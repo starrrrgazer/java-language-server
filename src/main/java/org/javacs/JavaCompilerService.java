@@ -64,6 +64,7 @@ class JavaCompilerService implements CompilerProvider {
             }
             cachedCompile.borrow.close();
         }
+        cachedCompile = null;
         cachedCompile = doCompile(sources);
         cachedModified.clear();
         for (var f : sources) {
@@ -74,7 +75,14 @@ class JavaCompilerService implements CompilerProvider {
     private CompileBatch doCompile(Collection<? extends JavaFileObject> sources) {
         if (sources.isEmpty()) throw new RuntimeException("empty sources");
         var firstAttempt = new CompileBatch(this, sources);
-        var addFiles = firstAttempt.needsAdditionalSources();
+        Set<Path> addFiles;
+        try {
+            addFiles = firstAttempt.needsAdditionalSources();
+        } catch (RuntimeException e) {
+            firstAttempt.close();
+            firstAttempt.borrow.close();
+            throw e;
+        }
         if (addFiles.isEmpty()) return firstAttempt;
         // If the compiler needs additional source files that contain package-private files
         LOG.info("...need to recompile with " + addFiles);
@@ -190,7 +198,7 @@ class JavaCompilerService implements CompilerProvider {
             if (!fileName.endsWith(".java")) continue;
             var className = fileName.substring(0, fileName.length() - ".java".length());
             var packageName = FileStore.packageName(file);
-            if (!packageName.isEmpty()) {
+            if (packageName != null && !packageName.isEmpty()) {
                 className = packageName + "." + className;
             }
             all.add(className);
@@ -207,7 +215,8 @@ class JavaCompilerService implements CompilerProvider {
 
     private boolean containsImport(Path file, String className) {
         var packageName = packageName(className);
-        if (FileStore.packageName(file).equals(packageName)) return true;
+        // Note: FileStore.packageName may return null.
+        if (packageName.equals(FileStore.packageName(file))) return true;
         var star = packageName + ".*";
         for (var i : readImports(file)) {
             if (i.equals(className) || i.equals(star)) return true;
