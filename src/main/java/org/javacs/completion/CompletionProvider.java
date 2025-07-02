@@ -120,6 +120,7 @@ public class CompletionProvider {
         this.compiler = compiler;
     }
 
+    //补全函数
     public CompletionList complete(Path file, int line, int column) {
         LOG.info("Complete at " + file.getFileName() + "(" + line + "," + column + ")...");
         var started = Instant.now();
@@ -145,12 +146,12 @@ public class CompletionProvider {
 
     private CompletionList compileAndComplete(Path file, String contents, long cursor) {
         var started = Instant.now();
-        var source = new SourceFileObject(file, contents, Instant.now());
-        var partial = partialIdentifier(contents, (int) cursor);
-        var endsWithParen = endsWithParen(contents, (int) cursor);
+        var source = new SourceFileObject(file, contents, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
+        var partial = partialIdentifier(contents, (int) cursor);  //从字符串的指定位置向前提取一个合法的 Java 标识符片段
+        var endsWithParen = endsWithParen(contents, (int) cursor); //判断用户是否正在输入方法调用（如输入 obj.method 后提示参数列表）
         try (var task = compiler.compile(List.of(source))) {
             LOG.info("...compiled in " + Duration.between(started, Instant.now()).toMillis() + "ms");
-            var path = new FindCompletionsAt(task.task).scan(task.root(), cursor);
+            var path = new FindCompletionsAt(task.task).scan(task.root(), cursor);//定位：找到光标指向的标识符的类型，从而决定调用什么补全方法
             switch (path.getLeaf().getKind()) {
                 case IDENTIFIER:
                     return completeIdentifier(task, path, partial, endsWithParen);
@@ -211,6 +212,7 @@ public class CompletionProvider {
     private boolean endsWithParen(String contents, int cursor) {
         for (var i = cursor; i < contents.length(); i++) {
             if (!Character.isJavaIdentifierPart(contents.charAt(i))) {
+                // 遇到第一个非标识符字符时，检查是否是 '('
                 return contents.charAt(i) == '(';
             }
         }

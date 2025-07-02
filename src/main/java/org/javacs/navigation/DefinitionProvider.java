@@ -30,7 +30,7 @@ public class DefinitionProvider {
 
     public List<Location> find() {
         try (var task = compiler.compile(file)) {
-            var element = NavigationHelper.findElement(task, file, line, column);
+            var element = NavigationHelper.findElement(task, file, line, column); //同样也是获取AST实例，获取光标位置后调用 finaNameAt，得到光标指向的element
             if (element == null) return NOT_SUPPORTED;
             if (element.asType().getKind() == TypeKind.ERROR) {
                 task.close();
@@ -107,12 +107,12 @@ public class DefinitionProvider {
 
     private List<Location> findDefinitions(CompileTask task, Element element) {
         var trees = Trees.instance(task.task);
-        var path = trees.getPath(element);
+        var path = trees.getPath(element); //这里将光标指向的element变成了其定义处的element？
         if (path == null) {
             return List.of();
         }
         var name = element.getSimpleName();
         if (name.contentEquals("<init>")) name = element.getEnclosingElement().getSimpleName();
-        return List.of(FindHelper.location(task, path, name));
+        return List.of(FindHelper.location(task, path, name)); //精确匹配位置
     }
 }

@@ -257,6 +257,7 @@ class JavaLanguageServer extends LanguageServer {
         }
     }
 
+    //补全
     @Override
     public Optional<CompletionList> completion(TextDocumentPositionParams params) {
         if (!FileStore.isJavaFile(params.textDocument.uri)) return Optional.empty();
@@ -275,6 +276,7 @@ class JavaLanguageServer extends LanguageServer {
 
     @Override
     public Optional<Hover> hover(TextDocumentPositionParams position) {
+        System.out.println("Test Hover");
         var uri = position.textDocument.uri;
         var line = position.position.line + 1;
         var column = position.position.character + 1;
@@ -299,17 +301,19 @@ class JavaLanguageServer extends LanguageServer {
         return Optional.of(help);
     }
 
+    //转到定义
     @Override
     public Optional<List<Location>> gotoDefinition(TextDocumentPositionParams position) {
+        System.out.println("Test Hover");
         if (!FileStore.isJavaFile(position.textDocument.uri)) return Optional.empty();
         var file = Paths.get(position.textDocument.uri);
         var line = position.position.line + 1;
         var column = position.position.character + 1;
-        var found = new DefinitionProvider(compiler(), file, line, column).find();
+        var found = new DefinitionProvider(compiler(), file, line, column).find(); //跳转DefinitionProvider.find
         if (found == DefinitionProvider.NOT_SUPPORTED) {
             return Optional.empty();
         }
-        return Optional.of(found);
+        return Optional.of(found); //将非null的found包装为Optional对象
     }
 
     @Override
@@ -433,13 +437,14 @@ class JavaLanguageServer extends LanguageServer {
 
     private Rewrite createRewrite(RenameParams params) {
         var file = Paths.get(params.textDocument.uri);
-        try (var task = compiler().compile(file)) {
-            var lines = task.root().getLineMap();
-            var position = lines.getPosition(params.position.line + 1, params.position.character + 1);
-            var path = new FindNameAt(task).scan(task.root(), position);
+        try (var task = compiler().compile(file)) { //编译文件获取语法树
+            var lines = task.root().getLineMap(); //获取行号映射表,用于转换行列号与文件偏移量,例如将将代码中的行号（如 line: 5, column: 10）转换为文件中的具体位置（如字节偏移量）。
+            var position = lines.getPosition(params.position.line + 1, params.position.character + 1);//将 params 中的光标位置（行号 + 列号）转换为文件中的绝对位置（Position 或偏移量
+            var path = new FindNameAt(task).scan(task.root(), position); // 定位： 使用 FindNameAt 扫描语法树，找到光标位置对应的标识符（如变量名、方法名）的 AST 节点
+            // 定位：使用 scan 从根节点开始递归扫描，返回匹配的节点路径（TreePath 或类似结构）
             if (path == null) return Rewrite.NOT_SUPPORTED;
-            var el = Trees.instance(task.task).getElement(path);
-            switch (el.getKind()) {
+            var el = Trees.instance(task.task).getElement(path); //搜索： 根据ast节点获取符号相关信息
+            switch (el.getKind()) {  //遍历：根据符号类型，进行不同的遍历方法
                 case METHOD:
                     return renameMethod(task, (ExecutableElement) el, params.newName);
                 case FIELD:
