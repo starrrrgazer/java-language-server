@@ -4,6 +4,7 @@ import com.sun.source.util.Trees;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 import javax.lang.model.element.Element;
 import javax.lang.model.element.TypeElement;
 import javax.lang.model.type.TypeKind;
@@ -18,7 +19,7 @@ public class DefinitionProvider {
     private final CompilerProvider compiler;
     private final Path file;
     private final int line, column;
-
+    private static final Logger LOG = Logger.getLogger("main");
     public static final List<Location> NOT_SUPPORTED = List.of();
 
     public DefinitionProvider(CompilerProvider compiler, Path file, int line, int column) {
@@ -29,9 +30,12 @@ public class DefinitionProvider {
     }
 
     public List<Location> find() {
+//        LOG.info("-----------Here find --------------");
         try (var task = compiler.compile(file)) {
+//            LOG.info("-----------compile completed --------------");
             var element = NavigationHelper.findElement(task, file, line, column); //同样也是获取AST实例，获取光标位置后调用 finaNameAt，得到光标指向的element
             if (element == null) return NOT_SUPPORTED;
+//            LOG.info("-----------element found --------------");
             if (element.asType().getKind() == TypeKind.ERROR) {
                 task.close();
                 return findError(element);

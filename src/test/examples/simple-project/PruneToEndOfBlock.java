@@ -1,7 +1,10 @@
 class PruneToEndOfBlock {
+    public int a;
+    public int testCompletion;
     void test() {
-        int a = 1;
+        a = 1;
         int b = 2;
         int c = 3;
+        int d = a + b+ this.testCompletion;
     }
 }

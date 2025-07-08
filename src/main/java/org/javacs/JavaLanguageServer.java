@@ -18,6 +18,7 @@ import org.javacs.fold.FoldProvider;
 import org.javacs.hover.HoverProvider;
 import org.javacs.index.SymbolProvider;
 import org.javacs.lens.CodeLensProvider;
+import org.javacs.log.LogConfig;
 import org.javacs.lsp.*;
 import org.javacs.markup.ColorProvider;
 import org.javacs.markup.ErrorProvider;
@@ -182,9 +183,11 @@ class JavaLanguageServer extends LanguageServer {
         c.add("codeLensProvider", codeLensOptions);
         c.addProperty("foldingRangeProvider", true);
         c.addProperty("codeActionProvider", true);
-        var renameOptions = new JsonObject();
-        renameOptions.addProperty("prepareProvider", true);
-        c.add("renameProvider", renameOptions);
+        //rename provider
+//        var renameOptions = new JsonObject();
+//        renameOptions.addProperty("prepareProvider", true);
+//        c.add("renameProvider", renameOptions);
+        c.addProperty("renameProvider", true);
 
         return new InitializeResult(c);
     }
@@ -215,6 +218,7 @@ class JavaLanguageServer extends LanguageServer {
 
     public JavaLanguageServer(LanguageClient client) {
         this.client = client;
+        LogConfig.setup();
     }
 
     @Override
@@ -261,9 +265,13 @@ class JavaLanguageServer extends LanguageServer {
     @Override
     public Optional<CompletionList> completion(TextDocumentPositionParams params) {
         if (!FileStore.isJavaFile(params.textDocument.uri)) return Optional.empty();
+//        LOG.info("-----------------Start completion----------------");
+        var started = Instant.now();
         var file = Paths.get(params.textDocument.uri);
         var provider = new CompletionProvider(compiler());
         var list = provider.complete(file, params.position.line + 1, params.position.character + 1);
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        LOG.info("completion: "+ elapsedMs);
         if (list == CompletionProvider.NOT_SUPPORTED) return Optional.empty();
         return Optional.of(list);
     }
@@ -304,15 +312,19 @@ class JavaLanguageServer extends LanguageServer {
     //转到定义
     @Override
     public Optional<List<Location>> gotoDefinition(TextDocumentPositionParams position) {
-        System.out.println("Test Hover");
+//        LOG.info("-----------Here Go to definition --------------");
+        var started = Instant.now();
         if (!FileStore.isJavaFile(position.textDocument.uri)) return Optional.empty();
         var file = Paths.get(position.textDocument.uri);
         var line = position.position.line + 1;
         var column = position.position.character + 1;
+//        LOG.info("-----------line:"+ line + " and column:"+ column+"--------------");
         var found = new DefinitionProvider(compiler(), file, line, column).find(); //跳转DefinitionProvider.find
         if (found == DefinitionProvider.NOT_SUPPORTED) {
             return Optional.empty();
         }
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        LOG.info("gotoDefinition: "+ elapsedMs);
         return Optional.of(found); //将非null的found包装为Optional对象
     }
 
@@ -415,9 +427,11 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     private boolean canFindSource(Element rename) {
+//        LOG.info("---------------rename symbol is " + rename);
         if (rename == null) return false;
         if (rename instanceof TypeElement) {
             var type = (TypeElement) rename;
+//            LOG.info("----------------canFindSource: " + type);
             var name = type.getQualifiedName().toString();
             return compiler().findTypeDeclaration(name) != CompilerProvider.NOT_FOUND;
         }
@@ -426,7 +440,10 @@ class JavaLanguageServer extends LanguageServer {
 
     @Override
     public WorkspaceEdit rename(RenameParams params) {
+        var started = Instant.now();
         var rw = createRewrite(params);
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        LOG.info("rename: "+ elapsedMs);
         var response = new WorkspaceEdit();
         var map = rw.rewrite(compiler());
         for (var editedFile : map.keySet()) {
