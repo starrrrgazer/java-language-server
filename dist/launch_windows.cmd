@@ -9,5 +9,6 @@ set JLINK_VM_OPTIONS=^
 --add-exports jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED ^
 --add-opens jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED
 set CLASSPATH_OPTIONS=-classpath %~dp0/classpath/gson-2.8.9.jar;%~dp0/classpath/protobuf-java-3.19.6.jar;%~dp0/classpath/java-language-server.jar
+echo [DEBUG] Starting Java with classpath: %CLASSPATH_OPTIONS% >> debug.log
 java %JLINK_VM_OPTIONS% %CLASSPATH_OPTIONS% %*
 

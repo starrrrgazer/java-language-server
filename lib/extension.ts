@@ -14,7 +14,7 @@ const visualVm = false;
 /** Called when extension is activated */
 export async function activate(context: ExtensionContext) {
     console.log('Activating Java');
-
+    console.log('test1');
     // Teach VSCode to open JAR files
     workspace.registerTextDocumentContentProvider('jar', new JarFileSystemProvider());
     
@@ -34,14 +34,21 @@ export async function activate(context: ExtensionContext) {
     let launcherRelativePath = platformSpecificLangServer();
     let launcherPath = [context.extensionPath].concat(launcherRelativePath);
     let launcher = Path.resolve(...launcherPath);
+    console.log(launcher);
     
     // Start the child java process
     let serverOptions: ServerOptions = {
-        command: launcher,
-        args: [],
-        options: { cwd: context.extensionPath }
+        command: 'cmd.exe',
+        args: [
+            '/c',
+            Path.join(context.extensionPath, ...launcherRelativePath)
+        ],
+        options: {
+            cwd: context.extensionPath,
+            shell: true
+        }
     }
-
+    console.log('Final command path:', Path.join(context.extensionPath, ...launcherRelativePath));
     if (visualVm) {
         serverOptions = visualVmConfig(context);
     }
@@ -317,7 +324,7 @@ interface PositionLike {
 function platformSpecificLangServer(): string[] {
 	switch (process.platform) {
 		case 'win32':
-            return ['dist', 'lang_server_windows.sh'];
+            return ['dist', 'lang_server_windows.cmd'];
 
         case 'darwin':
             return ['dist', 'lang_server_mac.sh'];
