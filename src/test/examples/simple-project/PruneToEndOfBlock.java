@@ -5,6 +5,6 @@ class PruneToEndOfBlock {
         a = 1;
         int b = 2;
         int c = 3;
-        int d = a + b+ this.testCompletion;
+        int d = a + b+ this.test;
     }
 }

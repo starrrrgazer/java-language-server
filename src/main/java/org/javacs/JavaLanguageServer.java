@@ -4,6 +4,11 @@ import static org.javacs.JsonHelper.GSON;
 
 import com.google.gson.*;
 import com.sun.source.util.Trees;
+
+import java.io.IOException;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -271,7 +276,7 @@ class JavaLanguageServer extends LanguageServer {
         var provider = new CompletionProvider(compiler());
         var list = provider.complete(file, params.position.line + 1, params.position.character + 1);
         var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("completion: "+ elapsedMs);
+        LOG.info("completion: "+ elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         if (list == CompletionProvider.NOT_SUPPORTED) return Optional.empty();
         return Optional.of(list);
     }
@@ -324,21 +329,77 @@ class JavaLanguageServer extends LanguageServer {
             return Optional.empty();
         }
         var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("gotoDefinition: "+ elapsedMs);
+        LOG.info("gotoDefinition: "+ elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
         return Optional.of(found); //将非null的found包装为Optional对象
     }
 
+    public String extractRelativeUri(URI uri) {
+        String uriString = uri.toString();
+        String prefix = "file:///d%3A/work24/";
+
+        if (uriString.startsWith(prefix)) {
+            String newPath = uriString.substring(prefix.length());
+            return newPath;
+        }
+        return uriString;
+    }
+
     @Override
-    public Optional<List<Location>> findReferences(ReferenceParams position) {
+    public Optional<List<Location>> findReferences(ReferenceParams position) throws IOException {
+        //change to test cost of component
+
         if (!FileStore.isJavaFile(position.textDocument.uri)) return Optional.empty();
         var file = Paths.get(position.textDocument.uri);
         var line = position.position.line + 1;
         var column = position.position.character + 1;
-        var found = new ReferenceProvider(compiler(), file, line, column).find();
-        if (found == ReferenceProvider.NOT_SUPPORTED) {
-            return Optional.empty();
-        }
-        return Optional.of(found);
+
+        //        var found = new ReferenceProvider(compiler(), file, line, column).find();
+//        if (found == ReferenceProvider.NOT_SUPPORTED) {
+//            return Optional.empty();
+//        }
+//        return Optional.of(found);
+
+        String uriString = extractRelativeUri(position.textDocument.uri);
+
+        //test compile component
+        var started1 = Instant.now();
+        var task = compiler().compile(file);
+        var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
+        LOG.info("compile component: "+ elapsedMs1 + " document: " + uriString);
+
+        //test locate component
+        var started2 = Instant.now();
+        var cursor = task.root().getLineMap().getPosition(line, column);
+        var path = new FindNameAt(task).scan(task.root(), cursor);
+        var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
+        LOG.info("locate component: "+ elapsedMs2 + " document: " + uriString);
+
+        //test traverse component
+        var started3 = Instant.now();
+//        var traverse = new FindNameAt(task).scan(task.root(), null);
+//        var elapsedMs3 = Duration.between(started1, Instant.now()).toMillis();
+//        LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
+
+        //count nodeNum
+        NodeCounter counter = new NodeCounter();
+        counter.scan(task.root(),null);
+        var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
+        LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
+        LOG.info("NOD: "+ counter.getCount() + " document: " + uriString);
+
+        //count definitionSymbol
+        DefinitionCounter counter2 = new DefinitionCounter();
+        counter2.scan(task.root(),null);
+        LOG.info("DEF: "+ counter2.getAllCount() + " document: " + uriString);
+
+        //count OccurSymbol
+        OccurCounter occurCounter = new OccurCounter();
+        occurCounter.scan(task.root(),null);
+        LOG.info("OCC: "+ occurCounter.getTotalOccurrencesOptimized() + " document: " + uriString);
+
+        String filePath = file.toFile().getAbsolutePath();
+        LOG.info("LOC: "+ (int) Files.lines(Paths.get(filePath)).count() + " document: " + uriString);
+        return Optional.empty();
     }
 
     @Override
@@ -443,12 +504,13 @@ class JavaLanguageServer extends LanguageServer {
         var started = Instant.now();
         var rw = createRewrite(params);
         var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("rename: "+ elapsedMs);
+        LOG.info("rename: "+ elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         var response = new WorkspaceEdit();
-        var map = rw.rewrite(compiler());
-        for (var editedFile : map.keySet()) {
-            response.changes.put(editedFile.toUri(), List.of(map.get(editedFile)));
-        }
+        //test rename cost
+//        var map = rw.rewrite(compiler());
+//        for (var editedFile : map.keySet()) {
+//            response.changes.put(editedFile.toUri(), List.of(map.get(editedFile)));
+//        }
         return response;
     }
 

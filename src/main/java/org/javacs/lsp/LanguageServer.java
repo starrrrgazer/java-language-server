@@ -1,5 +1,6 @@
 package org.javacs.lsp;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
@@ -68,7 +69,7 @@ public class LanguageServer {
         throw new RuntimeException("Unimplemented");
     }
 
-    public Optional<List<Location>> findReferences(ReferenceParams params) {
+    public Optional<List<Location>> findReferences(ReferenceParams params) throws IOException {
         throw new RuntimeException("Unimplemented");
     }
 

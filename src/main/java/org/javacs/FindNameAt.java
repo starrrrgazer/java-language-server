@@ -20,6 +20,11 @@ public class FindNameAt extends TreePathScanner<TreePath, Long> {
 
     @Override
     public TreePath visitClass(ClassTree t, Long find) {
+        // 添加 null 检查
+//        if (find == null) {
+//            return super.visitClass(t, null); // 或者返回 null/默认路径
+//        }
+
         var push = surroundingClass;
         surroundingClass = t;
         if (contains(t, t.getSimpleName(), find)) {

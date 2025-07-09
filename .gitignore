@@ -12,7 +12,7 @@
 /test-classpath.txt
 /docpath.txt
 
-*.log
+
 *.log.*
 .idea
 *.iml

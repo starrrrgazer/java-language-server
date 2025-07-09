@@ -383,7 +383,21 @@ public class LSP {
                     case "textDocument/references":
                         {
                             var params = gson.fromJson(r.params, ReferenceParams.class);
+                            // change to test cost of component
                             var response = server.findReferences(params);
+
+                            //call gotodefinition
+                            var definitionParams = gson.fromJson(r.params, TextDocumentPositionParams.class);
+                            server.gotoDefinition(definitionParams);
+
+                            //call rename
+                            var renameParams = gson.fromJson(r.params, RenameParams.class);
+                            server.rename(renameParams);
+
+                            //completion
+                            var completionParams = gson.fromJson(r.params, TextDocumentPositionParams.class);
+                            server.completion(completionParams);
+
                             respond(send, r.id, response);
                             break;
                         }

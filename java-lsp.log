@@ -1,0 +1,2323 @@
+7月 10, 2025 1:11:50 上午 org.javacs.lsp.LSP connect
+信息: Reading messages from queue...
+7月 10, 2025 1:11:50 上午 org.javacs.lsp.LSP$1MessageReader run
+信息: Placing incoming messages on queue...
+7月 10, 2025 1:11:50 上午 org.javacs.FileStore readInfoFromDisk
+警告: Input length = 1
+7月 10, 2025 1:11:50 上午 org.javacs.JavaLanguageServer didChangeConfiguration
+信息: Received java settings {"gradle":{"buildServer":{"enabled":"on","openBuildOutput":"openOnBuildFailure"}},"debug":{"logLevel":"warn","settings":{"showHex":false,"showStaticVariables":false,"showQualifiedNames":false,"showLogicalStructure":true,"showToString":true,"maxStringLength":0,"numericPrecision":0,"hotCodeReplace":"manual","enableRunDebugCodeLens":true,"forceBuildBeforeLaunch":true,"onBuildFailureProceed":false,"console":"integratedTerminal","exceptionBreakpoint":{"exceptionTypes":[],"allowClasses":[],"skipClasses":[]},"stepping":{"skipClasses":[],"skipSynthetics":false,"skipStaticInitializers":false,"skipConstructors":false},"jdwp":{"limitOfVariablesPerJdwpRequest":100,"requestTimeout":3000,"async":"auto"},"vmArgs":"","debugSupportOnDecompiledSource":"on"}},"silentNotification":false,"dependency":{"showMembers":false,"syncWithFolderExplorer":true,"autoRefresh":true,"refreshDelay":2000,"packagePresentation":"flat"},"project":{"exportJar":{"targetPath":"${workspaceFolder}/${workspaceFolderBasename}.jar"},"explorer":{"showNonJavaResources":true}},"help":{"firstView":"auto","showReleaseNotes":true,"collectErrorLog":false},"home":"C:\\Program Files\\Java\\jdk-18.0.2.1","classPath":[],"docPath":[],"externalDependencies":[],"testMethod":[],"debugTestMethod":[],"testClass":[],"addExports":[],"trace":{"server":"off"}}
+7月 10, 2025 1:11:50 上午 org.javacs.ScanClassPath jdkTopLevelClasses
+信息: Searching for top-level classes in the JDK
+7月 10, 2025 1:11:50 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 1 because it has already started
+7月 10, 2025 1:11:50 上午 org.javacs.ScanClassPath jdkTopLevelClasses
+信息: Found 14419 classes in the java platform
+7月 10, 2025 1:11:50 上午 org.javacs.Docs findSrcZip
+信息: Found C:\Program Files\Java\jdk-18.0.2.1\lib\src.zip
+7月 10, 2025 1:11:51 上午 org.javacs.ScanClassPath classPathTopLevelClasses
+信息: Searching for top-level classes in 0 classpath locations
+7月 10, 2025 1:11:51 上午 org.javacs.ScanClassPath classPathTopLevelClasses
+信息: Found 0 classes in classpath
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:11:51 上午 org.javacs.ReusableCompiler getTask
+警告: Options changed from [-classpath, , --add-modules, ALL-MODULE-PATH, -proc:none, -g, -Xlint:cast, -Xlint:deprecation, -Xlint:empty, -Xlint:fallthrough, -Xlint:finally, -Xlint:path, -Xlint:unchecked, -Xlint:varargs, -Xlint:static] to [-classpath, , --add-modules, ALL-MODULE-PATH, -proc:none, -g, -Xlint:cast, -Xlint:deprecation, -Xlint:empty, -Xlint:fallthrough, -Xlint:finally, -Xlint:path, -Xlint:unchecked, -Xlint:varargs, -Xlint:static], creating new compiler
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 208 ms
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 209 ms
+7月 10, 2025 1:11:51 上午 org.javacs.lsp.LSP connect
+严重: Cannot invoke "String.hashCode()" because "<local9>" is null
+java.lang.NullPointerException: Cannot invoke "String.hashCode()" because "<local9>" is null
+	at org.javacs.lsp.LSP.connect(LSP.java:255)
+	at org.javacs.Main.main(Main.java:30)
+
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:11:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:11:51 上午 org.javacs.lsp.LSP connect
+警告: Don't know what to do with method `$/setTraceNotification`
+7月 10, 2025 1:11:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:51 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:11:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:51 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 1 ms
+7月 10, 2025 1:11:51 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 7 ms
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:11:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:11:51 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 8 because it has already started
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: Check 1 diagnostics for quick fixes...
+7月 10, 2025 1:11:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: ...created 0 quick fixes in 1 ms
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: Check 1 diagnostics for quick fixes...
+7月 10, 2025 1:11:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:51 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: ...created 0 quick fixes in 0 ms
+7月 10, 2025 1:11:52 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:52 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:52 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 11 because it has already started
+7月 10, 2025 1:11:53 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:53 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 12 because it has already started
+7月 10, 2025 1:11:55 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 1 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 4 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 4 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 21 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 6 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 7 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneToEndOfBlock_erased.java(4,14)...
+7月 10, 2025 1:11:55 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:11:55 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:11:55 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:11:55 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 7 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:11:55 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 14 because it has already started
+7月 10, 2025 1:12:23 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:25 上午 org.javacs.lsp.LSP connect
+警告: Got shutdown message
+7月 10, 2025 1:12:25 上午 org.javacs.lsp.LSP read
+警告: Stream from client has been closed, throwing kill exception...
+7月 10, 2025 1:12:25 上午 org.javacs.lsp.LSP$1MessageReader kill
+信息: Read stream has been closed, putting kill message onto queue...
+7月 10, 2025 1:12:25 上午 org.javacs.lsp.LSP connect
+警告: Stream from client has been closed, exiting...
+7月 10, 2025 1:12:50 上午 org.javacs.lsp.LSP connect
+信息: Reading messages from queue...
+7月 10, 2025 1:12:50 上午 org.javacs.lsp.LSP$1MessageReader run
+信息: Placing incoming messages on queue...
+7月 10, 2025 1:12:50 上午 org.javacs.FileStore readInfoFromDisk
+警告: Input length = 1
+7月 10, 2025 1:12:50 上午 org.javacs.JavaLanguageServer didChangeConfiguration
+信息: Received java settings {"gradle":{"buildServer":{"enabled":"on","openBuildOutput":"openOnBuildFailure"}},"debug":{"logLevel":"warn","settings":{"showHex":false,"showStaticVariables":false,"showQualifiedNames":false,"showLogicalStructure":true,"showToString":true,"maxStringLength":0,"numericPrecision":0,"hotCodeReplace":"manual","enableRunDebugCodeLens":true,"forceBuildBeforeLaunch":true,"onBuildFailureProceed":false,"console":"integratedTerminal","exceptionBreakpoint":{"exceptionTypes":[],"allowClasses":[],"skipClasses":[]},"stepping":{"skipClasses":[],"skipSynthetics":false,"skipStaticInitializers":false,"skipConstructors":false},"jdwp":{"limitOfVariablesPerJdwpRequest":100,"requestTimeout":3000,"async":"auto"},"vmArgs":"","debugSupportOnDecompiledSource":"on"}},"silentNotification":false,"dependency":{"showMembers":false,"syncWithFolderExplorer":true,"autoRefresh":true,"refreshDelay":2000,"packagePresentation":"flat"},"project":{"exportJar":{"targetPath":"${workspaceFolder}/${workspaceFolderBasename}.jar"},"explorer":{"showNonJavaResources":true}},"help":{"firstView":"auto","showReleaseNotes":true,"collectErrorLog":false},"home":"C:\\Program Files\\Java\\jdk-18.0.2.1","classPath":[],"docPath":[],"externalDependencies":[],"testMethod":[],"debugTestMethod":[],"testClass":[],"addExports":[],"trace":{"server":"off"}}
+7月 10, 2025 1:12:50 上午 org.javacs.ScanClassPath jdkTopLevelClasses
+信息: Searching for top-level classes in the JDK
+7月 10, 2025 1:12:50 上午 org.javacs.ScanClassPath jdkTopLevelClasses
+信息: Found 14419 classes in the java platform
+7月 10, 2025 1:12:50 上午 org.javacs.Docs findSrcZip
+信息: Found C:\Program Files\Java\jdk-18.0.2.1\lib\src.zip
+7月 10, 2025 1:12:50 上午 org.javacs.ScanClassPath classPathTopLevelClasses
+信息: Searching for top-level classes in 0 classpath locations
+7月 10, 2025 1:12:50 上午 org.javacs.ScanClassPath classPathTopLevelClasses
+信息: Found 0 classes in classpath
+7月 10, 2025 1:12:50 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:12:50 上午 org.javacs.ReusableCompiler getTask
+警告: Options changed from [-classpath, , --add-modules, ALL-MODULE-PATH, -proc:none, -g, -Xlint:cast, -Xlint:deprecation, -Xlint:empty, -Xlint:fallthrough, -Xlint:finally, -Xlint:path, -Xlint:unchecked, -Xlint:varargs, -Xlint:static] to [-classpath, , --add-modules, ALL-MODULE-PATH, -proc:none, -g, -Xlint:cast, -Xlint:deprecation, -Xlint:empty, -Xlint:fallthrough, -Xlint:finally, -Xlint:path, -Xlint:unchecked, -Xlint:varargs, -Xlint:static], creating new compiler
+7月 10, 2025 1:12:50 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 227 ms
+7月 10, 2025 1:12:50 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 228 ms
+7月 10, 2025 1:12:50 上午 org.javacs.lsp.LSP connect
+严重: Cannot invoke "String.hashCode()" because "<local9>" is null
+java.lang.NullPointerException: Cannot invoke "String.hashCode()" because "<local9>" is null
+	at org.javacs.lsp.LSP.connect(LSP.java:255)
+	at org.javacs.Main.main(Main.java:30)
+
+7月 10, 2025 1:12:50 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 1 because it has already started
+7月 10, 2025 1:12:50 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:12:50 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:12:50 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:12:50 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:12:50 上午 org.javacs.lsp.LSP connect
+警告: Don't know what to do with method `$/setTraceNotification`
+7月 10, 2025 1:12:50 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cancelled request 3, which had not yet started
+7月 10, 2025 1:12:50 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:50 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:12:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:12:51 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 9 because it has already started
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:12:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:12:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:12:51 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:12:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:12:51 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 1 ms
+7月 10, 2025 1:12:51 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 7 ms
+7月 10, 2025 1:12:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: Check 1 diagnostics for quick fixes...
+7月 10, 2025 1:12:51 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:12:51 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:12:51 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: ...created 0 quick fixes in 1 ms
+7月 10, 2025 1:13:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(7)...
+7月 10, 2025 1:13:39 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:13:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:13:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:17:22 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/BuildUpScope.java(1)...
+7月 10, 2025 1:17:22 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 3 ms
+7月 10, 2025 1:17:22 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 4 ms
+7月 10, 2025 1:17:22 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:22 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:22 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 1 ms
+7月 10, 2025 1:17:22 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 4 ms
+7月 10, 2025 1:17:22 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/BuildUpScope.java(5)...
+7月 10, 2025 1:17:22 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:22 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:22 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:22 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:22 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:22 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:23 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/BuildUpScope.java(5)...
+7月 10, 2025 1:17:23 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:23 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:23 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:17:24 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: Check 1 diagnostics for quick fixes...
+7月 10, 2025 1:17:24 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:24 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:24 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: ...created 0 quick fixes in 1 ms
+7月 10, 2025 1:17:26 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 22 because it has already started
+7月 10, 2025 1:17:26 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:26 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:26 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: Check 1 diagnostics for quick fixes...
+7月 10, 2025 1:17:26 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:26 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:26 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: ...created 0 quick fixes in 0 ms
+7月 10, 2025 1:17:27 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 24 because it has already started
+7月 10, 2025 1:17:27 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 25 because it has already started
+7月 10, 2025 1:17:27 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: Check 1 diagnostics for quick fixes...
+7月 10, 2025 1:17:27 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:27 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:27 上午 org.javacs.action.CodeActionProvider codeActionForDiagnostics
+信息: ...created 0 quick fixes in 0 ms
+7月 10, 2025 1:17:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 4 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 4 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 29 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 7 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 8 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 8 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 2 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at BuildUpScope.java(5,14)...
+7月 10, 2025 1:17:28 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:28 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:17:28 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 1 items in 2 ms
+7月 10, 2025 1:17:28 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 6 document: java-language-server/src/test/examples/simple-project/BuildUpScope.java
+7月 10, 2025 1:17:28 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 23 because it has already started
+7月 10, 2025 1:17:28 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 28 because it has already started
+7月 10, 2025 1:17:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 26 because it has already started
+7月 10, 2025 1:17:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 27 because it has already started
+7月 10, 2025 1:17:29 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ClassDoc.java(1)...
+7月 10, 2025 1:17:29 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:17:29 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:17:29 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:29 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:29 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:29 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:17:29 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:29 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:29 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:30 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 29 because it has already started
+7月 10, 2025 1:17:31 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 33 because it has already started
+7月 10, 2025 1:17:31 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 9 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 2 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 3 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 4 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at ClassDoc.java(3,5)...
+7月 10, 2025 1:17:32 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:32 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 3ms
+7月 10, 2025 1:17:32 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 11 items in 3 ms
+7月 10, 2025 1:17:32 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 3 document: java-language-server/src/test/examples/simple-project/ClassDoc.java
+7月 10, 2025 1:17:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 34 because it has already started
+7月 10, 2025 1:17:32 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 31 because it has already started
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 36 because it has already started
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 32 because it has already started
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 30 because it has already started
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 35 because it has already started
+7月 10, 2025 1:17:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ErrorProne.java(1)...
+7月 10, 2025 1:17:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 25 ms
+7月 10, 2025 1:17:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 26 ms
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 37 because it has already started
+7月 10, 2025 1:17:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ErrorProne.java(9)...
+7月 10, 2025 1:17:33 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:33 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:33 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:33 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:33 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 43 because it has already started
+7月 10, 2025 1:17:34 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:34 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:34 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:34 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:17:34 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:34 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 44 because it has already started
+7月 10, 2025 1:17:35 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:35 上午 org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+信息: ...found jar:file:///C:/Program%20Files/Java/jdk-18.0.2.1/lib/src.zip!/java.base/java/util/Set.java in module java.base of jdk
+7月 10, 2025 1:17:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 45 because it has already started
+7月 10, 2025 1:17:35 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:35 上午 org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+信息: ...found jar:file:///C:/Program%20Files/Java/jdk-18.0.2.1/lib/src.zip!/java.base/java/util/HashSet.java in module java.base of jdk
+7月 10, 2025 1:17:36 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 46 because it has already started
+7月 10, 2025 1:17:36 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 39 because it has already started
+7月 10, 2025 1:17:36 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ErrorProne.java(6)...
+7月 10, 2025 1:17:36 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:36 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:36 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:37 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 42 because it has already started
+7月 10, 2025 1:17:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:37 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 49 because it has already started
+7月 10, 2025 1:17:37 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 47 because it has already started
+7月 10, 2025 1:17:37 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ErrorProne.java(6)...
+7月 10, 2025 1:17:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:37 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:37 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:17:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 1 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 2 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 2 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 41 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 23 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 9 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:37 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at ErrorProne.java(6,22)...
+7月 10, 2025 1:17:37 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:37 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 3ms
+7月 10, 2025 1:17:37 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 3 ms
+7月 10, 2025 1:17:37 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 4 document: java-language-server/src/test/examples/simple-project/ErrorProne.java
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 48 because it has already started
+7月 10, 2025 1:17:38 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 40 because it has already started
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 52 because it has already started
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 41 because it has already started
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 50 because it has already started
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 38 because it has already started
+7月 10, 2025 1:17:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 51 because it has already started
+7月 10, 2025 1:17:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/FindFields.java(1)...
+7月 10, 2025 1:17:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 3 ms
+7月 10, 2025 1:17:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 3 ms
+7月 10, 2025 1:17:39 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 53 because it has already started
+7月 10, 2025 1:17:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/FindFields.java(12)...
+7月 10, 2025 1:17:39 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:17:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:17:39 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:39 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:39 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:39 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:39 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:39 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:39 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 2 ms
+7月 10, 2025 1:17:39 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:39 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:39 上午 org.javacs.lsp.LSP connect
+严重: null
+java.lang.NullPointerException
+	at java.base/java.util.Objects.requireNonNull(Objects.java:208)
+	at jdk.compiler/com.sun.source.util.TreePath.getPath(TreePath.java:62)
+	at jdk.compiler/com.sun.source.util.TreePath.getPath(TreePath.java:50)
+	at jdk.compiler/com.sun.tools.javac.api.JavacTrees.getPath(JavacTrees.java:322)
+	at org.javacs.hover.HoverProvider.docs(HoverProvider.java:131)
+	at org.javacs.hover.HoverProvider.docs(HoverProvider.java:104)
+	at org.javacs.hover.HoverProvider.hover(HoverProvider.java:39)
+	at org.javacs.JavaLanguageServer.hover(JavaLanguageServer.java:298)
+	at org.javacs.lsp.LSP.connect(LSP.java:365)
+	at org.javacs.Main.main(Main.java:30)
+
+7月 10, 2025 1:17:39 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 59 because it has already started
+7月 10, 2025 1:17:40 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:40 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 60 because it has already started
+7月 10, 2025 1:17:40 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 55 because it has already started
+7月 10, 2025 1:17:40 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/FindFields.java(2)...
+7月 10, 2025 1:17:40 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:40 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:40 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 58 because it has already started
+7月 10, 2025 1:17:41 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:41 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 2 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 2 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 60 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 14 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 25 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 19 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:41 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at FindFields.java(2,13)...
+7月 10, 2025 1:17:41 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:41 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:17:41 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 3 ms
+7月 10, 2025 1:17:41 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 3 document: java-language-server/src/test/examples/simple-project/FindFields.java
+7月 10, 2025 1:17:42 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 62 because it has already started
+7月 10, 2025 1:17:42 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 56 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 64 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 57 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 61 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 54 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 63 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/GotoDefinition.java(1)...
+7月 10, 2025 1:17:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 2 ms
+7月 10, 2025 1:17:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:17:43 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:43 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:43 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:43 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:17:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 65 because it has already started
+7月 10, 2025 1:17:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/GotoDefinition.java(3)...
+7月 10, 2025 1:17:43 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:43 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:43 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:43 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:44 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 1 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 20 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 6 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 8 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 0 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:44 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at GotoDefinition.java(3,15)...
+7月 10, 2025 1:17:44 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:44 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:17:44 上午 org.javacs.completion.CompletionProvider completeIdentifier
+信息: ...complete identifiers
+7月 10, 2025 1:17:44 上午 org.javacs.completion.CompletionProvider completeUsingScope
+信息: ...found 1 scope members
+7月 10, 2025 1:17:44 上午 org.javacs.completion.CompletionProvider addStaticImports
+信息: ...found 0 static imports
+7月 10, 2025 1:17:44 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 1 items in 16 ms
+7月 10, 2025 1:17:44 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 16 document: java-language-server/src/test/examples/simple-project/GotoDefinition.java
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 70 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 68 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 72 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 69 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 67 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 66 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 71 because it has already started
+7月 10, 2025 1:17:45 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HasImport.java(1)...
+7月 10, 2025 1:17:45 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:17:45 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:17:46 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:46 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:46 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:46 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:17:46 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:46 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:46 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:46 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 73 because it has already started
+7月 10, 2025 1:17:46 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HasImport.java(3)...
+7月 10, 2025 1:17:46 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:46 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:46 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:46 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 77 because it has already started
+7月 10, 2025 1:17:46 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:47 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 13 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 2 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 7 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 5 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at HasImport.java(3,11)...
+7月 10, 2025 1:17:47 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:47 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:17:47 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:17:47 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 3 document: java-language-server/src/test/examples/simple-project/HasImport.java
+7月 10, 2025 1:17:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 79 because it has already started
+7月 10, 2025 1:17:47 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 75 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 81 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 76 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 78 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 74 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 80 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HelloError.java(1)...
+7月 10, 2025 1:17:48 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 40 ms
+7月 10, 2025 1:17:48 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 40 ms
+7月 10, 2025 1:17:48 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 82 because it has already started
+7月 10, 2025 1:17:48 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HelloError.java(3)...
+7月 10, 2025 1:17:48 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:48 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:48 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:48 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:48 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:48 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:48 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:48 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:48 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:48 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 12 ms
+7月 10, 2025 1:17:48 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:49 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 88 because it has already started
+7月 10, 2025 1:17:49 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 89 because it has already started
+7月 10, 2025 1:17:49 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:50 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:50 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 90 because it has already started
+7月 10, 2025 1:17:50 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:51 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 91 because it has already started
+7月 10, 2025 1:17:52 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:52 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 92 because it has already started
+7月 10, 2025 1:17:52 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 84 because it has already started
+7月 10, 2025 1:17:52 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HelloError.java(3)...
+7月 10, 2025 1:17:52 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:52 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:52 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:17:52 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 87 because it has already started
+7月 10, 2025 1:17:52 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:53 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 22 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 10 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 5 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:53 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:53 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at HelloError.java(3,14)...
+7月 10, 2025 1:17:53 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:53 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 28ms
+7月 10, 2025 1:17:53 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 30 ms
+7月 10, 2025 1:17:53 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 30 document: java-language-server/src/test/examples/simple-project/HelloError.java
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 94 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 85 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 96 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 86 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 93 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 83 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 95 because it has already started
+7月 10, 2025 1:17:54 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HelloWorld.java(1)...
+7月 10, 2025 1:17:54 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 2 ms
+7月 10, 2025 1:17:54 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:17:54 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:17:54 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:54 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:54 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:17:55 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:55 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:55 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:56 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:56 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 102 because it has already started
+7月 10, 2025 1:17:56 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:57 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 103 because it has already started
+7月 10, 2025 1:17:57 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:57 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 104 because it has already started
+7月 10, 2025 1:17:57 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 97 because it has already started
+7月 10, 2025 1:17:57 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/HelloWorld.java(3)...
+7月 10, 2025 1:17:57 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:57 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:17:57 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:17:57 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 101 because it has already started
+7月 10, 2025 1:17:57 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:58 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 23 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 10 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 5 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:58 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:58 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at HelloWorld.java(3,39)...
+7月 10, 2025 1:17:58 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:17:58 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:17:58 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 3 ms
+7月 10, 2025 1:17:58 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 3 document: java-language-server/src/test/examples/simple-project/HelloWorld.java
+7月 10, 2025 1:17:59 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 106 because it has already started
+7月 10, 2025 1:17:59 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 99 because it has already started
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 108 because it has already started
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 100 because it has already started
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 105 because it has already started
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 98 because it has already started
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 107 because it has already started
+7月 10, 2025 1:18:00 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ItalicEnumConst.java(1)...
+7月 10, 2025 1:18:00 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 4 ms
+7月 10, 2025 1:18:00 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 4 ms
+7月 10, 2025 1:18:00 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:00 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:00 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:00 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:00 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:00 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:00 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:00 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:00 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 114 because it has already started
+7月 10, 2025 1:18:01 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 109 because it has already started
+7月 10, 2025 1:18:01 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:01 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/ItalicEnumConst.java(6)...
+7月 10, 2025 1:18:01 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:01 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:01 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:01 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 115 because it has already started
+7月 10, 2025 1:18:02 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 40 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 6 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 24 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 15 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:02 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at ItalicEnumConst.java(6,12)...
+7月 10, 2025 1:18:02 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:02 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 3ms
+7月 10, 2025 1:18:02 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 3 ms
+7月 10, 2025 1:18:02 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 3 document: java-language-server/src/test/examples/simple-project/ItalicEnumConst.java
+7月 10, 2025 1:18:03 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 113 because it has already started
+7月 10, 2025 1:18:03 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:04 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 111 because it has already started
+7月 10, 2025 1:18:04 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 118 because it has already started
+7月 10, 2025 1:18:04 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 112 because it has already started
+7月 10, 2025 1:18:04 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 116 because it has already started
+7月 10, 2025 1:18:04 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 110 because it has already started
+7月 10, 2025 1:18:04 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 117 because it has already started
+7月 10, 2025 1:18:04 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/LocalMethodDoc.java(1)...
+7月 10, 2025 1:18:04 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:04 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:04 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:04 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:04 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:04 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:04 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:04 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:04 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:05 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:05 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 124 because it has already started
+7月 10, 2025 1:18:05 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 119 because it has already started
+7月 10, 2025 1:18:05 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/LocalMethodDoc.java(10)...
+7月 10, 2025 1:18:05 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:05 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:05 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:06 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 24 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 7 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 12 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:06 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at LocalMethodDoc.java(10,14)...
+7月 10, 2025 1:18:06 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:06 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:18:06 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 1 ms
+7月 10, 2025 1:18:06 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 1 document: java-language-server/src/test/examples/simple-project/LocalMethodDoc.java
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 123 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 121 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 127 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 122 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 125 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 120 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 126 because it has already started
+7月 10, 2025 1:18:07 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneDot_erased.java(1)...
+7月 10, 2025 1:18:07 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 2 ms
+7月 10, 2025 1:18:07 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:18:08 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:08 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:08 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:08 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:18:08 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:08 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:08 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:08 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:08 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 133 because it has already started
+7月 10, 2025 1:18:09 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 128 because it has already started
+7月 10, 2025 1:18:09 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneDot_erased.java(2)...
+7月 10, 2025 1:18:09 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:09 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:09 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:10 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 134 because it has already started
+7月 10, 2025 1:18:10 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneDot_erased.java(2)...
+7月 10, 2025 1:18:10 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:10 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:10 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:11 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 18 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 6 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 5 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 3 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 2 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:11 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneDot_erased.java(2,11)...
+7月 10, 2025 1:18:11 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:11 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:18:11 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 1 ms
+7月 10, 2025 1:18:11 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 1 document: java-language-server/src/test/examples/simple-project/PruneDot_erased.java
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 132 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 130 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 137 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 131 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 135 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 129 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 136 because it has already started
+7月 10, 2025 1:18:12 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneDot.java(1)...
+7月 10, 2025 1:18:12 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:12 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:18:13 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:13 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:13 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:13 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:13 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:13 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:13 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:14 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:14 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 143 because it has already started
+7月 10, 2025 1:18:14 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 138 because it has already started
+7月 10, 2025 1:18:14 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneDot.java(2)...
+7月 10, 2025 1:18:14 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:14 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:14 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:15 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 18 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 6 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 5 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 4 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneDot.java(2,12)...
+7月 10, 2025 1:18:15 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:15 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:18:15 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 1 ms
+7月 10, 2025 1:18:15 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 1 document: java-language-server/src/test/examples/simple-project/PruneDot.java
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 142 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 140 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 146 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 141 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 144 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 139 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 145 because it has already started
+7月 10, 2025 1:18:15 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMethods_erased.java(1)...
+7月 10, 2025 1:18:15 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:15 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:16 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:16 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:16 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:16 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:16 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:16 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:16 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:17 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:17 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 152 because it has already started
+7月 10, 2025 1:18:17 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 147 because it has already started
+7月 10, 2025 1:18:17 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMethods_erased.java(6)...
+7月 10, 2025 1:18:17 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:17 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:17 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:17 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 151 because it has already started
+7月 10, 2025 1:18:17 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:18 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:18 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 155 because it has already started
+7月 10, 2025 1:18:19 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 21 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 6 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 8 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneMethods_erased.java(6,13)...
+7月 10, 2025 1:18:19 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:19 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 0ms
+7月 10, 2025 1:18:19 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 11 items in 0 ms
+7月 10, 2025 1:18:19 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/PruneMethods_erased.java
+7月 10, 2025 1:18:19 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 154 because it has already started
+7月 10, 2025 1:18:19 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:20 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 149 because it has already started
+7月 10, 2025 1:18:20 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 157 because it has already started
+7月 10, 2025 1:18:20 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 150 because it has already started
+7月 10, 2025 1:18:20 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 153 because it has already started
+7月 10, 2025 1:18:20 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 148 because it has already started
+7月 10, 2025 1:18:20 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 156 because it has already started
+7月 10, 2025 1:18:20 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMethods.java(1)...
+7月 10, 2025 1:18:20 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:20 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:20 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:20 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:20 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:20 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:20 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:20 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:20 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:20 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:21 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 163 because it has already started
+7月 10, 2025 1:18:21 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:21 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 164 because it has already started
+7月 10, 2025 1:18:21 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 158 because it has already started
+7月 10, 2025 1:18:21 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMethods.java(6)...
+7月 10, 2025 1:18:21 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:21 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:21 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:21 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 162 because it has already started
+7月 10, 2025 1:18:21 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:22 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 25 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 6 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 7 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 8 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneMethods.java(6,14)...
+7月 10, 2025 1:18:22 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:22 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:18:22 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:18:22 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/PruneMethods.java
+7月 10, 2025 1:18:22 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 166 because it has already started
+7月 10, 2025 1:18:22 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 160 because it has already started
+7月 10, 2025 1:18:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 168 because it has already started
+7月 10, 2025 1:18:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 161 because it has already started
+7月 10, 2025 1:18:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 165 because it has already started
+7月 10, 2025 1:18:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 159 because it has already started
+7月 10, 2025 1:18:23 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 167 because it has already started
+7月 10, 2025 1:18:23 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java(1)...
+7月 10, 2025 1:18:23 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:23 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:23 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:23 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:23 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:23 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:23 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:23 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:23 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:24 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:24 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 174 because it has already started
+7月 10, 2025 1:18:24 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:24 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 175 because it has already started
+7月 10, 2025 1:18:25 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 169 because it has already started
+7月 10, 2025 1:18:25 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java(4)...
+7月 10, 2025 1:18:25 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:25 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:25 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:25 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 1 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 21 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 9 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 7 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:25 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:25 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneMiddle_erased.java(4,10)...
+7月 10, 2025 1:18:25 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:25 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:18:25 上午 org.javacs.completion.CompletionProvider completeIdentifier
+信息: ...complete identifiers
+7月 10, 2025 1:18:25 上午 org.javacs.completion.CompletionProvider completeUsingScope
+信息: ...found 1 scope members
+7月 10, 2025 1:18:25 上午 org.javacs.completion.CompletionProvider addStaticImports
+信息: ...found 0 static imports
+7月 10, 2025 1:18:25 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 2 items in 3 ms
+7月 10, 2025 1:18:25 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 3 document: java-language-server/src/test/examples/simple-project/PruneMiddle_erased.java
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 173 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 171 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 178 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 172 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 176 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 170 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 177 because it has already started
+7月 10, 2025 1:18:26 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMiddle.java(1)...
+7月 10, 2025 1:18:26 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 29 ms
+7月 10, 2025 1:18:26 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 29 ms
+7月 10, 2025 1:18:27 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:27 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:27 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:27 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:18:27 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:27 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:27 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:27 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:27 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 184 because it has already started
+7月 10, 2025 1:18:28 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 179 because it has already started
+7月 10, 2025 1:18:28 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneMiddle.java(5)...
+7月 10, 2025 1:18:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:28 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:28 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 27 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 14 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 7 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:28 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:28 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneMiddle.java(5,14)...
+7月 10, 2025 1:18:28 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:28 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 22ms
+7月 10, 2025 1:18:28 上午 org.javacs.completion.CompletionProvider completeIdentifier
+信息: ...complete identifiers
+7月 10, 2025 1:18:28 上午 org.javacs.completion.CompletionProvider completeUsingScope
+信息: ...found 1 scope members
+7月 10, 2025 1:18:28 上午 org.javacs.completion.CompletionProvider addStaticImports
+信息: ...found 0 static imports
+7月 10, 2025 1:18:28 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 5 items in 23 ms
+7月 10, 2025 1:18:28 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 23 document: java-language-server/src/test/examples/simple-project/PruneMiddle.java
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 183 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 181 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 187 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 182 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 185 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 180 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 186 because it has already started
+7月 10, 2025 1:18:29 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(1)...
+7月 10, 2025 1:18:29 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 2 ms
+7月 10, 2025 1:18:29 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:18:30 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:30 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:30 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:30 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:18:30 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 188 because it has already started
+7月 10, 2025 1:18:30 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(7)...
+7月 10, 2025 1:18:30 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:30 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:30 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:30 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:30 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:30 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:30 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:30 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 194 because it has already started
+7月 10, 2025 1:18:30 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:30 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 190 because it has already started
+7月 10, 2025 1:18:30 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java(4)...
+7月 10, 2025 1:18:30 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:30 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:30 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:30 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 195 because it has already started
+7月 10, 2025 1:18:31 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 21 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 6 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 7 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneToEndOfBlock_erased.java(4,14)...
+7月 10, 2025 1:18:31 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:31 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:18:31 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:18:31 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock_erased.java
+7月 10, 2025 1:18:31 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 193 because it has already started
+7月 10, 2025 1:18:31 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 191 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 198 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 192 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 196 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 189 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 197 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java(1)...
+7月 10, 2025 1:18:32 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 3 ms
+7月 10, 2025 1:18:32 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 4 ms
+7月 10, 2025 1:18:32 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:32 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:32 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 199 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java(10)...
+7月 10, 2025 1:18:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:32 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:32 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:32 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:32 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:32 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:32 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 205 because it has already started
+7月 10, 2025 1:18:32 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 206 because it has already started
+7月 10, 2025 1:18:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 201 because it has already started
+7月 10, 2025 1:18:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java(8)...
+7月 10, 2025 1:18:33 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:33 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:33 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 204 because it has already started
+7月 10, 2025 1:18:33 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:34 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 40 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 8 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 15 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 10 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneToEndOfBlock.java(8,14)...
+7月 10, 2025 1:18:34 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:34 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:18:34 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:18:34 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/PruneToEndOfBlock.java
+7月 10, 2025 1:18:34 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 208 because it has already started
+7月 10, 2025 1:18:34 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 202 because it has already started
+7月 10, 2025 1:18:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 210 because it has already started
+7月 10, 2025 1:18:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 203 because it has already started
+7月 10, 2025 1:18:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 207 because it has already started
+7月 10, 2025 1:18:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 200 because it has already started
+7月 10, 2025 1:18:35 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 209 because it has already started
+7月 10, 2025 1:18:35 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneWords_erased.java(1)...
+7月 10, 2025 1:18:35 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:35 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:18:35 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:35 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:35 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:35 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:18:35 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:35 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:35 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:36 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:36 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 216 because it has already started
+7月 10, 2025 1:18:36 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 211 because it has already started
+7月 10, 2025 1:18:36 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneWords_erased.java(11)...
+7月 10, 2025 1:18:36 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:36 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:36 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 27 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 8 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 13 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 2 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 1 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:37 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at PruneWords_erased.java(11,12)...
+7月 10, 2025 1:18:37 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:37 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:18:37 上午 org.javacs.completion.CompletionProvider completeIdentifier
+信息: ...complete identifiers
+7月 10, 2025 1:18:37 上午 org.javacs.completion.CompletionProvider completeUsingScope
+信息: ...found 0 scope members
+7月 10, 2025 1:18:37 上午 org.javacs.completion.CompletionProvider addStaticImports
+信息: ...found 0 static imports
+7月 10, 2025 1:18:37 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:18:37 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/PruneWords_erased.java
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 215 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 213 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 219 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 214 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 217 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 212 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 218 because it has already started
+7月 10, 2025 1:18:38 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneWords.java(1)...
+7月 10, 2025 1:18:38 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:38 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:38 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:38 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:38 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:38 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:38 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:38 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:38 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:39 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:39 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 225 because it has already started
+7月 10, 2025 1:18:39 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 220 because it has already started
+7月 10, 2025 1:18:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/PruneWords.java(11)...
+7月 10, 2025 1:18:39 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:39 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:40 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 1 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 30 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 5 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 9 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 13 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:40 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 2 document: java-language-server/src/test/examples/simple-project/PruneWords.java
+7月 10, 2025 1:18:40 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:40 上午 org.javacs.lsp.LSP connect
+严重: 2
+java.lang.RuntimeException: 2
+	at org.javacs.CompileTask.root(CompileTask.java:18)
+	at org.javacs.JavaLanguageServer.createRewrite(JavaLanguageServer.java:520)
+	at org.javacs.JavaLanguageServer.rename(JavaLanguageServer.java:505)
+	at org.javacs.lsp.LSP.connect(LSP.java:395)
+	at org.javacs.Main.main(Main.java:30)
+
+7月 10, 2025 1:18:40 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 224 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 222 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 228 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 223 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 226 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 221 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 227 because it has already started
+7月 10, 2025 1:18:41 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/UnderlineMutable.java(1)...
+7月 10, 2025 1:18:41 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 2 ms
+7月 10, 2025 1:18:41 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 3 ms
+7月 10, 2025 1:18:41 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:41 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:41 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:41 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 1 ms
+7月 10, 2025 1:18:41 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:41 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:41 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:42 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 234 because it has already started
+7月 10, 2025 1:18:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 229 because it has already started
+7月 10, 2025 1:18:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/UnderlineMutable.java(17)...
+7月 10, 2025 1:18:43 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:43 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:43 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 233 because it has already started
+7月 10, 2025 1:18:43 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:43 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 236 because it has already started
+7月 10, 2025 1:18:45 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 235 because it has already started
+7月 10, 2025 1:18:45 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/UnderlineMutable.java(16)...
+7月 10, 2025 1:18:45 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:45 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:45 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 0 ms
+7月 10, 2025 1:18:46 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 1 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 1 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 52 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 8 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 15 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 19 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 1 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:46 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at UnderlineMutable.java(16,19)...
+7月 10, 2025 1:18:46 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:46 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 2ms
+7月 10, 2025 1:18:46 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:18:46 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/UnderlineMutable.java
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 237 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 231 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 240 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 232 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 238 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 230 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 239 because it has already started
+7月 10, 2025 1:18:47 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/UnusedVar.java(1)...
+7月 10, 2025 1:18:47 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:47 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:48 上午 org.javacs.JavaLanguageServer lint
+信息: Lint 1 files...
+7月 10, 2025 1:18:48 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:48 上午 org.javacs.JavaLanguageServer lint
+信息: ...compiled in 0 ms
+7月 10, 2025 1:18:48 上午 org.javacs.JavaLanguageServer lint
+信息: ...published in 0 ms
+7月 10, 2025 1:18:48 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:48 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:48 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:49 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:49 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 246 because it has already started
+7月 10, 2025 1:18:49 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 241 because it has already started
+7月 10, 2025 1:18:49 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/UnusedVar.java(3)...
+7月 10, 2025 1:18:49 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:49 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 1 ms
+7月 10, 2025 1:18:49 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 1 ms
+7月 10, 2025 1:18:50 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: compile component: 0 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: locate component: 0 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: traverse component: 0 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: NOD: 17 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: DEF: 4 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: OCC: 5 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer findReferences
+信息: LOC: 5 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer gotoDefinition
+信息: gotoDefinition: 0 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.JavaCompilerService compileBatch
+信息: ...using cached compile
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer rename
+信息: rename: 0 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.completion.CompletionProvider complete
+信息: Complete at UnusedVar.java(3,14)...
+7月 10, 2025 1:18:50 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:18:50 上午 org.javacs.completion.CompletionProvider compileAndComplete
+信息: ...compiled in 1ms
+7月 10, 2025 1:18:50 上午 org.javacs.completion.CompletionProvider logCompletionTiming
+信息: ...found 0 items in 2 ms
+7月 10, 2025 1:18:50 上午 org.javacs.JavaLanguageServer completion
+信息: completion: 2 document: java-language-server/src/test/examples/simple-project/UnusedVar.java
+7月 10, 2025 1:18:50 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 245 because it has already started
+7月 10, 2025 1:18:50 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:19:01 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 248 because it has already started
+7月 10, 2025 1:19:02 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 247 because it has already started
+7月 10, 2025 1:19:02 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: Find code actions at /d:/work24/java-language-server/src/test/examples/simple-project/UnusedVar.java(5)...
+7月 10, 2025 1:19:02 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...compiled in 2 ms
+7月 10, 2025 1:19:02 上午 org.javacs.action.CodeActionProvider codeActionsForCursor
+信息: ...created 0 actions in 2 ms
+7月 10, 2025 1:19:02 上午 org.javacs.lsp.LSP$1MessageReader peek
+信息: Cannot cancel request 249 because it has already started
+7月 10, 2025 1:19:02 上午 org.javacs.Parser parseJavaFileObject
+信息: ...using cached parse
+7月 10, 2025 1:19:04 上午 org.javacs.lsp.LSP connect
+警告: Got shutdown message
+7月 10, 2025 1:19:04 上午 org.javacs.lsp.LSP read
+警告: Stream from client has been closed, throwing kill exception...
+7月 10, 2025 1:19:04 上午 org.javacs.lsp.LSP$1MessageReader kill
+信息: Read stream has been closed, putting kill message onto queue...
+7月 10, 2025 1:19:04 上午 org.javacs.lsp.LSP connect
+警告: Stream from client has been closed, exiting...
