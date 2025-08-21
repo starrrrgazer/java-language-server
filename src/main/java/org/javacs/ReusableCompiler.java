@@ -39,8 +39,9 @@ import com.sun.tools.javac.comp.Modules;
 import com.sun.tools.javac.main.Arguments;
 import com.sun.tools.javac.main.JavaCompiler;
 import com.sun.tools.javac.model.JavacElements;
-import com.sun.tools.javac.util.Context;
+
 import com.sun.tools.javac.util.DefinedBy;
+import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.DefinedBy.Api;
 import com.sun.tools.javac.util.Log;
 import java.lang.reflect.InvocationTargetException;

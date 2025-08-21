@@ -2,6 +2,7 @@ package org.javacs;
 
 import static org.javacs.JsonHelper.GSON;
 
+import com.github.javaparser.ParserConfiguration;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.FieldDeclaration;
@@ -45,7 +46,6 @@ class JavaLanguageServer extends LanguageServer {
     private JsonObject cacheSettings;
     private JsonObject settings = new JsonObject();
     private boolean modifiedBuild = true;
-    private static final Gson gson = new Gson();
 
     JavaCompilerService compiler() {
         if (needsCompiler()) {
@@ -100,8 +100,8 @@ class JavaLanguageServer extends LanguageServer {
     private JavaCompilerService createCompiler() {
         Objects.requireNonNull(workspaceRoot, "Can't create compiler because workspaceRoot has not been initialized");
 
-        javaStartProgress(new JavaStartProgressParams("Configure javac"));
-        javaReportProgress(new JavaReportProgressParams("Finding source roots"));
+//        javaStartProgress(new JavaStartProgressParams("Configure javac"));
+//        javaReportProgress(new JavaReportProgressParams("Finding source roots"));
 
         var externalDependencies = externalDependencies();
         var classPath = classPath();
@@ -115,13 +115,13 @@ class JavaLanguageServer extends LanguageServer {
         else {
             var infer = new InferConfig(workspaceRoot, externalDependencies);
 
-            javaReportProgress(new JavaReportProgressParams("Inferring class path"));
+//            javaReportProgress(new JavaReportProgressParams("Inferring class path"));
             classPath = infer.classPath();
 
-            javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
+//            javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
             var docPath = infer.buildDocPath();
 
-            javaEndProgress();
+//            javaEndProgress();
             return new JavaCompilerService(classPath, docPath, addExports);
         }
     }
@@ -584,19 +584,48 @@ class JavaLanguageServer extends LanguageServer {
 
         try{
             String codes = params.textDocument.text;
+            ParserConfiguration pc = new ParserConfiguration();
+            pc.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_18);
+            StaticJavaParser.setConfiguration(pc);
             CompilationUnit unit = StaticJavaParser.parse(codes);
-            List<RenameParams> renameParams = new ArrayList<>();
-            unit.accept(new Visitor(), renameParams);
+            List<ReferenceParams> referenceParams = new ArrayList<>();
+            unit.accept(new Visitor(params.textDocument.uri), referenceParams);
+            for (ReferenceParams param : referenceParams) {
+                LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(param));
+                findReferences(param);
+            }
         }catch (Exception e){
-            LOG.warning("#JavaLanguageServer.didOpenTextDocument# parse java file error, file:" +params.textDocument.uri +"error:" + e.toString());
+            LOG.warning("#JavaLanguageServer.didOpenTextDocument# " +params.textDocument.uri +"error:" + e.toString());
         }
     }
 
-    private static class Visitor extends VoidVisitorAdapter<List<RenameParams>>{
+    private static class Visitor extends VoidVisitorAdapter<List<ReferenceParams>>{
+        URI uri;
+        public Visitor(URI uri) {
+            super();
+            this.uri = uri;
+        }
+
         @Override
-        public void visit(VariableDeclarator declarator, List<RenameParams> params) {
-            LOG.info("#MethodVisitor# VariableDeclarator range" + gson.toJson(declarator.getRange()));
-            LOG.info("#MethodVisitor# VariableDeclarator" + gson.toJson(declarator));
+        public void visit(FieldDeclaration fieldDeclaration, List<ReferenceParams> referenceParams) {
+            if(fieldDeclaration.isPrivate() && fieldDeclaration.isStatic()) return;
+            List<VariableDeclarator> variables = fieldDeclaration.getVariables();
+            if(variables.isEmpty()) return;
+            ReferenceParams cur = new ReferenceParams();
+            cur.textDocument = new TextDocumentIdentifier();
+            cur.textDocument.uri = uri;
+            cur.position = new Position();
+            //referenceParams is zero based
+            cur.position.line = variables.get(0).getRange().get().begin.line - 1;
+            cur.position.character = variables.get(0).getRange().get().begin.column - 1;
+            cur.context = new ReferenceContext();
+            if(referenceParams.isEmpty()){
+                referenceParams.add(cur);
+                referenceParams.add(cur);
+            }else{
+                referenceParams.remove(referenceParams.size()-1);
+                referenceParams.add(cur);
+            }
         }
     }
 
@@ -614,7 +643,7 @@ class JavaLanguageServer extends LanguageServer {
 
         if (FileStore.isJavaFile(params.textDocument.uri)) {
             // Clear diagnostics
-            client.publishDiagnostics(new PublishDiagnosticsParams(params.textDocument.uri, List.of()));
+//            client.publishDiagnostics(new PublishDiagnosticsParams(params.textDocument.uri, List.of()));
         }
     }
 
