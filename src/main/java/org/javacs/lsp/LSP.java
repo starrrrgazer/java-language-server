@@ -252,6 +252,7 @@ public class LSP {
             // Otherwise, process the new message
             hasAsyncWork = true;
             try {
+                LOG.info("#LSP.connect# receive:" + gson.toJson(r));
                 switch (r.method) {
                     case "initialize":
                         {

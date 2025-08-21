@@ -10,7 +10,7 @@ public class LogConfig {
 
         try {
             // 1. 输出到文件
-            FileHandler fileHandler = new FileHandler("eclipse-jdt-core.log", true); // 追加模式
+            FileHandler fileHandler = new FileHandler("ljy.log"); // 追加模式
             fileHandler.setFormatter(new SimpleFormatter());
             logger.addHandler(fileHandler);
 

@@ -18,3 +18,5 @@
 *.iml
 *.vsix
 .DS_store
+.vscode
+/node_modules

@@ -2,6 +2,12 @@ package org.javacs;
 
 import static org.javacs.JsonHelper.GSON;
 
+import com.github.javaparser.StaticJavaParser;
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.body.FieldDeclaration;
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.google.gson.*;
 import com.sun.source.util.Trees;
 
@@ -39,6 +45,7 @@ class JavaLanguageServer extends LanguageServer {
     private JsonObject cacheSettings;
     private JsonObject settings = new JsonObject();
     private boolean modifiedBuild = true;
+    private static final Gson gson = new Gson();
 
     JavaCompilerService compiler() {
         if (needsCompiler()) {
@@ -574,7 +581,25 @@ class JavaLanguageServer extends LanguageServer {
         if (!FileStore.isJavaFile(params.textDocument.uri)) return;
         lastEdited = Paths.get(params.textDocument.uri);
         uncheckedChanges = true;
+
+        try{
+            String codes = params.textDocument.text;
+            CompilationUnit unit = StaticJavaParser.parse(codes);
+            List<RenameParams> renameParams = new ArrayList<>();
+            unit.accept(new Visitor(), renameParams);
+        }catch (Exception e){
+            LOG.warning("#JavaLanguageServer.didOpenTextDocument# parse java file error, file:" +params.textDocument.uri +"error:" + e.toString());
+        }
     }
+
+    private static class Visitor extends VoidVisitorAdapter<List<RenameParams>>{
+        @Override
+        public void visit(VariableDeclarator declarator, List<RenameParams> params) {
+            LOG.info("#MethodVisitor# VariableDeclarator range" + gson.toJson(declarator.getRange()));
+            LOG.info("#MethodVisitor# VariableDeclarator" + gson.toJson(declarator));
+        }
+    }
+
 
     @Override
     public void didChangeTextDocument(DidChangeTextDocumentParams params) {
