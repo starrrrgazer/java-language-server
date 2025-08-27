@@ -97,8 +97,7 @@ public class RequestGenerator {
      * @param filePath 文件路径
      * @throws IOException 如果读取文件时发生错误
      */
-    public static void readFileContent(Path filePath) throws IOException, InterruptedException {
-        Thread.sleep(100);
+    public synchronized static void readFileContent(Path filePath) throws IOException {
         System.out.println("正在读取文件: " + filePath);
 
         // 读取文件内容，使用UTF-8编码

@@ -89,7 +89,7 @@ def export_to_csv(results, output_file):
             writer.writerow(result)
 
 if __name__ == "__main__":
-    log_file_path = input("请输入日志文件路径: ")
+    log_file_path = "ljy.log"
     results = process_log_file(log_file_path)
 
     
