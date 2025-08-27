@@ -24,7 +24,7 @@ public class RequestGenerator {
 
     public static JavaLanguageServer server = new JavaLanguageServer(mockedClient);
 
-    public static String fileDir = "C:\\Users\\74993\\Desktop\\毕设\\wll论文\\java project\\defects4j\\project_repos\\output";
+    public static String fileDir = "testDir";
 
     public static void main(String[] args) {
         // 设置系统编码为UTF-8
