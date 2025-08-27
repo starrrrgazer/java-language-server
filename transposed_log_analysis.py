@@ -29,27 +29,28 @@ def process_log_file(log_file_path):
                     value = int(match.group(1))
                     document = match.group(2)
                     
-                    # 存储数据（累加相同键的值）
+                    # 存储数据（累加相同键的值，并记录累加次数）
                     if key in document_data[document]:
-                        document_data[document][key] += value
+                        current_value, count = document_data[document][key]
+                        document_data[document][key] = (current_value + value, count + 1)
                     else:
-                        document_data[document][key] = value
+                        document_data[document][key] = (value, 1)
     
     # 转换为更友好的格式
     results = []
     for doc, data in document_data.items():
         result = {
             'document': doc,
-            'compile_component': data.get('compile', 0),
-            'locate_component': data.get('locate', 0),
-            'traverse_component': data.get('traverse', 0),
-            'NOD': data.get('NOD', 0),
-            'DEF': data.get('DEF', 0),
-            'OCC': data.get('OCC', 0),
-            'LOC': data.get('LOC', 0),
-            'gotoDefinition': data.get('gotoDefinition', 0),
-            'rename': data.get('rename', 0),
-            'completion': data.get('completion', 0)
+            'compile_component': data.get('compile', (0, 1))[0] / data.get('compile', (0, 1))[1],
+            'locate_component': data.get('locate', (0, 1))[0] / data.get('locate', (0, 1))[1],
+            'traverse_component': data.get('traverse', (0, 1))[0] / data.get('traverse', (0, 1))[1],
+            'NOD': data.get('NOD', (0, 1))[0] / data.get('NOD', (0, 1))[1],
+            'DEF': data.get('DEF', (0, 1))[0] / data.get('DEF', (0, 1))[1],
+            'OCC': data.get('OCC', (0, 1))[0] / data.get('OCC', (0, 1))[1],
+            'LOC': data.get('LOC', (0, 1))[0] / data.get('LOC', (0, 1))[1],
+            'gotoDefinition': data.get('gotoDefinition', (0, 1))[0] / data.get('gotoDefinition', (0, 1))[1],
+            'rename': data.get('rename', (0, 1))[0] / data.get('rename', (0, 1))[1],
+            'completion': data.get('completion', (0, 1))[0] / data.get('completion', (0, 1))[1]
         }
         results.append(result)
     
