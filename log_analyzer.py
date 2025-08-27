@@ -57,7 +57,7 @@ def transpose_to_csv(document_data, output_file):
 
 if __name__ == "__main__":
     # log_file_path = input("请输入日志文件路径: ")
-    log_file_path = "./java-lsp.log"
+    log_file_path = "./ljy.log"
     document_data = process_log_file(log_file_path)
     
     # 输出转置的CSV

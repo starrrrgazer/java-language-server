@@ -131,10 +131,10 @@ public class LSP {
         writeClient(client, messageText);
     }
 
-    private static class RealClient implements LanguageClient {
+    public static class RealClient implements LanguageClient {
         final OutputStream send;
 
-        RealClient(OutputStream send) {
+        public RealClient(OutputStream send) {
             this.send = send;
         }
 

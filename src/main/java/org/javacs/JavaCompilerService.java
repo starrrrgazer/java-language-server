@@ -17,8 +17,10 @@ class JavaCompilerService implements CompilerProvider {
     final Set<String> jdkClasses = ScanClassPath.jdkTopLevelClasses(), classPathClasses;
     // Diagnostics from the last compilation task
     final List<Diagnostic<? extends JavaFileObject>> diags = new ArrayList<>();
-    // Use the same file manager for multiple tasks, so we don't repeatedly re-compile the same files
-    // TODO intercept files that aren't in the batch and erase method bodies so compilation is faster
+    // Use the same file manager for multiple tasks, so we don't repeatedly
+    // re-compile the same files
+    // TODO intercept files that aren't in the batch and erase method bodies so
+    // compilation is faster
     final SourceFileManager fileManager;
 
     JavaCompilerService(Set<Path> classPath, Set<Path> docPath, Set<String> addExports) {
@@ -30,7 +32,8 @@ class JavaCompilerService implements CompilerProvider {
         for (var p : docPath) {
             System.err.println("  " + p);
         }
-        // classPath can't actually be modified, because JavaCompiler remembers it from task to task
+        // classPath can't actually be modified, because JavaCompiler remembers it from
+        // task to task
         this.classPath = Collections.unmodifiableSet(classPath);
         this.docPath = Collections.unmodifiableSet(docPath);
         this.addExports = Collections.unmodifiableSet(addExports);
@@ -73,7 +76,8 @@ class JavaCompilerService implements CompilerProvider {
     }
 
     private CompileBatch doCompile(Collection<? extends JavaFileObject> sources) {
-        if (sources.isEmpty()) throw new RuntimeException("empty sources");
+        if (sources.isEmpty())
+            throw new RuntimeException("empty sources");
         var firstAttempt = new CompileBatch(this, sources);
         Set<Path> addFiles;
         try {
@@ -83,8 +87,10 @@ class JavaCompilerService implements CompilerProvider {
             firstAttempt.borrow.close();
             throw e;
         }
-        if (addFiles.isEmpty()) return firstAttempt;
-        // If the compiler needs additional source files that contain package-private files
+        if (addFiles.isEmpty())
+            return firstAttempt;
+        // If the compiler needs additional source files that contain package-private
+        // files
         LOG.info("...need to recompile with " + addFiles);
         firstAttempt.close();
         firstAttempt.borrow.close();
@@ -163,7 +169,8 @@ class JavaCompilerService implements CompilerProvider {
             for (var line = lines.readLine(); line != null; line = lines.readLine()) {
                 // If we reach a class declaration, stop looking for imports
                 // TODO This could be a little more specific
-                if (line.contains("class")) break;
+                if (line.contains("class"))
+                    break;
                 // import foo.bar.Doh;
                 var matchesClass = importClass.matcher(line);
                 if (matchesClass.matches()) {
@@ -195,7 +202,8 @@ class JavaCompilerService implements CompilerProvider {
         var all = new ArrayList<String>();
         for (var file : FileStore.all()) {
             var fileName = file.getFileName().toString();
-            if (!fileName.endsWith(".java")) continue;
+            if (!fileName.endsWith(".java"))
+                continue;
             var className = fileName.substring(0, fileName.length() - ".java".length());
             var packageName = FileStore.packageName(file);
             if (packageName != null && !packageName.isEmpty()) {
@@ -216,10 +224,12 @@ class JavaCompilerService implements CompilerProvider {
     private boolean containsImport(Path file, String className) {
         var packageName = packageName(className);
         // Note: FileStore.packageName may return null.
-        if (packageName.equals(FileStore.packageName(file))) return true;
+        if (packageName.equals(FileStore.packageName(file)))
+            return true;
         var star = packageName + ".*";
         for (var i : readImports(file)) {
-            if (i.equals(className) || i.equals(star)) return true;
+            if (i.equals(className) || i.equals(star))
+                return true;
         }
         return false;
     }
@@ -249,9 +259,8 @@ class JavaCompilerService implements CompilerProvider {
 
     private Optional<JavaFileObject> findPublicTypeDeclarationInDocPath(String className) {
         try {
-            var found =
-                    docs.fileManager.getJavaFileForInput(
-                            StandardLocation.SOURCE_PATH, className, JavaFileObject.Kind.SOURCE);
+            var found = docs.fileManager.getJavaFileForInput(
+                    StandardLocation.SOURCE_PATH, className, JavaFileObject.Kind.SOURCE);
             return Optional.ofNullable(found);
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -262,9 +271,10 @@ class JavaCompilerService implements CompilerProvider {
         try {
             for (var module : ScanClassPath.JDK_MODULES) {
                 var moduleLocation = docs.fileManager.getLocationForModule(StandardLocation.MODULE_SOURCE_PATH, module);
-                if (moduleLocation == null) continue;
-                var fromModuleSourcePath =
-                        docs.fileManager.getJavaFileForInput(moduleLocation, className, JavaFileObject.Kind.SOURCE);
+                if (moduleLocation == null)
+                    continue;
+                var fromModuleSourcePath = docs.fileManager.getJavaFileForInput(moduleLocation, className,
+                        JavaFileObject.Kind.SOURCE);
                 if (fromModuleSourcePath != null) {
                     LOG.info(String.format("...found %s in module %s of jdk", fromModuleSourcePath.toUri(), module));
                     return Optional.of(fromModuleSourcePath);
@@ -279,9 +289,11 @@ class JavaCompilerService implements CompilerProvider {
     @Override
     public Path findTypeDeclaration(String className) {
         var fastFind = findPublicTypeDeclaration(className);
-        if (fastFind != NOT_FOUND) return fastFind;
+        if (fastFind != NOT_FOUND)
+            return fastFind;
         // In principle, the slow path can be skipped in many cases.
-        // If we're spending a lot of time in findTypeDeclaration, this would be a good optimization.
+        // If we're spending a lot of time in findTypeDeclaration, this would be a good
+        // optimization.
         var packageName = packageName(className);
         var simpleName = simpleName(className);
         for (var f : FileStore.list(packageName)) {
@@ -295,16 +307,18 @@ class JavaCompilerService implements CompilerProvider {
     private Path findPublicTypeDeclaration(String className) {
         JavaFileObject source;
         try {
-            source =
-                    fileManager.getJavaFileForInput(
-                            StandardLocation.SOURCE_PATH, className, JavaFileObject.Kind.SOURCE);
+            source = fileManager.getJavaFileForInput(
+                    StandardLocation.SOURCE_PATH, className, JavaFileObject.Kind.SOURCE);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        if (source == null) return NOT_FOUND;
-        if (!source.toUri().getScheme().equals("file")) return NOT_FOUND;
+        if (source == null)
+            return NOT_FOUND;
+        if (!source.toUri().getScheme().equals("file"))
+            return NOT_FOUND;
         var file = Paths.get(source.toUri());
-        if (!containsType(file, className)) return NOT_FOUND;
+        if (!containsType(file, className))
+            return NOT_FOUND;
         return file;
     }
 

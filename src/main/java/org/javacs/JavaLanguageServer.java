@@ -68,7 +68,8 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     void lint(Collection<Path> files) {
-        if (files.isEmpty()) return;
+        if (files.isEmpty())
+            return;
         LOG.info("Lint " + files.size() + " files...");
         var started = Instant.now();
         try (var task = compiler().compile(files.toArray(Path[]::new))) {
@@ -100,8 +101,8 @@ class JavaLanguageServer extends LanguageServer {
     private JavaCompilerService createCompiler() {
         Objects.requireNonNull(workspaceRoot, "Can't create compiler because workspaceRoot has not been initialized");
 
-//        javaStartProgress(new JavaStartProgressParams("Configure javac"));
-//        javaReportProgress(new JavaReportProgressParams("Finding source roots"));
+        // javaStartProgress(new JavaStartProgressParams("Configure javac"));
+        // javaReportProgress(new JavaReportProgressParams("Finding source roots"));
 
         var externalDependencies = externalDependencies();
         var classPath = classPath();
@@ -115,19 +116,20 @@ class JavaLanguageServer extends LanguageServer {
         else {
             var infer = new InferConfig(workspaceRoot, externalDependencies);
 
-//            javaReportProgress(new JavaReportProgressParams("Inferring class path"));
+            // javaReportProgress(new JavaReportProgressParams("Inferring class path"));
             classPath = infer.classPath();
 
-//            javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
+            // javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
             var docPath = infer.buildDocPath();
 
-//            javaEndProgress();
+            // javaEndProgress();
             return new JavaCompilerService(classPath, docPath, addExports);
         }
     }
 
     private Set<String> externalDependencies() {
-        if (!settings.has("externalDependencies")) return Set.of();
+        if (!settings.has("externalDependencies"))
+            return Set.of();
         var array = settings.getAsJsonArray("externalDependencies");
         var strings = new HashSet<String>();
         for (var each : array) {
@@ -137,7 +139,8 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     private Set<Path> classPath() {
-        if (!settings.has("classPath")) return Set.of();
+        if (!settings.has("classPath"))
+            return Set.of();
         var array = settings.getAsJsonArray("classPath");
         var paths = new HashSet<Path>();
         for (var each : array) {
@@ -147,7 +150,8 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     private Set<Path> docPath() {
-        if (!settings.has("docPath")) return Set.of();
+        if (!settings.has("docPath"))
+            return Set.of();
         var array = settings.getAsJsonArray("docPath");
         var paths = new HashSet<Path>();
         for (var each : array) {
@@ -157,7 +161,8 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     private Set<String> addExports() {
-        if (!settings.has("addExports")) return Set.of();
+        if (!settings.has("addExports"))
+            return Set.of();
         var array = settings.getAsJsonArray("addExports");
         var strings = new HashSet<String>();
         for (var each : array) {
@@ -195,17 +200,17 @@ class JavaLanguageServer extends LanguageServer {
         c.add("codeLensProvider", codeLensOptions);
         c.addProperty("foldingRangeProvider", true);
         c.addProperty("codeActionProvider", true);
-        //rename provider
-//        var renameOptions = new JsonObject();
-//        renameOptions.addProperty("prepareProvider", true);
-//        c.add("renameProvider", renameOptions);
+        // rename provider
+        // var renameOptions = new JsonObject();
+        // renameOptions.addProperty("prepareProvider", true);
+        // c.add("renameProvider", renameOptions);
         c.addProperty("renameProvider", true);
 
         return new InitializeResult(c);
     }
 
     private static final String[] watchFiles = {
-        "**/*.java", "**/pom.xml", "**/BUILD", "**/javaconfig.json", "**/WORKSPACE"
+            "**/*.java", "**/pom.xml", "**/BUILD", "**/javaconfig.json", "**/WORKSPACE"
     };
 
     @Override
@@ -226,7 +231,8 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     @Override
-    public void shutdown() {}
+    public void shutdown() {
+    }
 
     public JavaLanguageServer(LanguageClient client) {
         this.client = client;
@@ -273,18 +279,20 @@ class JavaLanguageServer extends LanguageServer {
         }
     }
 
-    //补全
+    // 补全
     @Override
     public Optional<CompletionList> completion(TextDocumentPositionParams params) {
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return Optional.empty();
-//        LOG.info("-----------------Start completion----------------");
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return Optional.empty();
+        // LOG.info("-----------------Start completion----------------");
         var started = Instant.now();
         var file = Paths.get(params.textDocument.uri);
         var provider = new CompletionProvider(compiler());
         var list = provider.complete(file, params.position.line + 1, params.position.character + 1);
         var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("completion: "+ elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
-        if (list == CompletionProvider.NOT_SUPPORTED) return Optional.empty();
+        LOG.info("completion: " + elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
+        if (list == CompletionProvider.NOT_SUPPORTED)
+            return Optional.empty();
         return Optional.of(list);
     }
 
@@ -300,7 +308,8 @@ class JavaLanguageServer extends LanguageServer {
         var uri = position.textDocument.uri;
         var line = position.position.line + 1;
         var column = position.position.character + 1;
-        if (!FileStore.isJavaFile(uri)) return Optional.empty();
+        if (!FileStore.isJavaFile(uri))
+            return Optional.empty();
         var file = Paths.get(uri);
         var list = new HoverProvider(compiler()).hover(file, line, column);
         if (list == HoverProvider.NOT_SUPPORTED) {
@@ -312,32 +321,35 @@ class JavaLanguageServer extends LanguageServer {
 
     @Override
     public Optional<SignatureHelp> signatureHelp(TextDocumentPositionParams params) {
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return Optional.empty();
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return Optional.empty();
         var file = Paths.get(params.textDocument.uri);
         var line = params.position.line + 1;
         var column = params.position.character + 1;
         var help = new SignatureProvider(compiler()).signatureHelp(file, line, column);
-        if (help == SignatureProvider.NOT_SUPPORTED) return Optional.empty();
+        if (help == SignatureProvider.NOT_SUPPORTED)
+            return Optional.empty();
         return Optional.of(help);
     }
 
-    //转到定义
+    // 转到定义
     @Override
     public Optional<List<Location>> gotoDefinition(TextDocumentPositionParams position) {
-//        LOG.info("-----------Here Go to definition --------------");
+        // LOG.info("-----------Here Go to definition --------------");
         var started = Instant.now();
-        if (!FileStore.isJavaFile(position.textDocument.uri)) return Optional.empty();
+        if (!FileStore.isJavaFile(position.textDocument.uri))
+            return Optional.empty();
         var file = Paths.get(position.textDocument.uri);
         var line = position.position.line + 1;
         var column = position.position.character + 1;
-//        LOG.info("-----------line:"+ line + " and column:"+ column+"--------------");
-        var found = new DefinitionProvider(compiler(), file, line, column).find(); //跳转DefinitionProvider.find
+        // LOG.info("-----------line:"+ line + " and column:"+ column+"--------------");
+        var found = new DefinitionProvider(compiler(), file, line, column).find(); // 跳转DefinitionProvider.find
         if (found == DefinitionProvider.NOT_SUPPORTED) {
             return Optional.empty();
         }
         var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("gotoDefinition: "+ elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
-        return Optional.of(found); //将非null的found包装为Optional对象
+        LOG.info("gotoDefinition: " + elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
+        return Optional.of(found); // 将非null的found包装为Optional对象
     }
 
     public String extractRelativeUri(URI uri) {
@@ -353,72 +365,78 @@ class JavaLanguageServer extends LanguageServer {
 
     @Override
     public Optional<List<Location>> findReferences(ReferenceParams position) throws IOException {
-        //change to test cost of component
+        // change to test cost of component
 
-        if (!FileStore.isJavaFile(position.textDocument.uri)) return Optional.empty();
+        if (!FileStore.isJavaFile(position.textDocument.uri))
+            return Optional.empty();
         var file = Paths.get(position.textDocument.uri);
         var line = position.position.line + 1;
         var column = position.position.character + 1;
 
-        //        var found = new ReferenceProvider(compiler(), file, line, column).find();
-//        if (found == ReferenceProvider.NOT_SUPPORTED) {
-//            return Optional.empty();
-//        }
-//        return Optional.of(found);
+        // var found = new ReferenceProvider(compiler(), file, line, column).find();
+        // if (found == ReferenceProvider.NOT_SUPPORTED) {
+        // return Optional.empty();
+        // }
+        // return Optional.of(found);
 
         String uriString = extractRelativeUri(position.textDocument.uri);
 
-        //test compile component
+        // test compile component
         var started1 = Instant.now();
-        var task = compiler().compile(file);
-        var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
-        LOG.info("compile component: "+ elapsedMs1 + " document: " + uriString);
+        try(var task = compiler().compile(file)){
+            var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
+            LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
 
-        //test locate component
-        var started2 = Instant.now();
-        var cursor = task.root().getLineMap().getPosition(line, column);
-        var path = new FindNameAt(task).scan(task.root(), cursor);
-        var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
-        LOG.info("locate component: "+ elapsedMs2 + " document: " + uriString);
+            // test locate component
+            var started2 = Instant.now();
+            var cursor = task.root().getLineMap().getPosition(line, column);
+            var path = new FindNameAt(task).scan(task.root(), cursor);
+            var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
+            LOG.info("locate component: " + elapsedMs2 + " document: " + uriString);
 
-        //test traverse component
-        var started3 = Instant.now();
-//        var traverse = new FindNameAt(task).scan(task.root(), null);
-//        var elapsedMs3 = Duration.between(started1, Instant.now()).toMillis();
-//        LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
+            // test traverse component
+            var started3 = Instant.now();
+            // var traverse = new FindNameAt(task).scan(task.root(), null);
+            // var elapsedMs3 = Duration.between(started1, Instant.now()).toMillis();
+            // LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
 
-        //count nodeNum
-        NodeCounter counter = new NodeCounter();
-        counter.scan(task.root(),null);
-        var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
-        LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
-        LOG.info("NOD: "+ counter.getCount() + " document: " + uriString);
+            // count nodeNum
+            NodeCounter counter = new NodeCounter();
+            counter.scan(task.root(), null);
+            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
+            LOG.info("traverse component: " + elapsedMs3 + " document: " + uriString);
+            LOG.info("NOD: " + counter.getCount() + " document: " + uriString);
 
-        //count definitionSymbol
-        DefinitionCounter counter2 = new DefinitionCounter();
-        counter2.scan(task.root(),null);
-        LOG.info("DEF: "+ counter2.getAllCount() + " document: " + uriString);
+            // count definitionSymbol
+            DefinitionCounter counter2 = new DefinitionCounter();
+            counter2.scan(task.root(), null);
+            LOG.info("DEF: " + counter2.getAllCount() + " document: " + uriString);
 
-        //count OccurSymbol
-        OccurCounter occurCounter = new OccurCounter();
-        occurCounter.scan(task.root(),null);
-        LOG.info("OCC: "+ occurCounter.getTotalOccurrencesOptimized() + " document: " + uriString);
+            // count OccurSymbol
+            OccurCounter occurCounter = new OccurCounter();
+            occurCounter.scan(task.root(), null);
+            LOG.info("OCC: " + occurCounter.getTotalOccurrencesOptimized() + " document: " + uriString);
 
-        String filePath = file.toFile().getAbsolutePath();
-        LOG.info("LOC: "+ (int) Files.lines(Paths.get(filePath)).count() + " document: " + uriString);
+            String filePath = file.toFile().getAbsolutePath();
+            LOG.info("LOC: " + (int) Files.lines(Paths.get(filePath)).count() + " document: " + uriString);
+        }catch (Exception e){
+            LOG.severe("#findReferences#: " + e);
+        }
         return Optional.empty();
     }
 
     @Override
     public List<SymbolInformation> documentSymbol(DocumentSymbolParams params) {
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return List.of();
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return List.of();
         var file = Paths.get(params.textDocument.uri);
         return new SymbolProvider(compiler()).documentSymbols(file);
     }
 
     @Override
     public List<CodeLens> codeLens(CodeLensParams params) {
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return List.of();
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return List.of();
         var file = Paths.get(params.textDocument.uri);
         var task = compiler().parse(file);
         return CodeLensProvider.find(task);
@@ -442,14 +460,16 @@ class JavaLanguageServer extends LanguageServer {
 
     @Override
     public List<FoldingRange> foldingRange(FoldingRangeParams params) {
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return List.of();
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return List.of();
         var file = Paths.get(params.textDocument.uri);
         return new FoldProvider(compiler()).foldingRanges(file);
     }
 
     @Override
     public Optional<RenameResponse> prepareRename(TextDocumentPositionParams params) {
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return Optional.empty();
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return Optional.empty();
         LOG.info("Try to rename...");
         var file = Paths.get(params.textDocument.uri);
         try (var task = compiler().compile(file)) {
@@ -495,11 +515,12 @@ class JavaLanguageServer extends LanguageServer {
     }
 
     private boolean canFindSource(Element rename) {
-//        LOG.info("---------------rename symbol is " + rename);
-        if (rename == null) return false;
+        // LOG.info("---------------rename symbol is " + rename);
+        if (rename == null)
+            return false;
         if (rename instanceof TypeElement) {
             var type = (TypeElement) rename;
-//            LOG.info("----------------canFindSource: " + type);
+            // LOG.info("----------------canFindSource: " + type);
             var name = type.getQualifiedName().toString();
             return compiler().findTypeDeclaration(name) != CompilerProvider.NOT_FOUND;
         }
@@ -511,26 +532,32 @@ class JavaLanguageServer extends LanguageServer {
         var started = Instant.now();
         var rw = createRewrite(params);
         var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("rename: "+ elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
+        LOG.info("rename: " + elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         var response = new WorkspaceEdit();
-        //test rename cost
-//        var map = rw.rewrite(compiler());
-//        for (var editedFile : map.keySet()) {
-//            response.changes.put(editedFile.toUri(), List.of(map.get(editedFile)));
-//        }
+        // test rename cost
+        // var map = rw.rewrite(compiler());
+        // for (var editedFile : map.keySet()) {
+        // response.changes.put(editedFile.toUri(), List.of(map.get(editedFile)));
+        // }
         return response;
     }
 
     private Rewrite createRewrite(RenameParams params) {
         var file = Paths.get(params.textDocument.uri);
-        try (var task = compiler().compile(file)) { //编译文件获取语法树
-            var lines = task.root().getLineMap(); //获取行号映射表,用于转换行列号与文件偏移量,例如将将代码中的行号（如 line: 5, column: 10）转换为文件中的具体位置（如字节偏移量）。
-            var position = lines.getPosition(params.position.line + 1, params.position.character + 1);//将 params 中的光标位置（行号 + 列号）转换为文件中的绝对位置（Position 或偏移量
-            var path = new FindNameAt(task).scan(task.root(), position); // 定位： 使用 FindNameAt 扫描语法树，找到光标位置对应的标识符（如变量名、方法名）的 AST 节点
+        try (var task = compiler().compile(file)) { // 编译文件获取语法树
+            var lines = task.root().getLineMap(); // 获取行号映射表,用于转换行列号与文件偏移量,例如将将代码中的行号（如 line: 5, column:
+                                                  // 10）转换为文件中的具体位置（如字节偏移量）。
+            var position = lines.getPosition(params.position.line + 1, params.position.character + 1);// 将 params
+                                                                                                      // 中的光标位置（行号 +
+                                                                                                      // 列号）转换为文件中的绝对位置（Position
+                                                                                                      // 或偏移量
+            var path = new FindNameAt(task).scan(task.root(), position); // 定位： 使用 FindNameAt
+                                                                         // 扫描语法树，找到光标位置对应的标识符（如变量名、方法名）的 AST 节点
             // 定位：使用 scan 从根节点开始递归扫描，返回匹配的节点路径（TreePath 或类似结构）
-            if (path == null) return Rewrite.NOT_SUPPORTED;
-            var el = Trees.instance(task.task).getElement(path); //搜索： 根据ast节点获取符号相关信息
-            switch (el.getKind()) {  //遍历：根据符号类型，进行不同的遍历方法
+            if (path == null)
+                return Rewrite.NOT_SUPPORTED;
+            var el = Trees.instance(task.task).getElement(path); // 搜索： 根据ast节点获取符号相关信息
+            switch (el.getKind()) { // 遍历：根据符号类型，进行不同的遍历方法
                 case METHOD:
                     return renameMethod(task, (ExecutableElement) el, params.newName);
                 case FIELD:
@@ -578,11 +605,12 @@ class JavaLanguageServer extends LanguageServer {
     @Override
     public void didOpenTextDocument(DidOpenTextDocumentParams params) {
         FileStore.open(params);
-        if (!FileStore.isJavaFile(params.textDocument.uri)) return;
+        if (!FileStore.isJavaFile(params.textDocument.uri))
+            return;
         lastEdited = Paths.get(params.textDocument.uri);
         uncheckedChanges = true;
 
-        try{
+        try {
             String codes = params.textDocument.text;
             ParserConfiguration pc = new ParserConfiguration();
             pc.setLanguageLevel(ParserConfiguration.LanguageLevel.JAVA_18);
@@ -594,13 +622,15 @@ class JavaLanguageServer extends LanguageServer {
                 LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(param));
                 findReferences(param);
             }
-        }catch (Exception e){
-            LOG.warning("#JavaLanguageServer.didOpenTextDocument# " +params.textDocument.uri +"error:" + e.toString());
+        } catch (Exception e) {
+            LOG.warning(
+                    "#JavaLanguageServer.didOpenTextDocument# " + params.textDocument.uri + "error:" + e.toString());
         }
     }
 
-    private static class Visitor extends VoidVisitorAdapter<List<ReferenceParams>>{
+    private static class Visitor extends VoidVisitorAdapter<List<ReferenceParams>> {
         URI uri;
+
         public Visitor(URI uri) {
             super();
             this.uri = uri;
@@ -608,27 +638,28 @@ class JavaLanguageServer extends LanguageServer {
 
         @Override
         public void visit(FieldDeclaration fieldDeclaration, List<ReferenceParams> referenceParams) {
-            if(fieldDeclaration.isPrivate() && fieldDeclaration.isStatic()) return;
+            if (fieldDeclaration.isPrivate() && fieldDeclaration.isStatic())
+                return;
             List<VariableDeclarator> variables = fieldDeclaration.getVariables();
-            if(variables.isEmpty()) return;
+            if (variables.isEmpty())
+                return;
             ReferenceParams cur = new ReferenceParams();
             cur.textDocument = new TextDocumentIdentifier();
             cur.textDocument.uri = uri;
             cur.position = new Position();
-            //referenceParams is zero based
+            // referenceParams is zero based
             cur.position.line = variables.get(0).getRange().get().begin.line - 1;
             cur.position.character = variables.get(0).getRange().get().begin.column - 1;
             cur.context = new ReferenceContext();
-            if(referenceParams.isEmpty()){
+            if (referenceParams.isEmpty()) {
                 referenceParams.add(cur);
                 referenceParams.add(cur);
-            }else{
-                referenceParams.remove(referenceParams.size()-1);
+            } else {
+                referenceParams.remove(referenceParams.size() - 1);
                 referenceParams.add(cur);
             }
         }
     }
-
 
     @Override
     public void didChangeTextDocument(DidChangeTextDocumentParams params) {
@@ -643,7 +674,8 @@ class JavaLanguageServer extends LanguageServer {
 
         if (FileStore.isJavaFile(params.textDocument.uri)) {
             // Clear diagnostics
-//            client.publishDiagnostics(new PublishDiagnosticsParams(params.textDocument.uri, List.of()));
+            // client.publishDiagnostics(new
+            // PublishDiagnosticsParams(params.textDocument.uri, List.of()));
         }
     }
 
