@@ -391,20 +391,23 @@ class JavaLanguageServer extends LanguageServer {
             var started2 = Instant.now();
             var cursor = task.root().getLineMap().getPosition(line, column);
             var path = new FindNameAt(task).scan(task.root(), cursor);
+            var element = Trees.instance(task.task).getElement(path);
             var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
             LOG.info("locate component: " + elapsedMs2 + " document: " + uriString);
 
             // test traverse component
             var started3 = Instant.now();
-            // var traverse = new FindNameAt(task).scan(task.root(), null);
-            // var elapsedMs3 = Duration.between(started1, Instant.now()).toMillis();
-            // LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
+            var name = element.getSimpleName();
+            if (name.contentEquals("<init>")) name = element.getEnclosingElement().getSimpleName();
+            FindHelper.location(task, path, name);
+            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
+            LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
 
             // count nodeNum
             NodeCounter counter = new NodeCounter();
             counter.scan(task.root(), null);
-            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
-            LOG.info("traverse component: " + elapsedMs3 + " document: " + uriString);
+//            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
+//            LOG.info("traverse component: " + elapsedMs3 + " document: " + uriString);
             LOG.info("NOD: " + counter.getCount() + " document: " + uriString);
 
             // count definitionSymbol
