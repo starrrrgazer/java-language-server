@@ -7,7 +7,9 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.body.VariableDeclarator;
+import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 import com.google.gson.*;
 import com.sun.source.util.Trees;
@@ -625,19 +627,19 @@ class JavaLanguageServer extends LanguageServer {
                 LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(param));
                 findReferences(param);
 
-                LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
-                TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
-                gotoDefinition(positionParams);
-
-                LOG.info("#didOpenTextDocument# try call rename " + GSON.toJson(param));
-                RenameParams renameParams = new RenameParams();
-                renameParams.textDocument = param.textDocument;
-                renameParams.position = param.position;
-                renameParams.newName = "";
-                rename(renameParams);
-
-                LOG.info("#didOpenTextDocument# try completion " + GSON.toJson(param));
-                completion(positionParams);
+//                LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
+//                TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
+//                gotoDefinition(positionParams);
+//
+//                LOG.info("#didOpenTextDocument# try call rename " + GSON.toJson(param));
+//                RenameParams renameParams = new RenameParams();
+//                renameParams.textDocument = param.textDocument;
+//                renameParams.position = param.position;
+//                renameParams.newName = "";
+//                rename(renameParams);
+//
+//                LOG.info("#didOpenTextDocument# try completion " + GSON.toJson(param));
+//                completion(positionParams);
             }
         } catch (Exception e) {
             LOG.warning("#JavaLanguageServer.didOpenTextDocument# " + params.textDocument.uri + "error:" + e.toString());
@@ -653,6 +655,25 @@ class JavaLanguageServer extends LanguageServer {
         }
 
         @Override
+        public void visit(Parameter parameter, List<ReferenceParams> referenceParams) {
+            ReferenceParams cur = new ReferenceParams();
+            cur.textDocument = new TextDocumentIdentifier();
+            cur.textDocument.uri = uri;
+            cur.position = new Position();
+
+            cur.position.line = parameter.getRange().get().begin.line - 1;
+            cur.position.character = parameter.getRange().get().begin.column - 1;
+            cur.context = new ReferenceContext();
+            if (referenceParams.isEmpty()) {
+                referenceParams.add(cur);
+                referenceParams.add(cur);
+            } else {
+                referenceParams.removeLast();
+                referenceParams.add(cur);
+            }
+        }
+
+        @Override
         public void visit(FieldDeclaration fieldDeclaration, List<ReferenceParams> referenceParams) {
             if (fieldDeclaration.isPrivate() && fieldDeclaration.isStatic())
                 return;
@@ -664,14 +685,14 @@ class JavaLanguageServer extends LanguageServer {
             cur.textDocument.uri = uri;
             cur.position = new Position();
             // referenceParams is zero based
-            cur.position.line = variables.get(0).getRange().get().begin.line - 1;
-            cur.position.character = variables.get(0).getRange().get().begin.column - 1;
+            cur.position.line = variables.getFirst().getRange().get().begin.line - 1;
+            cur.position.character = variables.getFirst().getRange().get().begin.column - 1;
             cur.context = new ReferenceContext();
             if (referenceParams.isEmpty()) {
                 referenceParams.add(cur);
                 referenceParams.add(cur);
             } else {
-                referenceParams.remove(referenceParams.size() - 1);
+                referenceParams.removeLast();
                 referenceParams.add(cur);
             }
         }

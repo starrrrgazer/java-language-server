@@ -24,7 +24,8 @@ public class RequestGenerator {
 
     public static JavaLanguageServer server = new JavaLanguageServer(mockedClient);
 
-    public static String fileDir = "testDir";
+    //testDir/jfreechartBackUp
+    public static String fileDir = "testDir/jfreechart";
 
     public static void main(String[] args) {
         // 设置系统编码为UTF-8
@@ -77,7 +78,7 @@ public class RequestGenerator {
             return;
         }
 
-        System.out.println("开始遍历目录: " + directoryPath);
+        System.out.println("start: " + directoryPath);
 
         // 使用 Files.walk 递归遍历目录
         try (Stream<Path> paths = Files.walk(dir)) {
@@ -98,7 +99,7 @@ public class RequestGenerator {
      * @throws IOException 如果读取文件时发生错误
      */
     public synchronized static void readFileContent(Path filePath) throws IOException {
-        System.out.println("正在读取文件: " + filePath);
+        System.out.println("read file: " + filePath);
 
         // 读取文件内容，使用UTF-8编码
         String content = Files.readString(filePath, java.nio.charset.StandardCharsets.UTF_8);

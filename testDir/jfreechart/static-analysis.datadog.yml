@@ -1,9 +1,0 @@
-schema-version: v1
-rulesets:
-  - java-best-practices:
-    rules:
-      literals-first-in-comparison:
-        ignore:
-          - "**"
-  - java-code-style
-  - java-security
