@@ -26,6 +26,7 @@ public class RequestGenerator {
 
     // outputDir
     // testDir/jfreechart
+    // zTestDir
     public static String fileDir = "outputDir";
 
     public static void main(String[] args) {

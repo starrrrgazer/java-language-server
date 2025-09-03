@@ -15,6 +15,7 @@ import java.util.stream.Stream;
 public class GenerateJavaFile {
     public static String inputDir = "testDir/jfreechart";
     public static String outputDir = "outputDir";
+    private static int counter = 1;
 
     public static void main(String[] args) throws IOException {
         traverseAndReadFiles(inputDir, outputDir);
@@ -46,27 +47,32 @@ public class GenerateJavaFile {
         removeUnset(infos);
 
         // loc
-        generate(infos, (info) -> info.LOC, "LOC");
+        // NOD:1000-25000 DEF:80-2000 OCC:600-15000
+        generate(infos, (info) -> info.LOC, "LOC", 400);
+        generate(infos, (info) -> info.NOD, "NOD", 1000);
+        generate(infos, (info) -> info.OCC, "OCC", 600);
+        generate(infos, (info) -> info.DEF, "DEF", 80);
     }
 
-    public static void generate(List<FileInfo> infos, Function<FileInfo, Integer> function, String prefix) throws IOException {
+    public static void generate(List<FileInfo> infos, Function<FileInfo, Integer> function, String prefix, int step)
+            throws IOException {
         TreeMap<Integer, FileInfo> map = new TreeMap<>();
         for (FileInfo info : infos) {
             map.put(function.apply(info), info);
         }
 
-        for (int total = 400; total <= 10_000; total += 400) {
+        for (int total = step; total <= step * 25; total += step) {
             String fileName = prefix + "_" + total + ".java";
             Path outputPath = Paths.get(outputDir, fileName);
             Files.createDirectories(outputPath.getParent());
             // unique
-            Files.writeString(outputPath,  "package " + prefix + "." + convertToAlpha(total / 400) + ";\n");
+            Files.writeString(outputPath, "package " + prefix + "." + convertToAlpha(counter++) + ";\n");
             int left = total;
             Map.Entry<Integer, FileInfo> entry = map.floorEntry(left);
             while (left > 0 && entry != null) {
                 FileInfo info = entry.getValue();
                 left -= entry.getKey();
-                Files.writeString(outputPath,  info.codes, StandardOpenOption.APPEND);
+                Files.writeString(outputPath, info.codes, StandardOpenOption.APPEND);
                 entry = map.floorEntry(left);
             }
             System.out.println("generated:" + total);
@@ -84,7 +90,8 @@ public class GenerateJavaFile {
     }
 
     public static void removeUnset(List<FileInfo> infos) throws IOException {
-        infos.removeIf(fileInfo -> fileInfo.codes.isEmpty() || fileInfo.LOC == 0 || fileInfo.DEF == 0 || fileInfo.NOD == 0 || fileInfo.OCC == 0);
+        infos.removeIf(fileInfo -> fileInfo.codes.isEmpty() || fileInfo.LOC == 0 || fileInfo.DEF == 0
+                || fileInfo.NOD == 0 || fileInfo.OCC == 0);
     }
 
     public static List<FileInfo> readCsvToFileInfos(Path csvPath) throws IOException {
