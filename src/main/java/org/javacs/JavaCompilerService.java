@@ -1,5 +1,7 @@
 package org.javacs;
 
+import com.github.javaparser.utils.Log;
+
 import java.io.IOException;
 import java.nio.file.*;
 import java.util.*;
@@ -99,6 +101,10 @@ class JavaCompilerService implements CompilerProvider {
         for (var add : addFiles) {
             moreSources.add(new SourceFileObject(add));
         }
+        if(moreSources.size() > 1){
+            LOG.info(moreSources.size() + " moreSource " + moreSources);
+            LOG.info(sources.size() + " source " +sources);
+        }
         return new CompileBatch(this, moreSources);
     }
 
@@ -106,7 +112,7 @@ class JavaCompilerService implements CompilerProvider {
         if (needsCompile(sources)) {
             loadCompile(sources);
         } else {
-            LOG.info("...using cached compile");
+//            LOG.info("...using cached compile");
         }
         return cachedCompile;
     }

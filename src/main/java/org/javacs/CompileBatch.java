@@ -1,5 +1,6 @@
 package org.javacs;
 
+import com.google.gson.Gson;
 import com.sun.source.tree.*;
 import com.sun.source.util.*;
 import java.io.File;
@@ -7,11 +8,15 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.logging.Logger;
 import java.util.stream.Collectors;
 import javax.lang.model.util.*;
 import javax.tools.*;
 
+import static org.javacs.JsonHelper.GSON;
+
 class CompileBatch implements AutoCloseable {
+    private static final Logger LOG = Logger.getLogger("main");
     static final int MAX_COMPLETION_ITEMS = 50;
 
     final JavaCompilerService parent;
@@ -84,7 +89,11 @@ class CompileBatch implements AutoCloseable {
     private static final Path FILE_NOT_FOUND = Paths.get("");
 
     private Path findPackagePrivateClass(String packageName, String className) {
+
+        //TODO 这块优化
+//        LOG.info("findPackagePrivateClass");
         for (var file : FileStore.list(packageName)) {
+//            LOG.info(file.getFileName().toString());
             var parse = Parser.parseFile(file);
             for (var candidate : parse.packagePrivateClasses()) {
                 if (candidate.contentEquals(className)) {

@@ -623,23 +623,23 @@ class JavaLanguageServer extends LanguageServer {
             CompilationUnit unit = StaticJavaParser.parse(codes);
             List<ReferenceParams> referenceParams = new ArrayList<>();
             unit.accept(new Visitor(params.textDocument.uri), referenceParams);
+            //reference 数据只需要记录一次
+//            LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(referenceParams.getFirst()));
+//            findReferences(referenceParams.getFirst());
             for (ReferenceParams param : referenceParams) {
-                LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(param));
-                findReferences(param);
+                LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
+                TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
+                gotoDefinition(positionParams);
 
-//                LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
-//                TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
-//                gotoDefinition(positionParams);
-//
-//                LOG.info("#didOpenTextDocument# try call rename " + GSON.toJson(param));
-//                RenameParams renameParams = new RenameParams();
-//                renameParams.textDocument = param.textDocument;
-//                renameParams.position = param.position;
-//                renameParams.newName = "";
-//                rename(renameParams);
-//
-//                LOG.info("#didOpenTextDocument# try completion " + GSON.toJson(param));
-//                completion(positionParams);
+                LOG.info("#didOpenTextDocument# try call rename " + GSON.toJson(param));
+                RenameParams renameParams = new RenameParams();
+                renameParams.textDocument = param.textDocument;
+                renameParams.position = param.position;
+                renameParams.newName = "";
+                rename(renameParams);
+
+                LOG.info("#didOpenTextDocument# try completion " + GSON.toJson(param));
+                completion(positionParams);
             }
         } catch (Exception e) {
             LOG.warning("#JavaLanguageServer.didOpenTextDocument# " + params.textDocument.uri + "error:" + e.toString());

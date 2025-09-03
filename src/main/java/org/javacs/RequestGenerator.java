@@ -1,6 +1,5 @@
 package org.javacs;
 
-import org.javacs.debug.proto.DebugAdapter;
 import org.javacs.lsp.*;
 
 import java.io.*;
@@ -8,6 +7,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 public class RequestGenerator {
@@ -24,8 +24,9 @@ public class RequestGenerator {
 
     public static JavaLanguageServer server = new JavaLanguageServer(mockedClient);
 
-    //testDir/jfreechartBackUp
-    public static String fileDir = "testDir/jfreechart";
+    // outputDir
+    // testDir/jfreechart
+    public static String fileDir = "outputDir";
 
     public static void main(String[] args) {
         // 设置系统编码为UTF-8
@@ -79,17 +80,23 @@ public class RequestGenerator {
         }
 
         System.out.println("start: " + directoryPath);
-
+        //重新跑firstPath 避免启动影响
+        AtomicReference<Path> firstPath = new AtomicReference<>();
         // 使用 Files.walk 递归遍历目录
         try (Stream<Path> paths = Files.walk(dir)) {
             paths.filter(path -> path.getFileName().toString().endsWith(".java")).forEach(filePath -> {
                 try {
                     readFileContent(filePath);
+                    if(firstPath.get() == null) {
+                        firstPath.set(filePath);
+                    }
                 } catch (Exception e) {
                     System.err.println("读取文件失败: " + filePath + " - " + e.getMessage());
                 }
             });
         }
+
+        readFileContent(firstPath.get());
     }
 
     /**

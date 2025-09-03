@@ -1,0 +1,400 @@
+Sep 03, 2025 2:21:25 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":56,"character":20}}
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 733 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 40 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 2651 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 212 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 1461 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 1199 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 2:21:26 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":67,"character":34}}
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 718 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 85 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 5021 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 340 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 3095 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 1575 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 2:21:27 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 590 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 62 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 4296 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 378 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 2480 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 1996 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 732 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 102 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 7610 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 572 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4141 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:28 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 2397 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 779 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 114 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 8277 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 713 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4503 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:29 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 2793 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 594 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 76 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 5703 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 488 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 3325 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 3197 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 2:21:30 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 661 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 95 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 6910 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 572 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4017 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 3597 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":41,"character":28}}
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 169 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 13 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 905 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 65 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 566 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 399 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 2:21:31 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 694 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 103 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 7599 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 646 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4518 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 3995 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 2:21:32 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 881 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 133 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 8941 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 753 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 5255 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 4364 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 2:21:33 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":58,"character":32}}
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 782 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 151 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 10925 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 848 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 6447 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 4797 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 2:21:34 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 898 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 170 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 12461 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 927 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 7359 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 5195 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 2:21:35 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:36 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 966 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 189 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 13864 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1028 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 8241 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 5596 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 2:21:37 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1025 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 196 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 14282 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1078 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 8517 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 5995 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 2:21:38 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1029 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 218 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 15630 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1187 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 9257 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 6367 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 2:21:39 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1118 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 250 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 16672 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1429 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 9955 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 6795 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 2:21:41 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1071 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 236 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 16936 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1316 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 9950 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 7194 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 2:21:42 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1243 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 284 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 20314 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1516 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11625 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 7595 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":51,"character":29}}
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 281 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 1952 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 127 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 1273 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 785 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 2:21:44 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1465 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 273 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 1 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 19117 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1475 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11498 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 7969 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 2:21:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1177 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 266 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 18250 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1417 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 10752 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 8395 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 2:21:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1233 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 260 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 18857 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1488 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11080 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 8790 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 2:21:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1294 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 283 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 20405 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1525 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11724 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 9190 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 2:21:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1346 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 307 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 21419 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1682 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 12639 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 9592 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 2:21:53 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 2:21:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 1405 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 2:21:55 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 331 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 2:21:55 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 2:21:55 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 23629 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 2:21:55 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1792 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 2:21:55 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 13931 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 2:21:55 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 9995 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
