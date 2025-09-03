@@ -624,8 +624,8 @@ class JavaLanguageServer extends LanguageServer {
             List<ReferenceParams> referenceParams = new ArrayList<>();
             unit.accept(new Visitor(params.textDocument.uri), referenceParams);
             //reference 数据只需要记录一次
-//            LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(referenceParams.getFirst()));
-//            findReferences(referenceParams.getFirst());
+            LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(referenceParams.getFirst()));
+            findReferences(referenceParams.getFirst());
             for (ReferenceParams param : referenceParams) {
                 LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
                 TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
