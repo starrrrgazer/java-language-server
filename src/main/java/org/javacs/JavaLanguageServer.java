@@ -346,11 +346,12 @@ class JavaLanguageServer extends LanguageServer {
         var column = position.position.character + 1;
         // LOG.info("-----------line:"+ line + " and column:"+ column+"--------------");
         var found = new DefinitionProvider(compiler(), file, line, column).find(); // 跳转DefinitionProvider.find
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        LOG.info("gotoDefinition: " + elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
         if (found == DefinitionProvider.NOT_SUPPORTED) {
             return Optional.empty();
         }
-        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
-        LOG.info("gotoDefinition: " + elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
+
         return Optional.of(found); // 将非null的found包装为Optional对象
     }
 

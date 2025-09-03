@@ -1,0 +1,1440 @@
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":56,"character":20}}
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 292 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 37 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 2651 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 212 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 1461 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 1199 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":56,"character":20}}
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 40 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":56,"character":20}}
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 36 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":56,"character":20}}
+Sep 03, 2025 3:05:45 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_1200.java(57,21)...
+Sep 03, 2025 3:05:45 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 15ms
+Sep 03, 2025 3:05:45 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 16 ms
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 17 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":1188,"character":42}}
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 81 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":1188,"character":42}}
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 43 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1200.java"},"position":{"line":1188,"character":42}}
+Sep 03, 2025 3:05:45 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_1200.java(1189,43)...
+Sep 03, 2025 3:05:45 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 13ms
+Sep 03, 2025 3:05:45 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 14 ms
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 15 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1200.java
+Sep 03, 2025 3:05:45 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":67,"character":34}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 99 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 76 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 5021 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 340 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 3095 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 1575 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":67,"character":34}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 81 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":67,"character":34}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 75 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":67,"character":34}}
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_1600.java(68,35)...
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 28 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":1517,"character":26}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/Object.java in module java.base of jdk
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 277 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":1517,"character":26}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 125 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_1600.java"},"position":{"line":1517,"character":26}}
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_1600.java(1518,27)...
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 22ms
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 65 scope members
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:46 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 92 items in 33 ms
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 34 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_1600.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 52 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 62 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 4296 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 378 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 2480 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 1996 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 61 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:46 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 60 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_2000.java(62,32)...
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 20ms
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 23 ms
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 23 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":1971,"character":48}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 96 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":1971,"character":48}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 59 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2000.java"},"position":{"line":1971,"character":48}}
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_2000.java(1972,49)...
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 22ms
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 24 ms
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 24 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2000.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 103 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 109 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 7610 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 572 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4141 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 2397 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 107 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 105 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_2400.java(67,77)...
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 25ms
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 30 scope members
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:47 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 57 items in 32 ms
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 32 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":2390,"character":37}}
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 169 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:47 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":2390,"character":37}}
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 107 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2400.java"},"position":{"line":2390,"character":37}}
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_2400.java(2391,38)...
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 15 scope members
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 42 items in 28 ms
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 28 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2400.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 87 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 116 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 8277 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 713 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4503 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 2793 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 117 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 122 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":66,"character":76}}
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_2800.java(67,77)...
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 30 scope members
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:48 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 57 items in 30 ms
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":2789,"character":132}}
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 197 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:48 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":2789,"character":132}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 116 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_2800.java"},"position":{"line":2789,"character":132}}
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_2800.java(2790,133)...
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 22ms
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 17 scope members
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 44 items in 27 ms
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_2800.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 61 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 81 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 5703 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 488 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 3325 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 3197 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 78 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 80 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_3200.java(62,32)...
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 23ms
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 29 ms
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 29 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":3189,"character":32}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 116 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":3189,"character":32}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 77 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3200.java"},"position":{"line":3189,"character":32}}
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_3200.java(3190,33)...
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 25ms
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 8 scope members
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:49 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 35 items in 31 ms
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 31 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3200.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 67 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 93 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 6910 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 572 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4017 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 3597 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 97 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:49 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 94 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_3600.java(62,32)...
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 30 ms
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":3579,"character":64}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 138 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":3579,"character":64}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 93 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_3600.java"},"position":{"line":3579,"character":64}}
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_3600.java(3580,65)...
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 29 ms
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_3600.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":41,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 26 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 12 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 905 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 65 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 566 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 399 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":41,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 13 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":41,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 13 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":41,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_400.java(42,29)...
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 7ms
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 7 ms
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 9 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":391,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 26 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":391,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 12 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_400.java"},"position":{"line":391,"character":28}}
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_400.java(392,29)...
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 6ms
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 44 scope members
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:50 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 71 items in 9 ms
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 9 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_400.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 63 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 107 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 7599 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 646 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 4518 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 3995 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 110 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:50 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 118 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_4000.java(62,32)...
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 25ms
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":3993,"character":63}}
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 152 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":3993,"character":63}}
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 104 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4000.java"},"position":{"line":3993,"character":63}}
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_4000.java(3994,64)...
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 26 ms
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 26 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4000.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 139 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 131 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 8941 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 753 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 5255 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 4364 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 131 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 131 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":61,"character":31}}
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_4400.java(62,32)...
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:51 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:51 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":4348,"character":40}}
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 173 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":4348,"character":40}}
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 131 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4400.java"},"position":{"line":4348,"character":40}}
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_4400.java(4349,41)...
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 73 scope members
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 100 items in 30 ms
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4400.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":58,"character":32}}
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 60 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 152 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 10925 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 848 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 6447 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 4797 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":58,"character":32}}
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 157 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":58,"character":32}}
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 152 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":58,"character":32}}
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_4800.java(59,33)...
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 23ms
+Sep 03, 2025 3:05:52 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 26 ms
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 26 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:52 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":4790,"character":37}}
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 213 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":4790,"character":37}}
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 153 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_4800.java"},"position":{"line":4790,"character":37}}
+Sep 03, 2025 3:05:53 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_4800.java(4791,38)...
+Sep 03, 2025 3:05:53 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 22ms
+Sep 03, 2025 3:05:53 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:53 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 15 scope members
+Sep 03, 2025 3:05:53 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:53 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 42 items in 26 ms
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 26 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_4800.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 69 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 172 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 12461 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 927 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 7359 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 5195 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 172 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:53 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 174 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_5200.java(74,32)...
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 26 ms
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":5158,"character":53}}
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 235 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":5158,"character":53}}
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 180 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5200.java"},"position":{"line":5158,"character":53}}
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_5200.java(5159,54)...
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 3 scope members
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:54 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 30 items in 27 ms
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5200.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 77 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 201 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 13864 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1028 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 8241 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 5596 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:54 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 202 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 209 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_5600.java(74,32)...
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 28 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":5590,"character":28}}
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 284 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":5590,"character":28}}
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 197 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_5600.java"},"position":{"line":5590,"character":28}}
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_5600.java(5591,29)...
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 21ms
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 23 scope members
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:55 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 50 items in 26 ms
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 26 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_5600.java
+Sep 03, 2025 3:05:55 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 73 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 212 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 14282 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1078 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 8517 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 5995 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 203 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 206 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:56 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_6000.java(74,32)...
+Sep 03, 2025 3:05:56 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 36ms
+Sep 03, 2025 3:05:56 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 38 ms
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 39 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":5993,"character":23}}
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 264 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:56 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":5993,"character":23}}
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 196 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6000.java"},"position":{"line":5993,"character":23}}
+Sep 03, 2025 3:05:57 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_6000.java(5994,24)...
+Sep 03, 2025 3:05:57 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 22ms
+Sep 03, 2025 3:05:57 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:57 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 10 scope members
+Sep 03, 2025 3:05:57 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:57 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 37 items in 28 ms
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 28 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6000.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 84 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 215 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 15630 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1187 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 9257 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 6367 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 221 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:57 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 222 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_6400.java(74,32)...
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 23ms
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":6351,"character":40}}
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 290 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":6351,"character":40}}
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 231 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6400.java"},"position":{"line":6351,"character":40}}
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_6400.java(6352,41)...
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 23ms
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 73 scope members
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:05:58 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 100 items in 27 ms
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6400.java
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:58 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 81 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 251 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 16672 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1429 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 9955 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 6795 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 242 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 240 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:05:59 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_6800.java(74,32)...
+Sep 03, 2025 3:05:59 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:05:59 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":6793,"character":67}}
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 319 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:05:59 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":6793,"character":67}}
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 240 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_6800.java"},"position":{"line":6793,"character":67}}
+Sep 03, 2025 3:06:00 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_6800.java(6794,68)...
+Sep 03, 2025 3:06:00 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 24ms
+Sep 03, 2025 3:06:00 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 27 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_6800.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 92 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 235 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 16936 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1316 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 9950 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 7194 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 231 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:00 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:01 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 237 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:01 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:01 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_7200.java(74,32)...
+Sep 03, 2025 3:06:01 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 25ms
+Sep 03, 2025 3:06:01 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 27 ms
+Sep 03, 2025 3:06:01 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 28 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:01 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":7183,"character":42}}
+Sep 03, 2025 3:06:01 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/String.java in module java.base of jdk
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 1092 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":7183,"character":42}}
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 401 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7200.java"},"position":{"line":7183,"character":42}}
+Sep 03, 2025 3:06:02 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_7200.java(7184,43)...
+Sep 03, 2025 3:06:02 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 34ms
+Sep 03, 2025 3:06:02 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:02 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 20 scope members
+Sep 03, 2025 3:06:02 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:02 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 47 items in 41 ms
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 41 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7200.java
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:02 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 149 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 278 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 1 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 20314 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1516 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11625 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 7595 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 289 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 294 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:03 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_7600.java(74,32)...
+Sep 03, 2025 3:06:03 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 29ms
+Sep 03, 2025 3:06:03 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 33 ms
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 33 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:03 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":7569,"character":26}}
+Sep 03, 2025 3:06:04 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/Object.java in module java.base of jdk
+Sep 03, 2025 3:06:04 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 722 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:04 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":7569,"character":26}}
+Sep 03, 2025 3:06:04 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 362 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:04 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_7600.java"},"position":{"line":7569,"character":26}}
+Sep 03, 2025 3:06:04 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_7600.java(7570,27)...
+Sep 03, 2025 3:06:04 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:04 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:04 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 17 scope members
+Sep 03, 2025 3:06:04 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:04 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 44 items in 31 ms
+Sep 03, 2025 3:06:04 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 32 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_7600.java
+Sep 03, 2025 3:06:04 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":51,"character":29}}
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 28 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 1952 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 127 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 1273 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 785 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":51,"character":29}}
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 31 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":51,"character":29}}
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":51,"character":29}}
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_800.java(52,30)...
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 11ms
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 11 ms
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 11 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":779,"character":28}}
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 50 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":779,"character":28}}
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_800.java"},"position":{"line":779,"character":28}}
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_800.java(780,29)...
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 11ms
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 55 scope members
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:05 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 82 items in 15 ms
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 15 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_800.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 113 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 272 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 19117 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1475 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11498 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 7969 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:05 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 273 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 275 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_8000.java(74,32)...
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 30 ms
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":7959,"character":30}}
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 348 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":7959,"character":30}}
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 264 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8000.java"},"position":{"line":7959,"character":30}}
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_8000.java(7960,31)...
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 28ms
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 192 scope members
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:06 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 219 items in 33 ms
+Sep 03, 2025 3:06:06 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 33 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8000.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 101 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 256 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 18250 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1417 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 10752 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 8395 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 258 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 252 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:07 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:07 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_8400.java(74,32)...
+Sep 03, 2025 3:06:08 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:08 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 30 ms
+Sep 03, 2025 3:06:08 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:08 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":8389,"character":46}}
+Sep 03, 2025 3:06:08 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/Object.java in module java.base of jdk
+Sep 03, 2025 3:06:08 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 652 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:08 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":8389,"character":46}}
+Sep 03, 2025 3:06:08 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 329 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:08 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8400.java"},"position":{"line":8389,"character":46}}
+Sep 03, 2025 3:06:08 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_8400.java(8390,47)...
+Sep 03, 2025 3:06:09 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 33ms
+Sep 03, 2025 3:06:09 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:09 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 6 scope members
+Sep 03, 2025 3:06:09 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:09 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 33 items in 39 ms
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 39 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8400.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 136 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 258 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 18857 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1488 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11080 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 8790 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 268 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:09 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:10 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 266 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:10 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:10 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_8800.java(74,32)...
+Sep 03, 2025 3:06:10 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 28ms
+Sep 03, 2025 3:06:10 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 31 ms
+Sep 03, 2025 3:06:10 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 31 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:10 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":8742,"character":26}}
+Sep 03, 2025 3:06:10 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/Object.java in module java.base of jdk
+Sep 03, 2025 3:06:10 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 665 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:10 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":8742,"character":26}}
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 314 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_8800.java"},"position":{"line":8742,"character":26}}
+Sep 03, 2025 3:06:11 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_8800.java(8743,27)...
+Sep 03, 2025 3:06:11 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:11 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:11 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 40 scope members
+Sep 03, 2025 3:06:11 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:11 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 67 items in 30 ms
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 31 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_8800.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 85 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 269 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 20405 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1525 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 11724 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 9190 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 270 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:11 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 297 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:12 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_9200.java(74,32)...
+Sep 03, 2025 3:06:12 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:12 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 29 ms
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 31 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":9186,"character":35}}
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 358 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":9186,"character":35}}
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 275 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9200.java"},"position":{"line":9186,"character":35}}
+Sep 03, 2025 3:06:12 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_9200.java(9187,36)...
+Sep 03, 2025 3:06:12 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:12 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 29 ms
+Sep 03, 2025 3:06:12 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 29 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9200.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 102 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 292 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 21419 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1682 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 12639 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 9592 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 299 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:13 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:14 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 311 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:14 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:14 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_9600.java(74,32)...
+Sep 03, 2025 3:06:14 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:14 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 30 ms
+Sep 03, 2025 3:06:14 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:14 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":9574,"character":26}}
+Sep 03, 2025 3:06:14 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/Object.java in module java.base of jdk
+Sep 03, 2025 3:06:14 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 770 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:14 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":9574,"character":26}}
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 364 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_9600.java"},"position":{"line":9574,"character":26}}
+Sep 03, 2025 3:06:15 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_9600.java(9575,27)...
+Sep 03, 2025 3:06:15 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 25ms
+Sep 03, 2025 3:06:15 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:15 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 17 scope members
+Sep 03, 2025 3:06:15 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:15 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 44 items in 29 ms
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_9600.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call reference {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: compile component: 99 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: locate component: 324 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: traverse component: 0 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: NOD: 23629 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: DEF: 1792 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: OCC: 13931 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer findReferences
+INFO: LOC: 9995 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:15 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:16 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 324 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:16 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:16 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 324 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:16 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":73,"character":31}}
+Sep 03, 2025 3:06:16 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_10000.java(74,32)...
+Sep 03, 2025 3:06:16 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:16 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 11 items in 30 ms
+Sep 03, 2025 3:06:16 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 31 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:16 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call goto {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":9969,"character":26}}
+Sep 03, 2025 3:06:16 PM org.javacs.JavaCompilerService findPublicTypeDeclarationInJdk
+INFO: ...found jar:file:///C:/Program%20Files/Java/jdk-22/lib/src.zip!/java.base/java/lang/Object.java in module java.base of jdk
+Sep 03, 2025 3:06:17 PM org.javacs.JavaLanguageServer gotoDefinition
+INFO: gotoDefinition: 793 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:17 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try call rename {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":9969,"character":26}}
+Sep 03, 2025 3:06:17 PM org.javacs.JavaLanguageServer rename
+INFO: rename: 386 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
+Sep 03, 2025 3:06:17 PM org.javacs.JavaLanguageServer didOpenTextDocument
+INFO: #didOpenTextDocument# try completion {"context":{"includeDeclaration":false},"textDocument":{"uri":"file:///C:/Users/74993/Desktop/%E6%AF%95%E8%AE%BE/wll%E8%AE%BA%E6%96%87/java-language-server2/outputDir/LOC_10000.java"},"position":{"line":9969,"character":26}}
+Sep 03, 2025 3:06:17 PM org.javacs.completion.CompletionProvider complete
+INFO: Complete at LOC_10000.java(9970,27)...
+Sep 03, 2025 3:06:17 PM org.javacs.completion.CompletionProvider compileAndComplete
+INFO: ...compiled in 26ms
+Sep 03, 2025 3:06:17 PM org.javacs.completion.CompletionProvider completeIdentifier
+INFO: ...complete identifiers
+Sep 03, 2025 3:06:17 PM org.javacs.completion.CompletionProvider completeUsingScope
+INFO: ...found 17 scope members
+Sep 03, 2025 3:06:17 PM org.javacs.completion.CompletionProvider addStaticImports
+INFO: ...found 0 static imports
+Sep 03, 2025 3:06:17 PM org.javacs.completion.CompletionProvider logCompletionTiming
+INFO: ...found 44 items in 30 ms
+Sep 03, 2025 3:06:17 PM org.javacs.JavaLanguageServer completion
+INFO: completion: 30 document: file:///C:/Users/74993/Desktop/毕设/wll论文/java-language-server2/outputDir/LOC_10000.java
