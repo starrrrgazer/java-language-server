@@ -27,6 +27,7 @@ import java.util.logging.Logger;
 import javax.lang.model.element.*;
 import org.javacs.action.CodeActionProvider;
 import org.javacs.completion.CompletionProvider;
+import org.javacs.completion.PruneMethodBodies;
 import org.javacs.completion.SignatureProvider;
 import org.javacs.fold.FoldProvider;
 import org.javacs.hover.HoverProvider;
@@ -365,7 +366,14 @@ class JavaLanguageServer extends LanguageServer {
         }
         return uriString;
     }
-
+    private int endOfLine(CharSequence contents, int cursor) {
+        while (cursor < contents.length()) {
+            var c = contents.charAt(cursor);
+            if (c == '\r' || c == '\n') break;
+            cursor++;
+        }
+        return cursor;
+    }
     @Override
     public Optional<List<Location>> findReferences(ReferenceParams position) throws IOException {
         // change to test cost of component
@@ -385,14 +393,27 @@ class JavaLanguageServer extends LanguageServer {
         String uriString = extractRelativeUri(position.textDocument.uri);
 
         // test compile component
-        var started1 = Instant.now();
+
         try(var task = compiler().compile(file)){
-            var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
-            LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
+            var cursor = task.root().getLineMap().getPosition(line, column);
+
+            var started1 = Instant.now();
+            var test_task = compiler().parse(file);
+            var contents = new PruneMethodBodies(test_task.task).scan(test_task.root, cursor);
+            var endOfLine = endOfLine(contents, (int) cursor);
+            contents.insert(endOfLine, ';');
+            String content = contents.toString();
+            var source = new SourceFileObject(file, content, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
+            try (var task1 = compiler().compile(List.of(source))) {
+                var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
+                LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
+            }
+
+
 
             // test locate component
             var started2 = Instant.now();
-            var cursor = task.root().getLineMap().getPosition(line, column);
+
             var path = new FindNameAt(task).scan(task.root(), cursor);
             var element = Trees.instance(task.task).getElement(path);
             var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
