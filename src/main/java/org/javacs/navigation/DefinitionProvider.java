@@ -36,24 +36,24 @@ public class DefinitionProvider {
             var element = NavigationHelper.findElement(task, file, line, column); //同样也是获取AST实例，获取光标位置后调用 finaNameAt，得到光标指向的element
             if (element == null) return NOT_SUPPORTED;
 //            LOG.info("-----------element found --------------");
-//            if (element.asType().getKind() == TypeKind.ERROR) {
-//                task.close();
-//                return findError(element);
-//            }
+            if (element.asType().getKind() == TypeKind.ERROR) {
+                task.close();
+                return findError(element);
+            }
             // TODO instead of checking isLocal, just try to resolve the location, fall back to searching
-//            if (NavigationHelper.isLocal(element)) {
-//                return findDefinitions(task, element);
-//            }
-//            var className = className(element);
-//            if (className.isEmpty()) return NOT_SUPPORTED;
-//            var otherFile = compiler.findAnywhere(className);
-//            if (otherFile.isEmpty()) return List.of();
-//            if (otherFile.get().toUri().equals(file.toUri())) {
-//                return findDefinitions(task, element);
-//            }
+            if (NavigationHelper.isLocal(element)) {
+                return findDefinitions(task, element);
+            }
+            var className = className(element);
+            if (className.isEmpty()) return NOT_SUPPORTED;
+            var otherFile = compiler.findAnywhere(className);
+            if (otherFile.isEmpty()) return List.of();
+            if (otherFile.get().toUri().equals(file.toUri())) {
+                return findDefinitions(task, element);
+            }
             task.close();
 //            return findRemoteDefinitions(otherFile.get());
-            return findDefinitions(task,element);
+            return findDefinitions(task, element);
         }
     }
 
