@@ -104,8 +104,8 @@ class JavaLanguageServer extends LanguageServer {
     private JavaCompilerService createCompiler() {
         Objects.requireNonNull(workspaceRoot, "Can't create compiler because workspaceRoot has not been initialized");
 
-        // javaStartProgress(new JavaStartProgressParams("Configure javac"));
-        // javaReportProgress(new JavaReportProgressParams("Finding source roots"));
+         javaStartProgress(new JavaStartProgressParams("Configure javac"));
+         javaReportProgress(new JavaReportProgressParams("Finding source roots"));
 
         var externalDependencies = externalDependencies();
         var classPath = classPath();
@@ -119,13 +119,13 @@ class JavaLanguageServer extends LanguageServer {
         else {
             var infer = new InferConfig(workspaceRoot, externalDependencies);
 
-            // javaReportProgress(new JavaReportProgressParams("Inferring class path"));
+             javaReportProgress(new JavaReportProgressParams("Inferring class path"));
             classPath = infer.classPath();
 
-            // javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
+             javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
             var docPath = infer.buildDocPath();
 
-            // javaEndProgress();
+             javaEndProgress();
             return new JavaCompilerService(classPath, docPath, addExports);
         }
     }
@@ -376,6 +376,7 @@ class JavaLanguageServer extends LanguageServer {
     }
     @Override
     public Optional<List<Location>> findReferences(ReferenceParams position) throws IOException {
+        cacheCompiler = createCompiler();
         // change to test cost of component
 
         if (!FileStore.isJavaFile(position.textDocument.uri))
@@ -393,27 +394,33 @@ class JavaLanguageServer extends LanguageServer {
         String uriString = extractRelativeUri(position.textDocument.uri);
 
         // test compile component
-
+        long cursor = 0;
+        SourceFileObject source = null;
+        Instant started1 = null;
         try(var task = compiler().compile(file)){
-            var cursor = task.root().getLineMap().getPosition(line, column);
-
-            var started1 = Instant.now();
+            cursor = task.root().getLineMap().getPosition(line, column);
+            started1 = Instant.now();
             var test_task = compiler().parse(file);
             var contents = new PruneMethodBodies(test_task.task).scan(test_task.root, cursor);
             var endOfLine = endOfLine(contents, (int) cursor);
             contents.insert(endOfLine, ';');
             String content = contents.toString();
-            var source = new SourceFileObject(file, content, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
-            try (var task1 = compiler().compile(List.of(source))) {
-                var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
-                LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
-            }
+            source = new SourceFileObject(file, content, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
+        }catch (Exception e){
+            LOG.severe("#findReferences#: " + e);
+        }
 
+        try (var task1 = compiler().compile(List.of(source))) {
+            var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
+            LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
+        }catch (Exception e){
+            LOG.severe("#findReferences#: " + e);
+        }
 
+        try(var task = compiler().compile(file)){
 
             // test locate component
             var started2 = Instant.now();
-
             var path = new FindNameAt(task).scan(task.root(), cursor);
             var element = Trees.instance(task.task).getElement(path);
             var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
@@ -648,9 +655,17 @@ class JavaLanguageServer extends LanguageServer {
             //reference 数据只需要记录一次
             LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(referenceParams.getFirst()));
             findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
             for (ReferenceParams param : referenceParams) {
                 LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
                 TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
+                gotoDefinition(positionParams);
+                gotoDefinition(positionParams);
+                gotoDefinition(positionParams);
+                gotoDefinition(positionParams);
                 gotoDefinition(positionParams);
 
                 LOG.info("#didOpenTextDocument# try call rename " + GSON.toJson(param));
@@ -659,8 +674,16 @@ class JavaLanguageServer extends LanguageServer {
                 renameParams.position = param.position;
                 renameParams.newName = "";
                 rename(renameParams);
+                rename(renameParams);
+                rename(renameParams);
+                rename(renameParams);
+                rename(renameParams);
 
                 LOG.info("#didOpenTextDocument# try completion " + GSON.toJson(param));
+                completion(positionParams);
+                completion(positionParams);
+                completion(positionParams);
+                completion(positionParams);
                 completion(positionParams);
             }
         } catch (Exception e) {

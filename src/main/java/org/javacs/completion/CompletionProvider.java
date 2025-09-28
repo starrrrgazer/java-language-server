@@ -122,7 +122,7 @@ public class CompletionProvider {
 
     //补全函数
     public CompletionList complete(Path file, int line, int column) {
-        LOG.info("Complete at " + file.getFileName() + "(" + line + "," + column + ")...");
+//        LOG.info("Complete at " + file.getFileName() + "(" + line + "," + column + ")...");
         var started = Instant.now();
         var task = compiler.parse(file);
         var cursor = task.root.getLineMap().getPosition(line, column);
@@ -131,7 +131,7 @@ public class CompletionProvider {
         contents.insert(endOfLine, ';');
         var list = compileAndComplete(file, contents.toString(), cursor);
         addTopLevelSnippets(task, list);
-        logCompletionTiming(started, list.items, list.isIncomplete);
+//        logCompletionTiming(started, list.items, list.isIncomplete);
         return list;
     }
 
@@ -150,7 +150,7 @@ public class CompletionProvider {
         var partial = partialIdentifier(contents, (int) cursor);  //从字符串的指定位置向前提取一个合法的 Java 标识符片段
         var endsWithParen = endsWithParen(contents, (int) cursor); //判断用户是否正在输入方法调用（如输入 obj.method 后提示参数列表）
         try (var task = compiler.compile(List.of(source))) {
-            LOG.info("...compiled in " + Duration.between(started, Instant.now()).toMillis() + "ms");
+//            LOG.info("...compiled in " + Duration.between(started, Instant.now()).toMillis() + "ms");
             var path = new FindCompletionsAt(task.task).scan(task.root(), cursor);//定位：找到光标指向的标识符的类型，从而决定调用什么补全方法
             switch (path.getLeaf().getKind()) {
                 case IDENTIFIER:
@@ -232,7 +232,7 @@ public class CompletionProvider {
     }
 
     private CompletionList completeIdentifier(CompileTask task, TreePath path, String partial, boolean endsWithParen) {
-        LOG.info("...complete identifiers");
+//        LOG.info("...complete identifiers");
         var list = new CompletionList();
         list.items = completeUsingScope(task, path, partial, endsWithParen);
         addStaticImports(task, path.getCompilationUnit(), partial, endsWithParen, list);
@@ -289,7 +289,7 @@ public class CompletionProvider {
         for (var overloads : methods.values()) {
             list.add(method(task, overloads, !endsWithParen));
         }
-        LOG.info("...found " + list.size() + " scope members");
+//        LOG.info("...found " + list.size() + " scope members");
         return list;
     }
 
@@ -323,7 +323,7 @@ public class CompletionProvider {
         for (var overloads : methods.values()) {
             list.items.add(method(task, overloads, !endsWithParen));
         }
-        LOG.info("...found " + (list.items.size() - previousSize) + " static imports");
+//        LOG.info("...found " + (list.items.size() - previousSize) + " static imports");
     }
 
     private boolean importMatchesPartial(Name staticImport, String partial) {
@@ -353,14 +353,14 @@ public class CompletionProvider {
             list.items.add(classItem(className));
             uniques.add(className);
         }
-        LOG.info("...found " + (list.items.size() - previousSize) + " class names");
+//        LOG.info("...found " + (list.items.size() - previousSize) + " class names");
     }
 
     private CompletionList completeMemberSelect(
             CompileTask task, TreePath path, String partial, boolean endsWithParen) {
         var trees = Trees.instance(task.task);
         var select = (MemberSelectTree) path.getLeaf();
-        LOG.info("...complete members of " + select.getExpression());
+//        LOG.info("...complete members of " + select.getExpression());
         path = new TreePath(path, select.getExpression());
         var isStatic = trees.getElement(path) instanceof TypeElement;
         var scope = trees.getScope(path);
@@ -452,7 +452,7 @@ public class CompletionProvider {
     private CompletionList completeMemberReference(CompileTask task, TreePath path, String partial) {
         var trees = Trees.instance(task.task);
         var select = (MemberReferenceTree) path.getLeaf();
-        LOG.info("...complete methods of " + select.getQualifierExpression());
+//        LOG.info("...complete methods of " + select.getQualifierExpression());
         path = new TreePath(path, select.getQualifierExpression());
         var element = trees.getElement(path);
         var isStatic = element instanceof TypeElement;
@@ -532,7 +532,7 @@ public class CompletionProvider {
         var switchTree = (SwitchTree) path.getLeaf();
         path = new TreePath(path, switchTree.getExpression());
         var type = Trees.instance(task.task).getTypeMirror(path);
-        LOG.info("...complete constants of type " + type);
+//        LOG.info("...complete constants of type " + type);
         if (!(type instanceof DeclaredType)) {
             return NOT_SUPPORTED;
         }
@@ -548,7 +548,7 @@ public class CompletionProvider {
     }
 
     private CompletionList completeImport(String path) {
-        LOG.info("...complete import");
+//        LOG.info("...complete import");
         var names = new HashSet<String>();
         var list = new CompletionList();
         for (var className : compiler.publicTopLevelTypes()) {

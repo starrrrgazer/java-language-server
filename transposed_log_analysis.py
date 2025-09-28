@@ -2,6 +2,19 @@ import re
 from collections import defaultdict
 import csv
 
+def _trimmed_avg(stats):
+    # stats: (sum, count, min_val, max_val)
+    if not stats:
+        return 0
+    s, c, mn, mx = stats
+    if c <= 0:
+        return 0
+    if c == 1:
+        return s
+    if c == 2:
+        return s / 2
+    return (s - mn - mx) / (c - 2)
+
 def process_log_file(log_file_path):
     # 初始化数据结构
     document_data = defaultdict(dict)
@@ -29,28 +42,32 @@ def process_log_file(log_file_path):
                     value = int(match.group(1))
                     document = match.group(2)
                     
-                    # 存储数据（累加相同键的值，并记录累加次数）
+                    # 存储数据（累加相同键的值，并记录累加次数，同时维护最小和最大）
                     if key in document_data[document]:
-                        current_value, count = document_data[document][key]
-                        document_data[document][key] = (current_value + value, count + 1)
+                        s, c, mn, mx = document_data[document][key]
+                        s += value
+                        c += 1
+                        mn = value if value < mn else mn
+                        mx = value if value > mx else mx
+                        document_data[document][key] = (s, c, mn, mx)
                     else:
-                        document_data[document][key] = (value, 1)
+                        document_data[document][key] = (value, 1, value, value)
     
     # 转换为更友好的格式
     results = []
     for doc, data in document_data.items():
         result = {
             'document': doc,
-            'compile_component': data.get('compile', (0, 1))[0] / data.get('compile', (0, 1))[1],
-            'locate_component': data.get('locate', (0, 1))[0] / data.get('locate', (0, 1))[1],
-            'traverse_component': data.get('traverse', (0, 1))[0] / data.get('traverse', (0, 1))[1],
-            'NOD': data.get('NOD', (0, 1))[0] / data.get('NOD', (0, 1))[1],
-            'DEF': data.get('DEF', (0, 1))[0] / data.get('DEF', (0, 1))[1],
-            'OCC': data.get('OCC', (0, 1))[0] / data.get('OCC', (0, 1))[1],
-            'LOC': data.get('LOC', (0, 1))[0] / data.get('LOC', (0, 1))[1],
-            'gotoDefinition': data.get('gotoDefinition', (0, 1))[0] / data.get('gotoDefinition', (0, 1))[1],
-            'rename': data.get('rename', (0, 1))[0] / data.get('rename', (0, 1))[1],
-            'completion': data.get('completion', (0, 1))[0] / data.get('completion', (0, 1))[1]
+            'compile_component': _trimmed_avg(data.get('compile')),
+            'locate_component': _trimmed_avg(data.get('locate')),
+            'traverse_component': _trimmed_avg(data.get('traverse')),
+            'NOD': _trimmed_avg(data.get('NOD')),
+            'DEF': _trimmed_avg(data.get('DEF')),
+            'OCC': _trimmed_avg(data.get('OCC')),
+            'LOC': _trimmed_avg(data.get('LOC')),
+            'gotoDefinition': _trimmed_avg(data.get('gotoDefinition')),
+            'rename': _trimmed_avg(data.get('rename')),
+            'completion': _trimmed_avg(data.get('completion'))
         }
         results.append(result)
     

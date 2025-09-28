@@ -81,38 +81,38 @@ class JavaCompilerService implements CompilerProvider {
         if (sources.isEmpty())
             throw new RuntimeException("empty sources");
         var firstAttempt = new CompileBatch(this, sources);
-        Set<Path> addFiles;
-        try {
-            addFiles = firstAttempt.needsAdditionalSources();
-        } catch (RuntimeException e) {
-            firstAttempt.close();
-            firstAttempt.borrow.close();
-            throw e;
-        }
-        if (addFiles.isEmpty())
+//        Set<Path> addFiles;
+//        try {
+//            addFiles = firstAttempt.needsAdditionalSources();
+//        } catch (RuntimeException e) {
+//            firstAttempt.close();
+//            firstAttempt.borrow.close();
+//            throw e;
+//        }
+//        if (addFiles.isEmpty())
             return firstAttempt;
         // If the compiler needs additional source files that contain package-private
         // files
-        LOG.info("...need to recompile with " + addFiles);
-        firstAttempt.close();
-        firstAttempt.borrow.close();
-        var moreSources = new ArrayList<JavaFileObject>();
-        moreSources.addAll(sources);
-        for (var add : addFiles) {
-            moreSources.add(new SourceFileObject(add));
-        }
-        if(moreSources.size() > 1){
-            LOG.info(moreSources.size() + " moreSource " + moreSources);
-            LOG.info(sources.size() + " source " +sources);
-        }
-        return new CompileBatch(this, moreSources);
+//        LOG.info("...need to recompile with " + addFiles);
+//        firstAttempt.close();
+//        firstAttempt.borrow.close();
+//        var moreSources = new ArrayList<JavaFileObject>();
+//        moreSources.addAll(sources);
+//        for (var add : addFiles) {
+//            moreSources.add(new SourceFileObject(add));
+//        }
+//        if(moreSources.size() > 1){
+//            LOG.info(moreSources.size() + " moreSource " + moreSources);
+//            LOG.info(sources.size() + " source " +sources);
+//        }
+//        return new CompileBatch(this, moreSources);
     }
 
     private CompileBatch compileBatch(Collection<? extends JavaFileObject> sources) {
         if (needsCompile(sources)) {
             loadCompile(sources);
         } else {
-//            LOG.info("...using cached compile");
+            LOG.info("...using cached compile");
         }
         return cachedCompile;
     }
