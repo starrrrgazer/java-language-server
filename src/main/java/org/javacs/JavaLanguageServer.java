@@ -104,8 +104,8 @@ class JavaLanguageServer extends LanguageServer {
     private JavaCompilerService createCompiler() {
         Objects.requireNonNull(workspaceRoot, "Can't create compiler because workspaceRoot has not been initialized");
 
-        // javaStartProgress(new JavaStartProgressParams("Configure javac"));
-        // javaReportProgress(new JavaReportProgressParams("Finding source roots"));
+         javaStartProgress(new JavaStartProgressParams("Configure javac"));
+         javaReportProgress(new JavaReportProgressParams("Finding source roots"));
 
         var externalDependencies = externalDependencies();
         var classPath = classPath();
@@ -119,13 +119,13 @@ class JavaLanguageServer extends LanguageServer {
         else {
             var infer = new InferConfig(workspaceRoot, externalDependencies);
 
-            // javaReportProgress(new JavaReportProgressParams("Inferring class path"));
+             javaReportProgress(new JavaReportProgressParams("Inferring class path"));
             classPath = infer.classPath();
 
-            // javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
+             javaReportProgress(new JavaReportProgressParams("Inferring doc path"));
             var docPath = infer.buildDocPath();
 
-            // javaEndProgress();
+             javaEndProgress();
             return new JavaCompilerService(classPath, docPath, addExports);
         }
     }
@@ -292,7 +292,7 @@ class JavaLanguageServer extends LanguageServer {
         var file = Paths.get(params.textDocument.uri);
         var provider = new CompletionProvider(compiler());
         var list = provider.complete(file, params.position.line + 1, params.position.character + 1);
-        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
         LOG.info("completion: " + elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         if (list == CompletionProvider.NOT_SUPPORTED)
             return Optional.empty();
@@ -347,7 +347,7 @@ class JavaLanguageServer extends LanguageServer {
         var column = position.position.character + 1;
         // LOG.info("-----------line:"+ line + " and column:"+ column+"--------------");
         var found = new DefinitionProvider(compiler(), file, line, column).find(); // 跳转DefinitionProvider.find
-        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
         LOG.info("gotoDefinition: " + elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
         if (found == DefinitionProvider.NOT_SUPPORTED) {
             return Optional.empty();
@@ -376,6 +376,7 @@ class JavaLanguageServer extends LanguageServer {
     }
     @Override
     public Optional<List<Location>> findReferences(ReferenceParams position) throws IOException {
+        cacheCompiler = createCompiler();
         // change to test cost of component
 
         if (!FileStore.isJavaFile(position.textDocument.uri))
@@ -393,30 +394,36 @@ class JavaLanguageServer extends LanguageServer {
         String uriString = extractRelativeUri(position.textDocument.uri);
 
         // test compile component
-
+        long cursor = 0;
+        SourceFileObject source = null;
+        Instant started1 = null;
         try(var task = compiler().compile(file)){
-            var cursor = task.root().getLineMap().getPosition(line, column);
-
-            var started1 = Instant.now();
+            cursor = task.root().getLineMap().getPosition(line, column);
+            started1 = Instant.now();
             var test_task = compiler().parse(file);
             var contents = new PruneMethodBodies(test_task.task).scan(test_task.root, cursor);
             var endOfLine = endOfLine(contents, (int) cursor);
             contents.insert(endOfLine, ';');
             String content = contents.toString();
-            var source = new SourceFileObject(file, content, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
-            try (var task1 = compiler().compile(List.of(source))) {
-                var elapsedMs1 = Duration.between(started1, Instant.now()).toNanos() / 1_000_000.0;
-                LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
-            }
+            source = new SourceFileObject(file, content, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
+        }catch (Exception e){
+            LOG.severe("#findReferences#: " + e);
+        }
 
+        try (var task1 = compiler().compile(List.of(source))) {
+            var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
+            LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
+        }catch (Exception e){
+            LOG.severe("#findReferences#: " + e);
+        }
 
+        try(var task = compiler().compile(file)){
 
             // test locate component
             var started2 = Instant.now();
-
             var path = new FindNameAt(task).scan(task.root(), cursor);
             var element = Trees.instance(task.task).getElement(path);
-            var elapsedMs2 = Duration.between(started2, Instant.now()).toNanos() / 1_000_000.0;
+            var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
             LOG.info("locate component: " + elapsedMs2 + " document: " + uriString);
 
             // test traverse component
@@ -424,13 +431,13 @@ class JavaLanguageServer extends LanguageServer {
             var name = element.getSimpleName();
             if (name.contentEquals("<init>")) name = element.getEnclosingElement().getSimpleName();
             FindHelper.location(task, path, name);
-            var elapsedMs3 = Duration.between(started3, Instant.now()).toNanos() / 1_000_000.0;
+            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
             LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
 
             // count nodeNum
             NodeCounter counter = new NodeCounter();
             counter.scan(task.root(), null);
-//            var elapsedMs3 = Duration.between(started3, Instant.now()).toNanos() / 1_000_000.0;
+//            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
 //            LOG.info("traverse component: " + elapsedMs3 + " document: " + uriString);
             LOG.info("NOD: " + counter.getCount() + " document: " + uriString);
 
@@ -558,7 +565,7 @@ class JavaLanguageServer extends LanguageServer {
     public WorkspaceEdit rename(RenameParams params) {
         var started = Instant.now();
         var rw = createRewrite(params);
-        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
+        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
         LOG.info("rename: " + elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         var response = new WorkspaceEdit();
         // test rename cost
@@ -648,9 +655,17 @@ class JavaLanguageServer extends LanguageServer {
             //reference 数据只需要记录一次
             LOG.info("#didOpenTextDocument# try call reference " + GSON.toJson(referenceParams.getFirst()));
             findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
+            findReferences(referenceParams.getFirst());
             for (ReferenceParams param : referenceParams) {
                 LOG.info("#didOpenTextDocument# try call goto " + GSON.toJson(param));
                 TextDocumentPositionParams positionParams = new TextDocumentPositionParams(param.textDocument,param.position);
+                gotoDefinition(positionParams);
+                gotoDefinition(positionParams);
+                gotoDefinition(positionParams);
+                gotoDefinition(positionParams);
                 gotoDefinition(positionParams);
 
                 LOG.info("#didOpenTextDocument# try call rename " + GSON.toJson(param));
@@ -659,8 +674,16 @@ class JavaLanguageServer extends LanguageServer {
                 renameParams.position = param.position;
                 renameParams.newName = "";
                 rename(renameParams);
+                rename(renameParams);
+                rename(renameParams);
+                rename(renameParams);
+                rename(renameParams);
 
                 LOG.info("#didOpenTextDocument# try completion " + GSON.toJson(param));
+                completion(positionParams);
+                completion(positionParams);
+                completion(positionParams);
+                completion(positionParams);
                 completion(positionParams);
             }
         } catch (Exception e) {

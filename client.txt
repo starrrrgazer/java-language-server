@@ -1,0 +1,391 @@
+Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}Content-Length: 86
+
+{"jsonrpc":"2.0","method":"java/startProgress","params":{"message":"Configure javac"}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Finding source roots","increment":-1}}Content-Length: 107
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring class path","increment":-1}}Content-Length: 105
+
+{"jsonrpc":"2.0","method":"java/reportProgress","params":{"message":"Inferring doc path","increment":-1}}Content-Length: 59
+
+{"jsonrpc":"2.0","method":"java/endProgress","params":null}

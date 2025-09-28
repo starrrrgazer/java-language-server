@@ -22,6 +22,8 @@ public class Run {
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "java",
                     "-Dfile.encoding=UTF-8",
+                    "-Xss8m",
+                    "-Xint",
                     "-Dsun.jnu.encoding=UTF-8",
                     "-Duser.language=en",
                     "-Duser.country=US",

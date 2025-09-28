@@ -97,7 +97,7 @@ public class RequestGenerator {
             });
         }
 
-        readFileContent(firstPath.get());
+//        readFileContent(firstPath.get());
     }
 
     /**
