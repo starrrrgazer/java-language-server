@@ -292,7 +292,7 @@ class JavaLanguageServer extends LanguageServer {
         var file = Paths.get(params.textDocument.uri);
         var provider = new CompletionProvider(compiler());
         var list = provider.complete(file, params.position.line + 1, params.position.character + 1);
-        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
         LOG.info("completion: " + elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         if (list == CompletionProvider.NOT_SUPPORTED)
             return Optional.empty();
@@ -347,7 +347,7 @@ class JavaLanguageServer extends LanguageServer {
         var column = position.position.character + 1;
         // LOG.info("-----------line:"+ line + " and column:"+ column+"--------------");
         var found = new DefinitionProvider(compiler(), file, line, column).find(); // 跳转DefinitionProvider.find
-        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
         LOG.info("gotoDefinition: " + elapsedMs + " document: " + extractRelativeUri(position.textDocument.uri));
         if (found == DefinitionProvider.NOT_SUPPORTED) {
             return Optional.empty();
@@ -405,7 +405,7 @@ class JavaLanguageServer extends LanguageServer {
             String content = contents.toString();
             var source = new SourceFileObject(file, content, Instant.now()); //为了能够动态代码编译存在内存中的修改后的java文件内容
             try (var task1 = compiler().compile(List.of(source))) {
-                var elapsedMs1 = Duration.between(started1, Instant.now()).toMillis();
+                var elapsedMs1 = Duration.between(started1, Instant.now()).toNanos() / 1_000_000.0;
                 LOG.info("compile component: " + elapsedMs1 + " document: " + uriString);
             }
 
@@ -416,7 +416,7 @@ class JavaLanguageServer extends LanguageServer {
 
             var path = new FindNameAt(task).scan(task.root(), cursor);
             var element = Trees.instance(task.task).getElement(path);
-            var elapsedMs2 = Duration.between(started2, Instant.now()).toMillis();
+            var elapsedMs2 = Duration.between(started2, Instant.now()).toNanos() / 1_000_000.0;
             LOG.info("locate component: " + elapsedMs2 + " document: " + uriString);
 
             // test traverse component
@@ -424,13 +424,13 @@ class JavaLanguageServer extends LanguageServer {
             var name = element.getSimpleName();
             if (name.contentEquals("<init>")) name = element.getEnclosingElement().getSimpleName();
             FindHelper.location(task, path, name);
-            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
+            var elapsedMs3 = Duration.between(started3, Instant.now()).toNanos() / 1_000_000.0;
             LOG.info("traverse component: "+ elapsedMs3 + " document: " + uriString);
 
             // count nodeNum
             NodeCounter counter = new NodeCounter();
             counter.scan(task.root(), null);
-//            var elapsedMs3 = Duration.between(started3, Instant.now()).toMillis();
+//            var elapsedMs3 = Duration.between(started3, Instant.now()).toNanos() / 1_000_000.0;
 //            LOG.info("traverse component: " + elapsedMs3 + " document: " + uriString);
             LOG.info("NOD: " + counter.getCount() + " document: " + uriString);
 
@@ -558,7 +558,7 @@ class JavaLanguageServer extends LanguageServer {
     public WorkspaceEdit rename(RenameParams params) {
         var started = Instant.now();
         var rw = createRewrite(params);
-        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
         LOG.info("rename: " + elapsedMs + " document: " + extractRelativeUri(params.textDocument.uri));
         var response = new WorkspaceEdit();
         // test rename cost

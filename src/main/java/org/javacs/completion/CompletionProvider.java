@@ -731,7 +731,7 @@ public class CompletionProvider {
     }
 
     private void logCompletionTiming(Instant started, List<?> list, boolean isIncomplete) {
-        var elapsedMs = Duration.between(started, Instant.now()).toMillis();
+        var elapsedMs = Duration.between(started, Instant.now()).toNanos() / 1_000_000.0;
         if (isIncomplete) LOG.info(String.format("Found %d items (incomplete) in %,d ms", list.size(), elapsedMs));
         else LOG.info(String.format("...found %d items in %,d ms", list.size(), elapsedMs));
     }
