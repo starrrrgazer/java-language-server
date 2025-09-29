@@ -42,8 +42,10 @@ class JavaLSPPredictor:
 
         # 定义特征列和目标列
         # 首选特征列名；部分数据集可能使用 search_component 代替 traverse_component
+        # traverse_component,traverseTimes,locate_component,search_component
+        #
         self.feature_columns = [
-            'compile_component', 'locate_component', 'traverse_component',
+            'traverse_component','traverseTimes', 'locate_component', 'traverse_component',
             'NOD', 'DEF', 'OCC', 'LOC', 'subcontextNum'
         ]
         self.target_columns = ['gotoDefinition', 'rename', 'completion']
