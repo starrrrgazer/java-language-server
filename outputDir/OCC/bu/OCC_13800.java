@@ -61,7 +61,7 @@ package OCC.bu;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5131,4240 +5131,907 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
  *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -----------------
- * CategoryPlot.java
- * -----------------
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ * ---------------
+ * PeriodAxis.java
+ * ---------------
+ * (C) Copyright 2004-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Jeremy Bowman;
- *                   Arnaud Lelievre;
- *                   Richard West, Advanced Micro Devices, Inc.;
- *                   Ulrich Voigt - patch 2686040;
- *                   Peter Kolb - patches 2603321 and 2809117;
+ * Contributor(s):   -;
  *
  */
 /**
- * A general plotting class that uses data from a {@link CategoryDataset} and
- * renders each data item using a {@link CategoryItemRenderer}.
- *
- * @param <R> the row key type
- * @param <C> the column key type
+ * An axis that displays a date scale based on a
+ * {@link org.jfree.data.time.RegularTimePeriod}.  This axis works when
+ * displayed across the bottom or top of a plot, but is broken for display at
+ * the left or right of charts.
  */
-class CategoryPlot<R extends Comparable<R>, C extends Comparable<C>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, AnnotationChangeListener, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class PeriodAxis extends ValueAxis implements Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = -3537691700434728188L;
+    private static final long serialVersionUID = 8353295532075872069L;
 
     /**
-     * The default visibility of the grid lines plotted against the domain
+     * The first time period in the overall range.
+     */
+    private RegularTimePeriod first;
+
+    /**
+     * The last time period in the overall range.
+     */
+    private RegularTimePeriod last;
+
+    /**
+     * The time zone used to convert 'first' and 'last' to absolute
+     * milliseconds.
+     */
+    private TimeZone timeZone;
+
+    /**
+     * The locale (never {@code null}).
+     */
+    private Locale locale;
+
+    /**
+     * A calendar used for date manipulations in the current time zone and
+     * locale.
+     */
+    private Calendar calendar;
+
+    /**
+     * The {@link RegularTimePeriod} subclass used to automatically determine
+     * the axis range.
+     */
+    private Class autoRangeTimePeriodClass;
+
+    /**
+     * Indicates the {@link RegularTimePeriod} subclass that is used to
+     * determine the spacing of the major tick marks.
+     */
+    private Class majorTickTimePeriodClass;
+
+    /**
+     * A flag that indicates whether tick marks are visible for the
      * axis.
      */
-    public static final boolean DEFAULT_DOMAIN_GRIDLINES_VISIBLE = false;
+    private boolean minorTickMarksVisible;
 
     /**
-     * The default visibility of the grid lines plotted against the range
-     * axis.
+     * Indicates the {@link RegularTimePeriod} subclass that is used to
+     * determine the spacing of the minor tick marks.
      */
-    public static final boolean DEFAULT_RANGE_GRIDLINES_VISIBLE = true;
+    private Class minorTickTimePeriodClass;
 
     /**
-     * The default grid line stroke.
+     * The length of the tick mark inside the data area (zero permitted).
      */
-    public static final Stroke DEFAULT_GRIDLINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0.0f, new float[] { 2.0f, 2.0f }, 0.0f);
+    private float minorTickMarkInsideLength = 0.0f;
 
     /**
-     * The default grid line paint.
+     * The length of the tick mark outside the data area (zero permitted).
      */
-    public static final Paint DEFAULT_GRIDLINE_PAINT = Color.LIGHT_GRAY;
+    private float minorTickMarkOutsideLength = 2.0f;
 
     /**
-     * The default value label font.
+     * The stroke used to draw tick marks.
      */
-    public static final Font DEFAULT_VALUE_LABEL_FONT = new Font("SansSerif", Font.PLAIN, 10);
+    private transient Stroke minorTickMarkStroke = new BasicStroke(0.5f);
 
     /**
-     * The default crosshair visibility.
+     * The paint used to draw tick marks.
      */
-    public static final boolean DEFAULT_CROSSHAIR_VISIBLE = false;
+    private transient Paint minorTickMarkPaint = Color.BLACK;
 
     /**
-     * The default crosshair stroke.
+     * Info for each labeling band.
      */
-    public static final Stroke DEFAULT_CROSSHAIR_STROKE = DEFAULT_GRIDLINE_STROKE;
+    private PeriodAxisLabelInfo[] labelInfo;
 
     /**
-     * The default crosshair paint.
+     * Creates a new axis.
+     *
+     * @param label  the axis label.
      */
-    public static final Paint DEFAULT_CROSSHAIR_PAINT = Color.BLUE;
-
-    /**
-     * The resourceBundle for the localization.
-     */
-    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.plot.LocalizationBundle");
-
-    /**
-     * The plot orientation.
-     */
-    private PlotOrientation orientation;
-
-    /**
-     * The offset between the data area and the axes.
-     */
-    private RectangleInsets axisOffset;
-
-    /**
-     * Storage for the domain axes.
-     */
-    private Map<Integer, CategoryAxis> domainAxes;
-
-    /**
-     * Storage for the domain axis locations.
-     */
-    private Map<Integer, AxisLocation> domainAxisLocations;
-
-    /**
-     * A flag that controls whether the shared domain axis is drawn
-     * (only relevant when the plot is being used as a subplot).
-     */
-    private boolean drawSharedDomainAxis;
-
-    /**
-     * Storage for the range axes.
-     */
-    private Map<Integer, ValueAxis> rangeAxes;
-
-    /**
-     * Storage for the range axis locations.
-     */
-    private Map<Integer, AxisLocation> rangeAxisLocations;
-
-    /**
-     * Storage for the datasets.
-     */
-    private Map<Integer, CategoryDataset<R, C>> datasets;
-
-    /**
-     * Storage for keys that map each dataset to one or more domain axes.
-     * Typically a dataset is rendered using the scale of a single axis, but
-     * a dataset can contribute to the "auto-range" of any number of axes.
-     */
-    private Map<Integer, List<Integer>> datasetToDomainAxesMap;
-
-    /**
-     * Storage for keys that map each dataset to one or more range axes.
-     * Typically a dataset is rendered using the scale of a single axis, but
-     * a dataset can contribute to the "auto-range" of any number of axes.
-     */
-    private Map<Integer, List<Integer>> datasetToRangeAxesMap;
-
-    /**
-     * Storage for the renderers.
-     */
-    private Map<Integer, CategoryItemRenderer> renderers;
-
-    /**
-     * The dataset rendering order.
-     */
-    private DatasetRenderingOrder renderingOrder = DatasetRenderingOrder.REVERSE;
-
-    /**
-     * Controls the order in which the columns are traversed when rendering the
-     * data items.
-     */
-    private SortOrder columnRenderingOrder = SortOrder.ASCENDING;
-
-    /**
-     * Controls the order in which the rows are traversed when rendering the
-     * data items.
-     */
-    private SortOrder rowRenderingOrder = SortOrder.ASCENDING;
-
-    /**
-     * A flag that controls whether the grid-lines for the domain axis are
-     * visible.
-     */
-    private boolean domainGridlinesVisible;
-
-    /**
-     * The position of the domain gridlines relative to the category.
-     */
-    private CategoryAnchor domainGridlinePosition;
-
-    /**
-     * The stroke used to draw the domain grid-lines.
-     */
-    private transient Stroke domainGridlineStroke;
-
-    /**
-     * The paint used to draw the domain  grid-lines.
-     */
-    private transient Paint domainGridlinePaint;
-
-    /**
-     * A flag that controls whether the zero baseline against the range
-     * axis is visible.
-     */
-    private boolean rangeZeroBaselineVisible;
-
-    /**
-     * The stroke used for the zero baseline against the range axis.
-     */
-    private transient Stroke rangeZeroBaselineStroke;
-
-    /**
-     * The paint used for the zero baseline against the range axis.
-     */
-    private transient Paint rangeZeroBaselinePaint;
-
-    /**
-     * A flag that controls whether the grid-lines for the range axis are
-     * visible.
-     */
-    private boolean rangeGridlinesVisible;
-
-    /**
-     * The stroke used to draw the range axis grid-lines.
-     */
-    private transient Stroke rangeGridlineStroke;
-
-    /**
-     * The paint used to draw the range axis grid-lines.
-     */
-    private transient Paint rangeGridlinePaint;
-
-    /**
-     * A flag that controls whether gridlines are shown for the minor
-     * tick values on the primary range axis.
-     */
-    private boolean rangeMinorGridlinesVisible;
-
-    /**
-     * The stroke used to draw the range minor grid-lines.
-     */
-    private transient Stroke rangeMinorGridlineStroke;
-
-    /**
-     * The paint used to draw the range minor grid-lines.
-     */
-    private transient Paint rangeMinorGridlinePaint;
-
-    /**
-     * The anchor value.
-     */
-    private double anchorValue;
-
-    /**
-     * The index for the dataset that the crosshairs are linked to (this
-     * determines which axes the crosshairs are plotted against).
-     */
-    private int crosshairDatasetIndex;
-
-    /**
-     * A flag that controls the visibility of the domain crosshair.
-     */
-    private boolean domainCrosshairVisible;
-
-    /**
-     * The row key for the crosshair point.
-     */
-    private R domainCrosshairRowKey;
-
-    /**
-     * The column key for the crosshair point.
-     */
-    private C domainCrosshairColumnKey;
-
-    /**
-     * The stroke used to draw the domain crosshair if it is visible.
-     */
-    private transient Stroke domainCrosshairStroke;
-
-    /**
-     * The paint used to draw the domain crosshair if it is visible.
-     */
-    private transient Paint domainCrosshairPaint;
-
-    /**
-     * A flag that controls whether a range crosshair is drawn.
-     */
-    private boolean rangeCrosshairVisible;
-
-    /**
-     * The range crosshair value.
-     */
-    private double rangeCrosshairValue;
-
-    /**
-     * The pen/brush used to draw the crosshair (if any).
-     */
-    private transient Stroke rangeCrosshairStroke;
-
-    /**
-     * The color used to draw the crosshair (if any).
-     */
-    private transient Paint rangeCrosshairPaint;
-
-    /**
-     * A flag that controls whether the crosshair locks onto actual
-     * data points.
-     */
-    private boolean rangeCrosshairLockedOnData = true;
-
-    /**
-     * A map containing lists of markers for the domain axes.
-     */
-    private Map<Integer, Collection<CategoryMarker>> foregroundDomainMarkers;
-
-    /**
-     * A map containing lists of markers for the domain axes.
-     */
-    private Map<Integer, Collection<CategoryMarker>> backgroundDomainMarkers;
-
-    /**
-     * A map containing lists of markers for the range axes.
-     */
-    private Map<Integer, Collection<Marker>> foregroundRangeMarkers;
-
-    /**
-     * A map containing lists of markers for the range axes.
-     */
-    private Map<Integer, Collection<Marker>> backgroundRangeMarkers;
-
-    /**
-     * A (possibly empty) list of annotations for the plot.  The list should
-     * be initialised in the constructor and never allowed to be {@code null}.
-     */
-    private List<CategoryAnnotation> annotations;
-
-    /**
-     * The weight for the plot (only relevant when the plot is used as a subplot
-     * within a combined plot).
-     */
-    private int weight;
-
-    /**
-     * The fixed space for the domain axis.
-     */
-    private AxisSpace fixedDomainAxisSpace;
-
-    /**
-     * The fixed space for the range axis.
-     */
-    private AxisSpace fixedRangeAxisSpace;
-
-    /**
-     * An optional collection of legend items that can be returned by the
-     * getLegendItems() method.
-     */
-    private LegendItemCollection fixedLegendItems;
-
-    /**
-     * A flag that controls whether panning is enabled for the
-     * range axis/axes.
-     */
-    private boolean rangePannable;
-
-    /**
-     * The shadow generator for the plot ({@code null} permitted).
-     */
-    private ShadowGenerator shadowGenerator;
-
-    /**
-     * Default constructor.
-     */
-    public CategoryPlot() {
-        this(null, null, null, null);
+    public PeriodAxis(String label) {
+        this(label, new Day(), new Day());
     }
 
     /**
-     * Creates a new plot.
+     * Creates a new axis.
      *
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param domainAxis  the domain axis ({@code null} permitted).
-     * @param rangeAxis  the range axis ({@code null} permitted).
-     * @param renderer  the item renderer ({@code null} permitted).
+     * @param label  the axis label ({@code null} permitted).
+     * @param first  the first time period in the axis range
+     *               ({@code null} not permitted).
+     * @param last  the last time period in the axis range
+     *              ({@code null} not permitted).
      */
-    public CategoryPlot(CategoryDataset<R, C> dataset, CategoryAxis domainAxis, ValueAxis rangeAxis, CategoryItemRenderer renderer) {
-        super();
-        this.orientation = PlotOrientation.VERTICAL;
-        // allocate storage for dataset, axes and renderers
-        this.domainAxes = new HashMap<>();
-        this.domainAxisLocations = new HashMap<>();
-        this.rangeAxes = new HashMap<>();
-        this.rangeAxisLocations = new HashMap<>();
-        this.datasetToDomainAxesMap = new TreeMap<>();
-        this.datasetToRangeAxesMap = new TreeMap<>();
-        this.renderers = new HashMap<>();
-        this.datasets = new HashMap<>();
-        this.datasets.put(0, dataset);
-        if (dataset != null) {
-            dataset.addChangeListener(this);
-        }
-        this.axisOffset = RectangleInsets.ZERO_INSETS;
-        this.domainAxisLocations.put(0, AxisLocation.BOTTOM_OR_LEFT);
-        this.rangeAxisLocations.put(0, AxisLocation.TOP_OR_LEFT);
-        this.renderers.put(0, renderer);
-        if (renderer != null) {
-            renderer.setPlot(this);
-            renderer.addChangeListener(this);
-        }
-        this.domainAxes.put(0, domainAxis);
-        mapDatasetToDomainAxis(0, 0);
-        if (domainAxis != null) {
-            domainAxis.setPlot(this);
-            domainAxis.addChangeListener(this);
-        }
-        this.drawSharedDomainAxis = false;
-        this.rangeAxes.put(0, rangeAxis);
-        mapDatasetToRangeAxis(0, 0);
-        if (rangeAxis != null) {
-            rangeAxis.setPlot(this);
-            rangeAxis.addChangeListener(this);
-        }
-        configureDomainAxes();
-        configureRangeAxes();
-        this.domainGridlinesVisible = DEFAULT_DOMAIN_GRIDLINES_VISIBLE;
-        this.domainGridlinePosition = CategoryAnchor.MIDDLE;
-        this.domainGridlineStroke = DEFAULT_GRIDLINE_STROKE;
-        this.domainGridlinePaint = DEFAULT_GRIDLINE_PAINT;
-        this.rangeZeroBaselineVisible = false;
-        this.rangeZeroBaselinePaint = Color.BLACK;
-        this.rangeZeroBaselineStroke = new BasicStroke(0.5f);
-        this.rangeGridlinesVisible = DEFAULT_RANGE_GRIDLINES_VISIBLE;
-        this.rangeGridlineStroke = DEFAULT_GRIDLINE_STROKE;
-        this.rangeGridlinePaint = DEFAULT_GRIDLINE_PAINT;
-        this.rangeMinorGridlinesVisible = false;
-        this.rangeMinorGridlineStroke = DEFAULT_GRIDLINE_STROKE;
-        this.rangeMinorGridlinePaint = Color.WHITE;
-        this.foregroundDomainMarkers = new HashMap<>();
-        this.backgroundDomainMarkers = new HashMap<>();
-        this.foregroundRangeMarkers = new HashMap<>();
-        this.backgroundRangeMarkers = new HashMap<>();
-        this.anchorValue = 0.0;
-        this.domainCrosshairVisible = false;
-        this.domainCrosshairStroke = DEFAULT_CROSSHAIR_STROKE;
-        this.domainCrosshairPaint = DEFAULT_CROSSHAIR_PAINT;
-        this.rangeCrosshairVisible = DEFAULT_CROSSHAIR_VISIBLE;
-        this.rangeCrosshairValue = 0.0;
-        this.rangeCrosshairStroke = DEFAULT_CROSSHAIR_STROKE;
-        this.rangeCrosshairPaint = DEFAULT_CROSSHAIR_PAINT;
-        this.annotations = new ArrayList<>();
-        this.rangePannable = false;
-        this.shadowGenerator = null;
+    public PeriodAxis(String label, RegularTimePeriod first, RegularTimePeriod last) {
+        this(label, first, last, TimeZone.getDefault(), Locale.getDefault());
     }
 
     /**
-     * Returns a string describing the type of plot.
+     * Creates a new axis.
      *
-     * @return The type.
+     * @param label  the axis label ({@code null} permitted).
+     * @param first  the first time period in the axis range
+     *               ({@code null} not permitted).
+     * @param last  the last time period in the axis range
+     *              ({@code null} not permitted).
+     * @param timeZone  the time zone ({@code null} not permitted).
+     * @param locale  the locale ({@code null} not permitted).
      */
-    @Override
-    public String getPlotType() {
-        return localizationResources.getString("Category_Plot");
+    public PeriodAxis(String label, RegularTimePeriod first, RegularTimePeriod last, TimeZone timeZone, Locale locale) {
+        super(label, null);
+        Args.nullNotPermitted(timeZone, "timeZone");
+        Args.nullNotPermitted(locale, "locale");
+        this.first = first;
+        this.last = last;
+        this.timeZone = timeZone;
+        this.locale = locale;
+        this.calendar = Calendar.getInstance(timeZone, locale);
+        this.first.peg(this.calendar);
+        this.last.peg(this.calendar);
+        this.autoRangeTimePeriodClass = first.getClass();
+        this.majorTickTimePeriodClass = first.getClass();
+        this.minorTickMarksVisible = false;
+        this.minorTickTimePeriodClass = RegularTimePeriod.downsize(this.majorTickTimePeriodClass);
+        setAutoRange(true);
+        this.labelInfo = new PeriodAxisLabelInfo[2];
+        SimpleDateFormat df0 = new SimpleDateFormat("MMM", locale);
+        df0.setTimeZone(timeZone);
+        this.labelInfo[0] = new PeriodAxisLabelInfo(Month.class, df0);
+        SimpleDateFormat df1 = new SimpleDateFormat("yyyy", locale);
+        df1.setTimeZone(timeZone);
+        this.labelInfo[1] = new PeriodAxisLabelInfo(Year.class, df1);
     }
 
     /**
-     * Returns the orientation of the plot.
+     * Returns the first time period in the axis range.
      *
-     * @return The orientation of the plot (never {@code null}).
-     *
-     * @see #setOrientation(PlotOrientation)
+     * @return The first time period (never {@code null}).
      */
-    @Override
-    public PlotOrientation getOrientation() {
-        return this.orientation;
+    public RegularTimePeriod getFirst() {
+        return this.first;
     }
 
     /**
-     * Sets the orientation for the plot and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
+     * Sets the first time period in the axis range and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param orientation  the orientation ({@code null} not permitted).
-     *
-     * @see #getOrientation()
+     * @param first  the time period ({@code null} not permitted).
      */
-    public void setOrientation(PlotOrientation orientation) {
-        Args.nullNotPermitted(orientation, "orientation");
-        this.orientation = orientation;
+    public void setFirst(RegularTimePeriod first) {
+        Args.nullNotPermitted(first, "first");
+        this.first = first;
+        this.first.peg(this.calendar);
         fireChangeEvent();
     }
 
     /**
-     * Returns the axis offset.
+     * Returns the last time period in the axis range.
      *
-     * @return The axis offset (never {@code null}).
-     *
-     * @see #setAxisOffset(RectangleInsets)
+     * @return The last time period (never {@code null}).
      */
-    public RectangleInsets getAxisOffset() {
-        return this.axisOffset;
+    public RegularTimePeriod getLast() {
+        return this.last;
     }
 
     /**
-     * Sets the axis offsets (gap between the data area and the axes) and
-     * sends a {@link PlotChangeEvent} to all registered listeners.
+     * Sets the last time period in the axis range and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param offset  the offset ({@code null} not permitted).
-     *
-     * @see #getAxisOffset()
+     * @param last  the time period ({@code null} not permitted).
      */
-    public void setAxisOffset(RectangleInsets offset) {
-        Args.nullNotPermitted(offset, "offset");
-        this.axisOffset = offset;
+    public void setLast(RegularTimePeriod last) {
+        Args.nullNotPermitted(last, "last");
+        this.last = last;
+        this.last.peg(this.calendar);
         fireChangeEvent();
     }
 
     /**
-     * Returns the domain axis for the plot.  If the domain axis for this plot
-     * is {@code null}, then the method will return the parent plot's
-     * domain axis (if there is a parent plot).
+     * Returns the time zone used to convert the periods defining the axis
+     * range into absolute milliseconds.
      *
-     * @return The domain axis ({@code null} permitted).
-     *
-     * @see #setDomainAxis(CategoryAxis)
+     * @return The time zone (never {@code null}).
      */
-    public CategoryAxis getDomainAxis() {
-        return getDomainAxis(0);
+    public TimeZone getTimeZone() {
+        return this.timeZone;
     }
 
     /**
-     * Returns a domain axis.
+     * Sets the time zone that is used to convert the time periods into
+     * absolute milliseconds.
      *
-     * @param index  the axis index.
-     *
-     * @return The axis ({@code null} possible).
-     *
-     * @see #setDomainAxis(int, CategoryAxis)
+     * @param zone  the time zone ({@code null} not permitted).
      */
-    public CategoryAxis getDomainAxis(int index) {
-        CategoryAxis result = this.domainAxes.get(index);
-        if (result == null) {
-            Plot parent = getParent();
-            if (parent instanceof CategoryPlot) {
-                @SuppressWarnings("unchecked")
-                CategoryPlot<R, C> cp = (CategoryPlot) parent;
-                result = cp.getDomainAxis(index);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a map containing the domain axes that are assigned to this plot.
-     * The map is unmodifiable.
-     *
-     * @return A map containing the domain axes that are assigned to the plot
-     *     (never {@code null}).
-     *
-     * @since 1.5.4
-     */
-    public Map<Integer, CategoryAxis> getDomainAxes() {
-        return Collections.unmodifiableMap(this.domainAxes);
-    }
-
-    /**
-     * Sets the domain axis for the plot and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param axis  the axis ({@code null} permitted).
-     *
-     * @see #getDomainAxis()
-     */
-    public void setDomainAxis(CategoryAxis axis) {
-        setDomainAxis(0, axis);
-    }
-
-    /**
-     * Sets a domain axis and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param index  the axis index.
-     * @param axis  the axis ({@code null} permitted).
-     *
-     * @see #getDomainAxis(int)
-     */
-    public void setDomainAxis(int index, CategoryAxis axis) {
-        setDomainAxis(index, axis, true);
-    }
-
-    /**
-     * Sets a domain axis and, if requested, sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param index  the axis index.
-     * @param axis  the axis ({@code null} permitted).
-     * @param notify  notify listeners?
-     */
-    public void setDomainAxis(int index, CategoryAxis axis, boolean notify) {
-        CategoryAxis existing = this.domainAxes.get(index);
-        if (existing != null) {
-            existing.removeChangeListener(this);
-        }
-        if (axis != null) {
-            axis.setPlot(this);
-        }
-        this.domainAxes.put(index, axis);
-        if (axis != null) {
-            axis.configure();
-            axis.addChangeListener(this);
-        }
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Sets the domain axes for this plot and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param axes  the axes ({@code null} not permitted).
-     *
-     * @see #setRangeAxes(ValueAxis[])
-     */
-    public void setDomainAxes(CategoryAxis[] axes) {
-        for (int i = 0; i < axes.length; i++) {
-            setDomainAxis(i, axes[i], false);
-        }
+    public void setTimeZone(TimeZone zone) {
+        Args.nullNotPermitted(zone, "zone");
+        this.timeZone = zone;
+        this.calendar = Calendar.getInstance(zone, this.locale);
+        this.first.peg(this.calendar);
+        this.last.peg(this.calendar);
         fireChangeEvent();
     }
 
     /**
-     * Returns the index of the specified axis, or {@code -1} if the axis
-     * is not assigned to the plot.
+     * Returns the locale for this axis.
      *
-     * @param axis  the axis ({@code null} not permitted).
-     *
-     * @return The axis index.
-     *
-     * @see #getDomainAxis(int)
-     * @see #getRangeAxisIndex(ValueAxis)
+     * @return The locale (never ({@code null}).
      */
-    public int getDomainAxisIndex(CategoryAxis axis) {
-        Args.nullNotPermitted(axis, "axis");
-        for (Entry<Integer, CategoryAxis> entry : this.domainAxes.entrySet()) {
-            if (entry.getValue() == axis) {
-                return entry.getKey();
-            }
-        }
-        return -1;
+    public Locale getLocale() {
+        return this.locale;
     }
 
     /**
-     * Returns the domain axis location for the primary domain axis.
+     * Returns the class used to create the first and last time periods for
+     * the axis range when the auto-range flag is set to {@code true}.
      *
-     * @return The location (never {@code null}).
-     *
-     * @see #getRangeAxisLocation()
+     * @return The class (never {@code null}).
      */
-    public AxisLocation getDomainAxisLocation() {
-        return getDomainAxisLocation(0);
+    public Class getAutoRangeTimePeriodClass() {
+        return this.autoRangeTimePeriodClass;
     }
 
     /**
-     * Returns the location for a domain axis.
+     * Sets the class used to create the first and last time periods for the
+     * axis range when the auto-range flag is set to {@code true} and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param index  the axis index.
-     *
-     * @return The location.
-     *
-     * @see #setDomainAxisLocation(int, AxisLocation)
+     * @param c  the class ({@code null} not permitted).
      */
-    public AxisLocation getDomainAxisLocation(int index) {
-        AxisLocation result = this.domainAxisLocations.get(index);
-        if (result == null) {
-            result = AxisLocation.getOpposite(getDomainAxisLocation(0));
-        }
-        return result;
-    }
-
-    /**
-     * Sets the location of the domain axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param location  the axis location ({@code null} not permitted).
-     *
-     * @see #getDomainAxisLocation()
-     * @see #setDomainAxisLocation(int, AxisLocation)
-     */
-    public void setDomainAxisLocation(AxisLocation location) {
-        // delegate...
-        setDomainAxisLocation(0, location, true);
-    }
-
-    /**
-     * Sets the location of the domain axis and, if requested, sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param location  the axis location ({@code null} not permitted).
-     * @param notify  a flag that controls whether listeners are notified.
-     */
-    public void setDomainAxisLocation(AxisLocation location, boolean notify) {
-        // delegate...
-        setDomainAxisLocation(0, location, notify);
-    }
-
-    /**
-     * Sets the location for a domain axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param index  the axis index.
-     * @param location  the location.
-     *
-     * @see #getDomainAxisLocation(int)
-     * @see #setRangeAxisLocation(int, AxisLocation)
-     */
-    public void setDomainAxisLocation(int index, AxisLocation location) {
-        // delegate...
-        setDomainAxisLocation(index, location, true);
-    }
-
-    /**
-     * Sets the location for a domain axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param index  the axis index.
-     * @param location  the location.
-     * @param notify  notify listeners?
-     *
-     * @see #getDomainAxisLocation(int)
-     * @see #setRangeAxisLocation(int, AxisLocation, boolean)
-     */
-    public void setDomainAxisLocation(int index, AxisLocation location, boolean notify) {
-        if (index == 0 && location == null) {
-            throw new IllegalArgumentException("Null 'location' for index 0 not permitted.");
-        }
-        this.domainAxisLocations.put(index, location);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the domain axis edge.  This is derived from the axis location
-     * and the plot orientation.
-     *
-     * @return The edge (never {@code null}).
-     */
-    public RectangleEdge getDomainAxisEdge() {
-        return getDomainAxisEdge(0);
-    }
-
-    /**
-     * Returns the edge for a domain axis.
-     *
-     * @param index  the axis index.
-     *
-     * @return The edge (never {@code null}).
-     */
-    public RectangleEdge getDomainAxisEdge(int index) {
-        RectangleEdge result;
-        AxisLocation location = getDomainAxisLocation(index);
-        if (location != null) {
-            result = Plot.resolveDomainAxisLocation(location, this.orientation);
-        } else {
-            result = RectangleEdge.opposite(getDomainAxisEdge(0));
-        }
-        return result;
-    }
-
-    /**
-     * Returns the number of domain axes.
-     *
-     * @return The axis count.
-     */
-    public int getDomainAxisCount() {
-        return this.domainAxes.size();
-    }
-
-    /**
-     * Clears the domain axes from the plot and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     */
-    public void clearDomainAxes() {
-        for (CategoryAxis xAxis : this.domainAxes.values()) {
-            if (xAxis != null) {
-                xAxis.removeChangeListener(this);
-            }
-        }
-        this.domainAxes.clear();
+    public void setAutoRangeTimePeriodClass(Class c) {
+        Args.nullNotPermitted(c, "c");
+        this.autoRangeTimePeriodClass = c;
         fireChangeEvent();
     }
 
     /**
-     * Configures the domain axes.
+     * Returns the class that controls the spacing of the major tick marks.
+     *
+     * @return The class (never {@code null}).
      */
-    public void configureDomainAxes() {
-        for (CategoryAxis xAxis : this.domainAxes.values()) {
-            if (xAxis != null) {
-                xAxis.configure();
-            }
-        }
+    public Class getMajorTickTimePeriodClass() {
+        return this.majorTickTimePeriodClass;
     }
 
     /**
-     * Returns the range axis for the plot.  If the range axis for this plot is
-     * null, then the method will return the parent plot's range axis (if there
-     * is a parent plot).
+     * Sets the class that controls the spacing of the major tick marks, and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
      *
-     * @return The range axis (possibly {@code null}).
+     * @param c  the class (a subclass of {@link RegularTimePeriod} is
+     *           expected).
      */
-    public ValueAxis getRangeAxis() {
-        return getRangeAxis(0);
-    }
-
-    /**
-     * Returns a range axis.
-     *
-     * @param index  the axis index.
-     *
-     * @return The axis ({@code null} possible).
-     */
-    public ValueAxis getRangeAxis(int index) {
-        ValueAxis result = this.rangeAxes.get(index);
-        if (result == null) {
-            Plot parent = getParent();
-            if (parent instanceof CategoryPlot) {
-                @SuppressWarnings("unchecked")
-                CategoryPlot<R, C> cp = (CategoryPlot) parent;
-                result = cp.getRangeAxis(index);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a map containing the range axes that are assigned to this plot.
-     * The map is unmodifiable.
-     *
-     * @return A map containing the domain axes that are assigned to the plot
-     *     (never {@code null}).
-     *
-     * @since 1.5.4
-     */
-    public Map<Integer, ValueAxis> getRangeAxes() {
-        return Collections.unmodifiableMap(this.rangeAxes);
-    }
-
-    /**
-     * Sets the range axis for the plot and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param axis  the axis ({@code null} permitted).
-     */
-    public void setRangeAxis(ValueAxis axis) {
-        setRangeAxis(0, axis);
-    }
-
-    /**
-     * Sets a range axis and sends a {@link PlotChangeEvent} to all registered
-     * listeners.
-     *
-     * @param index  the axis index.
-     * @param axis  the axis.
-     */
-    public void setRangeAxis(int index, ValueAxis axis) {
-        setRangeAxis(index, axis, true);
-    }
-
-    /**
-     * Sets a range axis and, if requested, sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param index  the axis index.
-     * @param axis  the axis.
-     * @param notify  notify listeners?
-     */
-    public void setRangeAxis(int index, ValueAxis axis, boolean notify) {
-        ValueAxis existing = this.rangeAxes.get(index);
-        if (existing != null) {
-            existing.removeChangeListener(this);
-        }
-        if (axis != null) {
-            axis.setPlot(this);
-        }
-        this.rangeAxes.put(index, axis);
-        if (axis != null) {
-            axis.configure();
-            axis.addChangeListener(this);
-        }
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Sets the range axes for this plot and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param axes  the axes ({@code null} not permitted).
-     *
-     * @see #setDomainAxes(CategoryAxis[])
-     */
-    public void setRangeAxes(ValueAxis[] axes) {
-        for (int i = 0; i < axes.length; i++) {
-            setRangeAxis(i, axes[i], false);
-        }
+    public void setMajorTickTimePeriodClass(Class c) {
+        Args.nullNotPermitted(c, "c");
+        this.majorTickTimePeriodClass = c;
         fireChangeEvent();
     }
 
     /**
-     * Returns the index of the specified axis, or {@code -1} if the axis
-     * is not assigned to the plot.
-     *
-     * @param axis  the axis ({@code null} not permitted).
-     *
-     * @return The axis index.
-     *
-     * @see #getRangeAxis(int)
-     * @see #getDomainAxisIndex(CategoryAxis)
-     */
-    public int getRangeAxisIndex(ValueAxis axis) {
-        Args.nullNotPermitted(axis, "axis");
-        int result = findRangeAxisIndex(axis);
-        if (result < 0) {
-            // try the parent plot
-            Plot parent = getParent();
-            if (parent instanceof CategoryPlot) {
-                @SuppressWarnings("unchecked")
-                CategoryPlot<R, C> p = (CategoryPlot) parent;
-                result = p.getRangeAxisIndex(axis);
-            }
-        }
-        return result;
-    }
-
-    private int findRangeAxisIndex(ValueAxis axis) {
-        for (Entry<Integer, ValueAxis> entry : this.rangeAxes.entrySet()) {
-            if (entry.getValue() == axis) {
-                return entry.getKey();
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Returns the range axis location.
-     *
-     * @return The location (never {@code null}).
-     */
-    public AxisLocation getRangeAxisLocation() {
-        return getRangeAxisLocation(0);
-    }
-
-    /**
-     * Returns the location for a range axis.
-     *
-     * @param index  the axis index.
-     *
-     * @return The location.
-     *
-     * @see #setRangeAxisLocation(int, AxisLocation)
-     */
-    public AxisLocation getRangeAxisLocation(int index) {
-        AxisLocation result = this.rangeAxisLocations.get(index);
-        if (result == null) {
-            result = AxisLocation.getOpposite(getRangeAxisLocation(0));
-        }
-        return result;
-    }
-
-    /**
-     * Sets the location of the range axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param location  the location ({@code null} not permitted).
-     *
-     * @see #setRangeAxisLocation(AxisLocation, boolean)
-     * @see #setDomainAxisLocation(AxisLocation)
-     */
-    public void setRangeAxisLocation(AxisLocation location) {
-        // defer argument checking...
-        setRangeAxisLocation(location, true);
-    }
-
-    /**
-     * Sets the location of the range axis and, if requested, sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param location  the location ({@code null} not permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #setDomainAxisLocation(AxisLocation, boolean)
-     */
-    public void setRangeAxisLocation(AxisLocation location, boolean notify) {
-        setRangeAxisLocation(0, location, notify);
-    }
-
-    /**
-     * Sets the location for a range axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param index  the axis index.
-     * @param location  the location.
-     *
-     * @see #getRangeAxisLocation(int)
-     * @see #setRangeAxisLocation(int, AxisLocation, boolean)
-     */
-    public void setRangeAxisLocation(int index, AxisLocation location) {
-        setRangeAxisLocation(index, location, true);
-    }
-
-    /**
-     * Sets the location for a range axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param index  the axis index.
-     * @param location  the location.
-     * @param notify  notify listeners?
-     *
-     * @see #getRangeAxisLocation(int)
-     * @see #setDomainAxisLocation(int, AxisLocation, boolean)
-     */
-    public void setRangeAxisLocation(int index, AxisLocation location, boolean notify) {
-        if (index == 0 && location == null) {
-            throw new IllegalArgumentException("Null 'location' for index 0 not permitted.");
-        }
-        this.rangeAxisLocations.put(index, location);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the edge where the primary range axis is located.
-     *
-     * @return The edge (never {@code null}).
-     */
-    public RectangleEdge getRangeAxisEdge() {
-        return getRangeAxisEdge(0);
-    }
-
-    /**
-     * Returns the edge for a range axis.
-     *
-     * @param index  the axis index.
-     *
-     * @return The edge.
-     */
-    public RectangleEdge getRangeAxisEdge(int index) {
-        AxisLocation location = getRangeAxisLocation(index);
-        return Plot.resolveRangeAxisLocation(location, this.orientation);
-    }
-
-    /**
-     * Returns the number of range axes.
-     *
-     * @return The axis count.
-     */
-    public int getRangeAxisCount() {
-        return this.rangeAxes.size();
-    }
-
-    /**
-     * Clears the range axes from the plot and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     */
-    public void clearRangeAxes() {
-        for (ValueAxis yAxis : this.rangeAxes.values()) {
-            if (yAxis != null) {
-                yAxis.removeChangeListener(this);
-            }
-        }
-        this.rangeAxes.clear();
-        fireChangeEvent();
-    }
-
-    /**
-     * Configures the range axes.
-     */
-    public void configureRangeAxes() {
-        for (ValueAxis yAxis : this.rangeAxes.values()) {
-            if (yAxis != null) {
-                yAxis.configure();
-            }
-        }
-    }
-
-    /**
-     * Returns the primary dataset for the plot.
-     *
-     * @return The primary dataset (possibly {@code null}).
-     *
-     * @see #setDataset(CategoryDataset)
-     */
-    public CategoryDataset<R, C> getDataset() {
-        return getDataset(0);
-    }
-
-    /**
-     * Returns the dataset with the given index, or {@code null} if there is
-     * no dataset.
-     *
-     * @param index  the dataset index (must be &gt;= 0).
-     *
-     * @return The dataset (possibly {@code null}).
-     *
-     * @see #setDataset(int, CategoryDataset)
-     */
-    public CategoryDataset<R, C> getDataset(int index) {
-        return this.datasets.get(index);
-    }
-
-    /**
-     * Returns a map containing the datasets that are assigned to this plot.
-     * The map is unmodifiable.
-     *
-     * @return A map containing the datasets that are assigned to the plot
-     *     (never {@code null}).
-     *
-     * @since 1.5.4
-     */
-    public Map<Integer, CategoryDataset<R, C>> getDatasets() {
-        return Collections.unmodifiableMap(this.datasets);
-    }
-
-    /**
-     * Sets the dataset for the plot, replacing the existing dataset, if there
-     * is one.  This method also calls the
-     * {@link #datasetChanged(DatasetChangeEvent)} method, which adjusts the
-     * axis ranges if necessary and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @see #getDataset()
-     */
-    public void setDataset(CategoryDataset<R, C> dataset) {
-        setDataset(0, dataset);
-    }
-
-    /**
-     * Sets a dataset for the plot and sends a change notification to all
-     * registered listeners.
-     *
-     * @param index  the dataset index (must be &gt;= 0).
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @see #getDataset(int)
-     */
-    public void setDataset(int index, CategoryDataset<R, C> dataset) {
-        CategoryDataset<R, C> existing = this.datasets.get(index);
-        if (existing != null) {
-            existing.removeChangeListener(this);
-        }
-        this.datasets.put(index, dataset);
-        if (dataset != null) {
-            dataset.addChangeListener(this);
-        }
-        // send a dataset change event to self...
-        DatasetChangeEvent event = new DatasetChangeEvent(this, dataset);
-        datasetChanged(event);
-    }
-
-    /**
-     * Returns the number of datasets.
-     *
-     * @return The number of datasets.
-     */
-    public int getDatasetCount() {
-        return this.datasets.size();
-    }
-
-    /**
-     * Returns the index of the specified dataset, or {@code -1} if the
-     * dataset does not belong to the plot.
-     *
-     * @param dataset  the dataset ({@code null} not permitted).
-     *
-     * @return The index.
-     */
-    public int indexOf(CategoryDataset<R, C> dataset) {
-        for (Entry<Integer, CategoryDataset<R, C>> entry : this.datasets.entrySet()) {
-            if (entry.getValue() == dataset) {
-                return entry.getKey();
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Maps a dataset to a particular domain axis.
-     *
-     * @param index  the dataset index (zero-based).
-     * @param axisIndex  the axis index (zero-based).
-     *
-     * @see #getDomainAxisForDataset(int)
-     */
-    public void mapDatasetToDomainAxis(int index, int axisIndex) {
-        List<Integer> axisIndices = new ArrayList<>(1);
-        axisIndices.add(axisIndex);
-        mapDatasetToDomainAxes(index, axisIndices);
-    }
-
-    /**
-     * Maps the specified dataset to the axes in the list.  Note that the
-     * conversion of data values into Java2D space is always performed using
-     * the first axis in the list.
-     *
-     * @param index  the dataset index (zero-based).
-     * @param axisIndices  the axis indices ({@code null} permitted).
-     */
-    public void mapDatasetToDomainAxes(int index, List<Integer> axisIndices) {
-        Args.requireNonNegative(index, "index");
-        checkAxisIndices(axisIndices);
-        this.datasetToDomainAxesMap.put(index, new ArrayList<>(axisIndices));
-        // fake a dataset change event to update axes...
-        datasetChanged(new DatasetChangeEvent(this, getDataset(index)));
-    }
-
-    /**
-     * This method is used to perform argument checking on the list of
-     * axis indices passed to mapDatasetToDomainAxes() and
-     * mapDatasetToRangeAxes().
-     *
-     * @param indices  the list of indices ({@code null} permitted).
-     */
-    private void checkAxisIndices(List<Integer> indices) {
-        // indices can be:
-        // 1.  null;
-        // 2.  non-empty, containing only Integer objects that are unique.
-        if (indices == null) {
-            // OK
-            return;
-        }
-        int count = indices.size();
-        if (count == 0) {
-            throw new IllegalArgumentException("Empty list not permitted.");
-        }
-        HashSet<Integer> set = new HashSet<>();
-        for (Integer item : indices) {
-            if (!set.add(item)) {
-                throw new IllegalArgumentException("Indices must be unique.");
-            }
-            ;
-        }
-    }
-
-    /**
-     * Returns the domain axis for a dataset.  You can change the axis for a
-     * dataset using the {@link #mapDatasetToDomainAxis(int, int)} method.
-     *
-     * @param index  the dataset index (must be &gt;= 0).
-     *
-     * @return The domain axis.
-     *
-     * @see #mapDatasetToDomainAxis(int, int)
-     */
-    public CategoryAxis getDomainAxisForDataset(int index) {
-        Args.requireNonNegative(index, "index");
-        CategoryAxis axis;
-        List<Integer> axisIndices = this.datasetToDomainAxesMap.get(index);
-        if (axisIndices != null) {
-            // the first axis in the list is used for data <--> Java2D
-            Integer axisIndex = axisIndices.get(0);
-            axis = getDomainAxis(axisIndex);
-        } else {
-            axis = getDomainAxis(0);
-        }
-        return axis;
-    }
-
-    /**
-     * Maps a dataset to a particular range axis.
-     *
-     * @param index  the dataset index (zero-based).
-     * @param axisIndex  the axis index (zero-based).
-     *
-     * @see #getRangeAxisForDataset(int)
-     */
-    public void mapDatasetToRangeAxis(int index, int axisIndex) {
-        List<Integer> axisIndices = new ArrayList<>(1);
-        axisIndices.add(axisIndex);
-        mapDatasetToRangeAxes(index, axisIndices);
-    }
-
-    /**
-     * Maps the specified dataset to the axes in the list.  Note that the
-     * conversion of data values into Java2D space is always performed using
-     * the first axis in the list.
-     *
-     * @param index  the dataset index (zero-based).
-     * @param axisIndices  the axis indices ({@code null} permitted).
-     */
-    public void mapDatasetToRangeAxes(int index, List<Integer> axisIndices) {
-        Args.requireNonNegative(index, "index");
-        checkAxisIndices(axisIndices);
-        this.datasetToRangeAxesMap.put(index, new ArrayList<>(axisIndices));
-        // fake a dataset change event to update axes...
-        datasetChanged(new DatasetChangeEvent(this, getDataset(index)));
-    }
-
-    /**
-     * Returns the range axis for a dataset.  You can change the axis for a
-     * dataset using the {@link #mapDatasetToRangeAxis(int, int)} method.
-     *
-     * @param index  the dataset index (must be &gt;= 0).
-     *
-     * @return The range axis.
-     *
-     * @see #mapDatasetToRangeAxis(int, int)
-     */
-    public ValueAxis getRangeAxisForDataset(int index) {
-        Args.requireNonNegative(index, "index");
-        ValueAxis axis;
-        List<Integer> axisIndices = this.datasetToRangeAxesMap.get(index);
-        if (axisIndices != null) {
-            // the first axis in the list is used for data <--> Java2D
-            axis = getRangeAxis(axisIndices.get(0));
-        } else {
-            axis = getRangeAxis(0);
-        }
-        return axis;
-    }
-
-    /**
-     * Returns the number of renderer slots for this plot.
-     *
-     * @return The number of renderer slots.
-     */
-    public int getRendererCount() {
-        return this.renderers.size();
-    }
-
-    /**
-     * Returns a reference to the renderer for the plot.
-     *
-     * @return The renderer.
-     *
-     * @see #setRenderer(CategoryItemRenderer)
-     */
-    public CategoryItemRenderer getRenderer() {
-        return getRenderer(0);
-    }
-
-    /**
-     * Returns the renderer at the given index.
-     *
-     * @param index  the renderer index.
-     *
-     * @return The renderer (possibly {@code null}).
-     *
-     * @see #setRenderer(int, CategoryItemRenderer)
-     */
-    public CategoryItemRenderer getRenderer(int index) {
-        CategoryItemRenderer renderer = this.renderers.get(index);
-        if (renderer == null) {
-            return this.renderers.get(0);
-        }
-        return renderer;
-    }
-
-    /**
-     * Returns a map containing the renderers that are assigned to this plot.
-     * The map is unmodifiable.
-     *
-     * @return A map containing the renderers that are assigned to the plot
-     *     (never {@code null}).
-     *
-     * @since 1.5.4
-     */
-    public Map<Integer, CategoryItemRenderer> getRenderers() {
-        return Collections.unmodifiableMap(this.renderers);
-    }
-
-    /**
-     * Sets the renderer at index 0 (sometimes referred to as the "primary"
-     * renderer) and sends a change event to all registered listeners.
-     *
-     * @param renderer  the renderer ({@code null} permitted.
-     *
-     * @see #getRenderer()
-     */
-    public void setRenderer(CategoryItemRenderer renderer) {
-        setRenderer(0, renderer, true);
-    }
-
-    /**
-     * Sets the renderer at index 0 (sometimes referred to as the "primary"
-     * renderer) and, if requested, sends a change event to all registered
-     * listeners.
-     * <p>
-     * You can set the renderer to {@code null}, but this is not
-     * recommended because:
-     * <ul>
-     *   <li>no data will be displayed;</li>
-     *   <li>the plot background will not be painted;</li>
-     * </ul>
-     *
-     * @param renderer  the renderer ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getRenderer()
-     */
-    public void setRenderer(CategoryItemRenderer renderer, boolean notify) {
-        setRenderer(0, renderer, notify);
-    }
-
-    /**
-     * Sets the renderer to use for the dataset with the specified index and
-     * sends a change event to all registered listeners.  Note that each
-     * dataset should have its own renderer, you should not use one renderer
-     * for multiple datasets.
-     *
-     * @param index  the index.
-     * @param renderer  the renderer ({@code null} permitted).
-     *
-     * @see #getRenderer(int)
-     * @see #setRenderer(int, CategoryItemRenderer, boolean)
-     */
-    public void setRenderer(int index, CategoryItemRenderer renderer) {
-        setRenderer(index, renderer, true);
-    }
-
-    /**
-     * Sets the renderer to use for the dataset with the specified index and,
-     * if requested, sends a change event to all registered listeners.  Note
-     * that each dataset should have its own renderer, you should not use one
-     * renderer for multiple datasets.
-     *
-     * @param index  the index.
-     * @param renderer  the renderer ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getRenderer(int)
-     */
-    public void setRenderer(int index, CategoryItemRenderer renderer, boolean notify) {
-        CategoryItemRenderer existing = this.renderers.get(index);
-        if (existing != null) {
-            existing.removeChangeListener(this);
-        }
-        this.renderers.put(index, renderer);
-        if (renderer != null) {
-            renderer.setPlot(this);
-            renderer.addChangeListener(this);
-        }
-        configureDomainAxes();
-        configureRangeAxes();
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Sets the renderers for this plot and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param renderers  the renderers.
-     */
-    public void setRenderers(CategoryItemRenderer[] renderers) {
-        for (int i = 0; i < renderers.length; i++) {
-            setRenderer(i, renderers[i], false);
-        }
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the renderer for the specified dataset.  If the dataset doesn't
-     * belong to the plot, this method will return {@code null}.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The renderer (possibly {@code null}).
-     */
-    public CategoryItemRenderer getRendererForDataset(CategoryDataset<R, C> dataset) {
-        int datasetIndex = indexOf(dataset);
-        if (datasetIndex < 0) {
-            return null;
-        }
-        CategoryItemRenderer renderer = this.renderers.get(datasetIndex);
-        if (renderer == null) {
-            return getRenderer();
-        }
-        return renderer;
-    }
-
-    /**
-     * Returns the index of the specified renderer, or {@code -1} if the
-     * renderer is not assigned to this plot.
-     *
-     * @param renderer  the renderer ({@code null} permitted).
-     *
-     * @return The renderer index.
-     */
-    public int getIndexOf(CategoryItemRenderer renderer) {
-        for (Entry<Integer, CategoryItemRenderer> entry : this.renderers.entrySet()) {
-            if (entry.getValue() == renderer) {
-                return entry.getKey();
-            }
-        }
-        return -1;
-    }
-
-    /**
-     * Returns the dataset rendering order.
-     *
-     * @return The order (never {@code null}).
-     *
-     * @see #setDatasetRenderingOrder(DatasetRenderingOrder)
-     */
-    public DatasetRenderingOrder getDatasetRenderingOrder() {
-        return this.renderingOrder;
-    }
-
-    /**
-     * Sets the rendering order and sends a {@link PlotChangeEvent} to all
-     * registered listeners.  By default, the plot renders the primary dataset
-     * last (so that the primary dataset overlays the secondary datasets).  You
-     * can reverse this if you want to.
-     *
-     * @param order  the rendering order ({@code null} not permitted).
-     *
-     * @see #getDatasetRenderingOrder()
-     */
-    public void setDatasetRenderingOrder(DatasetRenderingOrder order) {
-        Args.nullNotPermitted(order, "order");
-        this.renderingOrder = order;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the order in which the columns are rendered.  The default value
-     * is {@code SortOrder.ASCENDING}.
-     *
-     * @return The column rendering order (never {@code null}).
-     *
-     * @see #setColumnRenderingOrder(SortOrder)
-     */
-    public SortOrder getColumnRenderingOrder() {
-        return this.columnRenderingOrder;
-    }
-
-    /**
-     * Sets the column order in which the items in each dataset should be
-     * rendered and sends a {@link PlotChangeEvent} to all registered
-     * listeners.  Note that this affects the order in which items are drawn,
-     * NOT their position in the chart.
-     *
-     * @param order  the order ({@code null} not permitted).
-     *
-     * @see #getColumnRenderingOrder()
-     * @see #setRowRenderingOrder(SortOrder)
-     */
-    public void setColumnRenderingOrder(SortOrder order) {
-        Args.nullNotPermitted(order, "order");
-        this.columnRenderingOrder = order;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the order in which the rows should be rendered.  The default
-     * value is {@code SortOrder.ASCENDING}.
-     *
-     * @return The order (never {@code null}).
-     *
-     * @see #setRowRenderingOrder(SortOrder)
-     */
-    public SortOrder getRowRenderingOrder() {
-        return this.rowRenderingOrder;
-    }
-
-    /**
-     * Sets the row order in which the items in each dataset should be
-     * rendered and sends a {@link PlotChangeEvent} to all registered
-     * listeners.  Note that this affects the order in which items are drawn,
-     * NOT their position in the chart.
-     *
-     * @param order  the order ({@code null} not permitted).
-     *
-     * @see #getRowRenderingOrder()
-     * @see #setColumnRenderingOrder(SortOrder)
-     */
-    public void setRowRenderingOrder(SortOrder order) {
-        Args.nullNotPermitted(order, "order");
-        this.rowRenderingOrder = order;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the flag that controls whether the domain grid-lines are visible.
-     *
-     * @return The {@code true} or {@code false}.
-     *
-     * @see #setDomainGridlinesVisible(boolean)
-     */
-    public boolean isDomainGridlinesVisible() {
-        return this.domainGridlinesVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether grid-lines are drawn against
-     * the domain axis.
-     * <p>
-     * If the flag value changes, a {@link PlotChangeEvent} is sent to all
-     * registered listeners.
-     *
-     * @param visible  the new value of the flag.
-     *
-     * @see #isDomainGridlinesVisible()
-     */
-    public void setDomainGridlinesVisible(boolean visible) {
-        if (this.domainGridlinesVisible != visible) {
-            this.domainGridlinesVisible = visible;
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the position used for the domain gridlines.
-     *
-     * @return The gridline position (never {@code null}).
-     *
-     * @see #setDomainGridlinePosition(CategoryAnchor)
-     */
-    public CategoryAnchor getDomainGridlinePosition() {
-        return this.domainGridlinePosition;
-    }
-
-    /**
-     * Sets the position used for the domain gridlines and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param position  the position ({@code null} not permitted).
-     *
-     * @see #getDomainGridlinePosition()
-     */
-    public void setDomainGridlinePosition(CategoryAnchor position) {
-        Args.nullNotPermitted(position, "position");
-        this.domainGridlinePosition = position;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the stroke used to draw grid-lines against the domain axis.
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setDomainGridlineStroke(Stroke)
-     */
-    public Stroke getDomainGridlineStroke() {
-        return this.domainGridlineStroke;
-    }
-
-    /**
-     * Sets the stroke used to draw grid-lines against the domain axis and
-     * sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getDomainGridlineStroke()
-     */
-    public void setDomainGridlineStroke(Stroke stroke) {
-        Args.nullNotPermitted(stroke, "stroke");
-        this.domainGridlineStroke = stroke;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the paint used to draw grid-lines against the domain axis.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDomainGridlinePaint(Paint)
-     */
-    public Paint getDomainGridlinePaint() {
-        return this.domainGridlinePaint;
-    }
-
-    /**
-     * Sets the paint used to draw the grid-lines (if any) against the domain
-     * axis and sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDomainGridlinePaint()
-     */
-    public void setDomainGridlinePaint(Paint paint) {
-        Args.nullNotPermitted(paint, "paint");
-        this.domainGridlinePaint = paint;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns a flag that controls whether a zero baseline is
-     * displayed for the range axis.
+     * Returns the flag that controls whether minor tick marks
+     * are displayed for the axis.
      *
      * @return A boolean.
-     *
-     * @see #setRangeZeroBaselineVisible(boolean)
      */
-    public boolean isRangeZeroBaselineVisible() {
-        return this.rangeZeroBaselineVisible;
+    @Override
+    public boolean isMinorTickMarksVisible() {
+        return this.minorTickMarksVisible;
     }
 
     /**
-     * Sets the flag that controls whether the zero baseline is
-     * displayed for the range axis, and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
+     * Sets the flag that controls whether minor tick marks
+     * are displayed for the axis, and sends a {@link AxisChangeEvent}
+     * to all registered listeners.
      *
      * @param visible  the flag.
-     *
-     * @see #isRangeZeroBaselineVisible()
      */
-    public void setRangeZeroBaselineVisible(boolean visible) {
-        this.rangeZeroBaselineVisible = visible;
+    @Override
+    public void setMinorTickMarksVisible(boolean visible) {
+        this.minorTickMarksVisible = visible;
         fireChangeEvent();
     }
 
     /**
-     * Returns the stroke used for the zero baseline against the range axis.
+     * Returns the class that controls the spacing of the minor tick marks.
      *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setRangeZeroBaselineStroke(Stroke)
+     * @return The class (never {@code null}).
      */
-    public Stroke getRangeZeroBaselineStroke() {
-        return this.rangeZeroBaselineStroke;
+    public Class getMinorTickTimePeriodClass() {
+        return this.minorTickTimePeriodClass;
     }
 
     /**
-     * Sets the stroke for the zero baseline for the range axis,
-     * and sends a {@link PlotChangeEvent} to all registered listeners.
+     * Sets the class that controls the spacing of the minor tick marks, and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param c  the class (a subclass of {@link RegularTimePeriod} is
+     *           expected).
+     */
+    public void setMinorTickTimePeriodClass(Class c) {
+        Args.nullNotPermitted(c, "c");
+        this.minorTickTimePeriodClass = c;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the stroke used to display minor tick marks, if they are
+     * visible.
+     *
+     * @return A stroke (never {@code null}).
+     */
+    public Stroke getMinorTickMarkStroke() {
+        return this.minorTickMarkStroke;
+    }
+
+    /**
+     * Sets the stroke used to display minor tick marks, if they are
+     * visible, and sends a {@link AxisChangeEvent} to all registered
+     * listeners.
      *
      * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getRangeZeroBaselineStroke()
      */
-    public void setRangeZeroBaselineStroke(Stroke stroke) {
+    public void setMinorTickMarkStroke(Stroke stroke) {
         Args.nullNotPermitted(stroke, "stroke");
-        this.rangeZeroBaselineStroke = stroke;
+        this.minorTickMarkStroke = stroke;
         fireChangeEvent();
     }
 
     /**
-     * Returns the paint for the zero baseline (if any) plotted against the
-     * range axis.
+     * Returns the paint used to display minor tick marks, if they are
+     * visible.
      *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setRangeZeroBaselinePaint(Paint)
+     * @return A paint (never {@code null}).
      */
-    public Paint getRangeZeroBaselinePaint() {
-        return this.rangeZeroBaselinePaint;
+    public Paint getMinorTickMarkPaint() {
+        return this.minorTickMarkPaint;
     }
 
     /**
-     * Sets the paint for the zero baseline plotted against the range axis and
-     * sends a {@link PlotChangeEvent} to all registered listeners.
+     * Sets the paint used to display minor tick marks, if they are
+     * visible, and sends a {@link AxisChangeEvent} to all registered
+     * listeners.
      *
      * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getRangeZeroBaselinePaint()
      */
-    public void setRangeZeroBaselinePaint(Paint paint) {
+    public void setMinorTickMarkPaint(Paint paint) {
         Args.nullNotPermitted(paint, "paint");
-        this.rangeZeroBaselinePaint = paint;
+        this.minorTickMarkPaint = paint;
         fireChangeEvent();
     }
 
     /**
-     * Returns the flag that controls whether the range grid-lines are visible.
+     * Returns the inside length for the minor tick marks.
      *
-     * @return The flag.
-     *
-     * @see #setRangeGridlinesVisible(boolean)
-     */
-    public boolean isRangeGridlinesVisible() {
-        return this.rangeGridlinesVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether grid-lines are drawn against
-     * the range axis.  If the flag changes value, a {@link PlotChangeEvent} is
-     * sent to all registered listeners.
-     *
-     * @param visible  the new value of the flag.
-     *
-     * @see #isRangeGridlinesVisible()
-     */
-    public void setRangeGridlinesVisible(boolean visible) {
-        if (this.rangeGridlinesVisible != visible) {
-            this.rangeGridlinesVisible = visible;
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the stroke used to draw the grid-lines against the range axis.
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setRangeGridlineStroke(Stroke)
-     */
-    public Stroke getRangeGridlineStroke() {
-        return this.rangeGridlineStroke;
-    }
-
-    /**
-     * Sets the stroke used to draw the grid-lines against the range axis and
-     * sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getRangeGridlineStroke()
-     */
-    public void setRangeGridlineStroke(Stroke stroke) {
-        Args.nullNotPermitted(stroke, "stroke");
-        this.rangeGridlineStroke = stroke;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the paint used to draw the grid-lines against the range axis.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setRangeGridlinePaint(Paint)
-     */
-    public Paint getRangeGridlinePaint() {
-        return this.rangeGridlinePaint;
-    }
-
-    /**
-     * Sets the paint used to draw the grid lines against the range axis and
-     * sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getRangeGridlinePaint()
-     */
-    public void setRangeGridlinePaint(Paint paint) {
-        Args.nullNotPermitted(paint, "paint");
-        this.rangeGridlinePaint = paint;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns {@code true} if the range axis minor grid is visible, and
-     * {@code false} otherwise.
-     *
-     * @return A boolean.
-     *
-     * @see #setRangeMinorGridlinesVisible(boolean)
-     */
-    public boolean isRangeMinorGridlinesVisible() {
-        return this.rangeMinorGridlinesVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether the range axis minor grid
-     * lines are visible.
-     * <p>
-     * If the flag value is changed, a {@link PlotChangeEvent} is sent to all
-     * registered listeners.
-     *
-     * @param visible  the new value of the flag.
-     *
-     * @see #isRangeMinorGridlinesVisible()
-     */
-    public void setRangeMinorGridlinesVisible(boolean visible) {
-        if (this.rangeMinorGridlinesVisible != visible) {
-            this.rangeMinorGridlinesVisible = visible;
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the stroke for the minor grid lines (if any) plotted against the
-     * range axis.
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setRangeMinorGridlineStroke(Stroke)
-     */
-    public Stroke getRangeMinorGridlineStroke() {
-        return this.rangeMinorGridlineStroke;
-    }
-
-    /**
-     * Sets the stroke for the minor grid lines plotted against the range axis,
-     * and sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getRangeMinorGridlineStroke()
-     */
-    public void setRangeMinorGridlineStroke(Stroke stroke) {
-        Args.nullNotPermitted(stroke, "stroke");
-        this.rangeMinorGridlineStroke = stroke;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the paint for the minor grid lines (if any) plotted against the
-     * range axis.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setRangeMinorGridlinePaint(Paint)
-     */
-    public Paint getRangeMinorGridlinePaint() {
-        return this.rangeMinorGridlinePaint;
-    }
-
-    /**
-     * Sets the paint for the minor grid lines plotted against the range axis
-     * and sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getRangeMinorGridlinePaint()
-     */
-    public void setRangeMinorGridlinePaint(Paint paint) {
-        Args.nullNotPermitted(paint, "paint");
-        this.rangeMinorGridlinePaint = paint;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the fixed legend items, if any.
-     *
-     * @return The legend items (possibly {@code null}).
-     *
-     * @see #setFixedLegendItems(LegendItemCollection)
-     */
-    public LegendItemCollection getFixedLegendItems() {
-        return this.fixedLegendItems;
-    }
-
-    /**
-     * Sets the fixed legend items for the plot.  Leave this set to
-     * {@code null} if you prefer the legend items to be created
-     * automatically.
-     *
-     * @param items  the legend items ({@code null} permitted).
-     *
-     * @see #getFixedLegendItems()
-     */
-    public void setFixedLegendItems(LegendItemCollection items) {
-        this.fixedLegendItems = items;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend items for the plot.  By default, this method creates
-     * a legend item for each series in each of the datasets.  You can change
-     * this behaviour by overriding this method.
-     *
-     * @return The legend items.
+     * @return The length.
      */
     @Override
-    public LegendItemCollection getLegendItems() {
-        if (this.fixedLegendItems != null) {
-            return this.fixedLegendItems;
-        }
-        LegendItemCollection result = new LegendItemCollection();
-        // get the legend items for the datasets...
-        for (CategoryDataset<R, C> dataset : this.datasets.values()) {
-            if (dataset != null) {
-                int datasetIndex = indexOf(dataset);
-                CategoryItemRenderer renderer = getRenderer(datasetIndex);
-                if (renderer != null) {
-                    result.addAll(renderer.getLegendItems());
-                }
-            }
-        }
-        return result;
+    public float getMinorTickMarkInsideLength() {
+        return this.minorTickMarkInsideLength;
     }
 
     /**
-     * Handles a 'click' on the plot by updating the anchor value.
+     * Sets the inside length of the minor tick marks and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param x  x-coordinate of the click (in Java2D space).
-     * @param y  y-coordinate of the click (in Java2D space).
-     * @param info  information about the plot's dimensions.
+     * @param length  the length.
      */
     @Override
-    public void handleClick(int x, int y, PlotRenderingInfo info) {
-        Rectangle2D dataArea = info.getDataArea();
-        if (dataArea.contains(x, y)) {
-            // set the anchor value for the range axis...
-            double java2D = 0.0;
-            if (this.orientation == PlotOrientation.HORIZONTAL) {
-                java2D = x;
-            } else if (this.orientation == PlotOrientation.VERTICAL) {
-                java2D = y;
-            }
-            RectangleEdge edge = Plot.resolveRangeAxisLocation(getRangeAxisLocation(), this.orientation);
-            double value = getRangeAxis().java2DToValue(java2D, info.getDataArea(), edge);
-            setAnchorValue(value);
-            setRangeCrosshairValue(value);
-        }
-    }
-
-    /**
-     * Zooms (in or out) on the plot's value axis.
-     * <p>
-     * If the value 0.0 is passed in as the zoom percent, the auto-range
-     * calculation for the axis is restored (which sets the range to include
-     * the minimum and maximum data values, thus displaying all the data).
-     *
-     * @param percent  the zoom amount.
-     */
-    @Override
-    public void zoom(double percent) {
-        if (percent > 0.0) {
-            double range = getRangeAxis().getRange().getLength();
-            double scaledRange = range * percent;
-            getRangeAxis().setRange(this.anchorValue - scaledRange / 2.0, this.anchorValue + scaledRange / 2.0);
-        } else {
-            getRangeAxis().setAutoRange(true);
-        }
-    }
-
-    /**
-     * Receives notification of a change to an {@link Annotation} added to
-     * this plot.
-     *
-     * @param event  information about the event (not used here).
-     */
-    @Override
-    public void annotationChanged(AnnotationChangeEvent event) {
-        if (getParent() != null) {
-            getParent().annotationChanged(event);
-        } else {
-            PlotChangeEvent e = new PlotChangeEvent(this);
-            notifyListeners(e);
-        }
-    }
-
-    /**
-     * Receives notification of a change to the plot's dataset.
-     * <P>
-     * The range axis bounds will be recalculated if necessary.
-     *
-     * @param event  information about the event (not used here).
-     */
-    @Override
-    public void datasetChanged(DatasetChangeEvent event) {
-        for (ValueAxis yAxis : this.rangeAxes.values()) {
-            if (yAxis != null) {
-                yAxis.configure();
-            }
-        }
-        if (getParent() != null) {
-            getParent().datasetChanged(event);
-        } else {
-            PlotChangeEvent e = new PlotChangeEvent(this);
-            e.setType(ChartChangeEventType.DATASET_UPDATED);
-            notifyListeners(e);
-        }
-    }
-
-    /**
-     * Receives notification of a renderer change event.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void rendererChanged(RendererChangeEvent event) {
-        Plot parent = getParent();
-        if (parent != null) {
-            if (parent instanceof RendererChangeListener) {
-                RendererChangeListener rcl = (RendererChangeListener) parent;
-                rcl.rendererChanged(event);
-            } else {
-                // this should never happen with the existing code, but throw
-                // an exception in case future changes make it possible...
-                throw new RuntimeException("The renderer has changed and I don't know what to do!");
-            }
-        } else {
-            configureRangeAxes();
-            PlotChangeEvent e = new PlotChangeEvent(this);
-            notifyListeners(e);
-        }
-    }
-
-    /**
-     * Adds a marker for display (in the foreground) against the domain axis and
-     * sends a {@link PlotChangeEvent} to all registered listeners. Typically a
-     * marker will be drawn by the renderer as a line perpendicular to the
-     * domain axis, however this is entirely up to the renderer.
-     *
-     * @param marker  the marker ({@code null} not permitted).
-     *
-     * @see #removeDomainMarker(CategoryMarker)
-     */
-    public void addDomainMarker(CategoryMarker marker) {
-        addDomainMarker(marker, Layer.FOREGROUND);
-    }
-
-    /**
-     * Adds a marker for display against the domain axis and sends a
-     * {@link PlotChangeEvent} to all registered listeners.  Typically a marker
-     * will be drawn by the renderer as a line perpendicular to the domain
-     * axis, however this is entirely up to the renderer.
-     *
-     * @param marker  the marker ({@code null} not permitted).
-     * @param layer  the layer (foreground or background) ({@code null}
-     *               not permitted).
-     *
-     * @see #removeDomainMarker(CategoryMarker, Layer)
-     */
-    public void addDomainMarker(CategoryMarker marker, Layer layer) {
-        addDomainMarker(0, marker, layer);
-    }
-
-    /**
-     * Adds a marker for display by a particular renderer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     * <P>
-     * Typically a marker will be drawn by the renderer as a line perpendicular
-     * to a domain axis, however this is entirely up to the renderer.
-     *
-     * @param index  the renderer index.
-     * @param marker  the marker ({@code null} not permitted).
-     * @param layer  the layer ({@code null} not permitted).
-     *
-     * @see #removeDomainMarker(int, CategoryMarker, Layer)
-     */
-    public void addDomainMarker(int index, CategoryMarker marker, Layer layer) {
-        addDomainMarker(index, marker, layer, true);
-    }
-
-    /**
-     * Adds a marker for display by a particular renderer and, if requested,
-     * sends a {@link PlotChangeEvent} to all registered listeners.
-     * <P>
-     * Typically a marker will be drawn by the renderer as a line perpendicular
-     * to a domain axis, however this is entirely up to the renderer.
-     *
-     * @param index  the renderer index.
-     * @param marker  the marker ({@code null} not permitted).
-     * @param layer  the layer ({@code null} not permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #removeDomainMarker(int, CategoryMarker, Layer, boolean)
-     */
-    public void addDomainMarker(int index, CategoryMarker marker, Layer layer, boolean notify) {
-        Args.nullNotPermitted(marker, "marker");
-        Args.nullNotPermitted(layer, "layer");
-        Collection<CategoryMarker> markers;
-        if (layer == Layer.FOREGROUND) {
-            markers = this.foregroundDomainMarkers.get(index);
-            if (markers == null) {
-                markers = new ArrayList<>();
-                this.foregroundDomainMarkers.put(index, markers);
-            }
-            markers.add(marker);
-        } else if (layer == Layer.BACKGROUND) {
-            markers = this.backgroundDomainMarkers.get(index);
-            if (markers == null) {
-                markers = new ArrayList<>();
-                this.backgroundDomainMarkers.put(index, markers);
-            }
-            markers.add(marker);
-        }
-        marker.addChangeListener(this);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Clears all the domain markers for the plot and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @see #clearRangeMarkers()
-     */
-    public void clearDomainMarkers() {
-        if (this.backgroundDomainMarkers != null) {
-            Set<Integer> keys = this.backgroundDomainMarkers.keySet();
-            for (Integer key : keys) {
-                clearDomainMarkers(key);
-            }
-            this.backgroundDomainMarkers.clear();
-        }
-        if (this.foregroundDomainMarkers != null) {
-            Set<Integer> keys = this.foregroundDomainMarkers.keySet();
-            for (Integer key : keys) {
-                clearDomainMarkers(key);
-            }
-            this.foregroundDomainMarkers.clear();
-        }
+    public void setMinorTickMarkInsideLength(float length) {
+        this.minorTickMarkInsideLength = length;
         fireChangeEvent();
     }
 
     /**
-     * Returns the list of domain markers (read only) for the specified layer.
+     * Returns the outside length for the minor tick marks.
      *
-     * @param layer  the layer (foreground or background).
-     *
-     * @return The list of domain markers.
+     * @return The length.
      */
-    public Collection<CategoryMarker> getDomainMarkers(Layer layer) {
-        return getDomainMarkers(0, layer);
+    @Override
+    public float getMinorTickMarkOutsideLength() {
+        return this.minorTickMarkOutsideLength;
     }
 
     /**
-     * Returns a collection of domain markers for a particular renderer and
-     * layer.
+     * Sets the outside length of the minor tick marks and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param index  the renderer index.
-     * @param layer  the layer.
-     *
-     * @return A collection of markers (possibly {@code null}).
+     * @param length  the length.
      */
-    public Collection<CategoryMarker> getDomainMarkers(int index, Layer layer) {
-        Collection<CategoryMarker> result = null;
-        Integer key = index;
-        if (layer == Layer.FOREGROUND) {
-            result = this.foregroundDomainMarkers.get(key);
-        } else if (layer == Layer.BACKGROUND) {
-            result = this.backgroundDomainMarkers.get(key);
-        }
-        if (result != null) {
-            result = Collections.unmodifiableCollection(result);
-        }
-        return result;
-    }
-
-    /**
-     * Clears all the domain markers for the specified renderer.
-     *
-     * @param index  the renderer index.
-     *
-     * @see #clearRangeMarkers(int)
-     */
-    public void clearDomainMarkers(int index) {
-        Integer key = index;
-        if (this.backgroundDomainMarkers != null) {
-            Collection<CategoryMarker> markers = this.backgroundDomainMarkers.get(key);
-            if (markers != null) {
-                for (CategoryMarker m : markers) {
-                    m.removeChangeListener(this);
-                }
-                markers.clear();
-            }
-        }
-        if (this.foregroundDomainMarkers != null) {
-            Collection<CategoryMarker> markers = this.foregroundDomainMarkers.get(key);
-            if (markers != null) {
-                for (Marker m : markers) {
-                    m.removeChangeListener(this);
-                }
-                markers.clear();
-            }
-        }
+    @Override
+    public void setMinorTickMarkOutsideLength(float length) {
+        this.minorTickMarkOutsideLength = length;
         fireChangeEvent();
     }
 
     /**
-     * Removes a marker for the domain axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
+     * Returns an array of label info records.
      *
-     * @param marker  the marker.
-     *
-     * @return A boolean indicating whether the marker was actually removed.
+     * @return An array.
      */
-    public boolean removeDomainMarker(CategoryMarker marker) {
-        return removeDomainMarker(marker, Layer.FOREGROUND);
+    public PeriodAxisLabelInfo[] getLabelInfo() {
+        return this.labelInfo;
     }
 
     /**
-     * Removes a marker for the domain axis in the specified layer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
+     * Sets the array of label info records and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param marker the marker ({@code null} not permitted).
-     * @param layer the layer (foreground or background).
-     *
-     * @return A boolean indicating whether the marker was actually removed.
+     * @param info  the info.
      */
-    public boolean removeDomainMarker(CategoryMarker marker, Layer layer) {
-        return removeDomainMarker(0, marker, layer);
-    }
-
-    /**
-     * Removes a marker for a specific dataset/renderer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param index the dataset/renderer index.
-     * @param marker the marker.
-     * @param layer the layer (foreground or background).
-     *
-     * @return A boolean indicating whether the marker was actually removed.
-     */
-    public boolean removeDomainMarker(int index, CategoryMarker marker, Layer layer) {
-        return removeDomainMarker(index, marker, layer, true);
-    }
-
-    /**
-     * Removes a marker for a specific dataset/renderer and, if requested,
-     * sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param index the dataset/renderer index.
-     * @param marker the marker.
-     * @param layer the layer (foreground or background).
-     * @param notify  notify listeners?
-     *
-     * @return A boolean indicating whether the marker was actually removed.
-     */
-    public boolean removeDomainMarker(int index, CategoryMarker marker, Layer layer, boolean notify) {
-        Collection<CategoryMarker> markers;
-        if (layer == Layer.FOREGROUND) {
-            markers = this.foregroundDomainMarkers.get(index);
-        } else {
-            markers = this.backgroundDomainMarkers.get(index);
-        }
-        if (markers == null) {
-            return false;
-        }
-        boolean removed = markers.remove(marker);
-        if (removed && notify) {
-            fireChangeEvent();
-        }
-        return removed;
-    }
-
-    /**
-     * Adds a marker for display (in the foreground) against the range axis and
-     * sends a {@link PlotChangeEvent} to all registered listeners. Typically a
-     * marker will be drawn by the renderer as a line perpendicular to the
-     * range axis, however this is entirely up to the renderer.
-     *
-     * @param marker  the marker ({@code null} not permitted).
-     *
-     * @see #removeRangeMarker(Marker)
-     */
-    public void addRangeMarker(Marker marker) {
-        addRangeMarker(marker, Layer.FOREGROUND);
-    }
-
-    /**
-     * Adds a marker for display against the range axis and sends a
-     * {@link PlotChangeEvent} to all registered listeners.  Typically a marker
-     * will be drawn by the renderer as a line perpendicular to the range axis,
-     * however this is entirely up to the renderer.
-     *
-     * @param marker  the marker ({@code null} not permitted).
-     * @param layer  the layer (foreground or background) ({@code null}
-     *               not permitted).
-     *
-     * @see #removeRangeMarker(Marker, Layer)
-     */
-    public void addRangeMarker(Marker marker, Layer layer) {
-        addRangeMarker(0, marker, layer);
-    }
-
-    /**
-     * Adds a marker for display by a particular renderer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     * <P>
-     * Typically a marker will be drawn by the renderer as a line perpendicular
-     * to a range axis, however this is entirely up to the renderer.
-     *
-     * @param index  the renderer index.
-     * @param marker  the marker.
-     * @param layer  the layer.
-     *
-     * @see #removeRangeMarker(int, Marker, Layer)
-     */
-    public void addRangeMarker(int index, Marker marker, Layer layer) {
-        addRangeMarker(index, marker, layer, true);
-    }
-
-    /**
-     * Adds a marker for display by a particular renderer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     * <P>
-     * Typically a marker will be drawn by the renderer as a line perpendicular
-     * to a range axis, however this is entirely up to the renderer.
-     *
-     * @param index  the renderer index.
-     * @param marker  the marker.
-     * @param layer  the layer.
-     * @param notify  notify listeners?
-     *
-     * @see #removeRangeMarker(int, Marker, Layer, boolean)
-     */
-    public void addRangeMarker(int index, Marker marker, Layer layer, boolean notify) {
-        Collection<Marker> markers;
-        if (layer == Layer.FOREGROUND) {
-            markers = this.foregroundRangeMarkers.get(index);
-            if (markers == null) {
-                markers = new ArrayList<>();
-                this.foregroundRangeMarkers.put(index, markers);
-            }
-            markers.add(marker);
-        } else if (layer == Layer.BACKGROUND) {
-            markers = this.backgroundRangeMarkers.get(index);
-            if (markers == null) {
-                markers = new ArrayList<>();
-                this.backgroundRangeMarkers.put(index, markers);
-            }
-            markers.add(marker);
-        }
-        marker.addChangeListener(this);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Clears all the range markers for the plot and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @see #clearDomainMarkers()
-     */
-    public void clearRangeMarkers() {
-        if (this.backgroundRangeMarkers != null) {
-            Set<Integer> keys = this.backgroundRangeMarkers.keySet();
-            for (Integer key : keys) {
-                clearRangeMarkers(key);
-            }
-            this.backgroundRangeMarkers.clear();
-        }
-        if (this.foregroundRangeMarkers != null) {
-            Set<Integer> keys = this.foregroundRangeMarkers.keySet();
-            for (Integer key : keys) {
-                clearRangeMarkers(key);
-            }
-            this.foregroundRangeMarkers.clear();
-        }
+    public void setLabelInfo(PeriodAxisLabelInfo[] info) {
+        this.labelInfo = info;
         fireChangeEvent();
     }
 
     /**
-     * Returns the list of range markers (read only) for the specified layer.
+     * Sets the range for the axis, if requested, sends an
+     * {@link AxisChangeEvent} to all registered listeners.  As a side-effect,
+     * the auto-range flag is set to {@code false} (optional).
      *
-     * @param layer  the layer (foreground or background).
-     *
-     * @return The list of range markers.
-     *
-     * @see #getRangeMarkers(int, Layer)
-     */
-    public Collection<Marker> getRangeMarkers(Layer layer) {
-        return getRangeMarkers(0, layer);
-    }
-
-    /**
-     * Returns a collection of range markers for a particular renderer and
-     * layer.
-     *
-     * @param index  the renderer index.
-     * @param layer  the layer.
-     *
-     * @return A collection of markers (possibly {@code null}).
-     */
-    public Collection<Marker> getRangeMarkers(int index, Layer layer) {
-        Collection<Marker> result = null;
-        if (layer == Layer.FOREGROUND) {
-            result = this.foregroundRangeMarkers.get(index);
-        } else if (layer == Layer.BACKGROUND) {
-            result = this.backgroundRangeMarkers.get(index);
-        }
-        if (result != null) {
-            result = Collections.unmodifiableCollection(result);
-        }
-        return result;
-    }
-
-    /**
-     * Clears all the range markers for the specified renderer.
-     *
-     * @param index  the renderer index.
-     *
-     * @see #clearDomainMarkers(int)
-     */
-    public void clearRangeMarkers(int index) {
-        Integer key = index;
-        if (this.backgroundRangeMarkers != null) {
-            Collection<Marker> markers = this.backgroundRangeMarkers.get(key);
-            if (markers != null) {
-                for (Marker m : markers) {
-                    m.removeChangeListener(this);
-                }
-                markers.clear();
-            }
-        }
-        if (this.foregroundRangeMarkers != null) {
-            Collection<Marker> markers = this.foregroundRangeMarkers.get(key);
-            if (markers != null) {
-                for (Marker m : markers) {
-                    m.removeChangeListener(this);
-                }
-                markers.clear();
-            }
-        }
-        fireChangeEvent();
-    }
-
-    /**
-     * Removes a marker for the range axis and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param marker the marker.
-     *
-     * @return A boolean indicating whether the marker was actually
-     *         removed.
-     *
-     * @see #addRangeMarker(Marker)
-     */
-    public boolean removeRangeMarker(Marker marker) {
-        return removeRangeMarker(marker, Layer.FOREGROUND);
-    }
-
-    /**
-     * Removes a marker for the range axis in the specified layer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param marker the marker ({@code null} not permitted).
-     * @param layer the layer (foreground or background).
-     *
-     * @return A boolean indicating whether the marker was actually
-     *         removed.
-     *
-     * @see #addRangeMarker(Marker, Layer)
-     */
-    public boolean removeRangeMarker(Marker marker, Layer layer) {
-        return removeRangeMarker(0, marker, layer);
-    }
-
-    /**
-     * Removes a marker for a specific dataset/renderer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param index the dataset/renderer index.
-     * @param marker the marker.
-     * @param layer the layer (foreground or background).
-     *
-     * @return A boolean indicating whether the marker was actually
-     *         removed.
-     *
-     * @see #addRangeMarker(int, Marker, Layer)
-     */
-    public boolean removeRangeMarker(int index, Marker marker, Layer layer) {
-        return removeRangeMarker(index, marker, layer, true);
-    }
-
-    /**
-     * Removes a marker for a specific dataset/renderer and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param index  the dataset/renderer index.
-     * @param marker  the marker.
-     * @param layer  the layer (foreground or background).
-     * @param notify  notify listeners.
-     *
-     * @return A boolean indicating whether the marker was actually
-     *         removed.
-     *
-     * @see #addRangeMarker(int, Marker, Layer, boolean)
-     */
-    public boolean removeRangeMarker(int index, Marker marker, Layer layer, boolean notify) {
-        Args.nullNotPermitted(marker, "marker");
-        Collection<Marker> markers;
-        if (layer == Layer.FOREGROUND) {
-            markers = this.foregroundRangeMarkers.get(index);
-        } else {
-            markers = this.backgroundRangeMarkers.get(index);
-        }
-        if (markers == null) {
-            return false;
-        }
-        boolean removed = markers.remove(marker);
-        if (removed && notify) {
-            fireChangeEvent();
-        }
-        return removed;
-    }
-
-    /**
-     * Returns the flag that controls whether the domain crosshair is
-     * displayed by the plot.
-     *
-     * @return A boolean.
-     *
-     * @see #setDomainCrosshairVisible(boolean)
-     */
-    public boolean isDomainCrosshairVisible() {
-        return this.domainCrosshairVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether the domain crosshair is
-     * displayed by the plot, and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param flag  the new flag value.
-     *
-     * @see #isDomainCrosshairVisible()
-     * @see #setRangeCrosshairVisible(boolean)
-     */
-    public void setDomainCrosshairVisible(boolean flag) {
-        if (this.domainCrosshairVisible != flag) {
-            this.domainCrosshairVisible = flag;
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the row key for the domain crosshair.
-     *
-     * @return The row key.
-     */
-    public R getDomainCrosshairRowKey() {
-        return this.domainCrosshairRowKey;
-    }
-
-    /**
-     * Sets the row key for the domain crosshair and sends a
-     * {PlotChangeEvent} to all registered listeners.
-     *
-     * @param key  the key.
-     */
-    public void setDomainCrosshairRowKey(R key) {
-        setDomainCrosshairRowKey(key, true);
-    }
-
-    /**
-     * Sets the row key for the domain crosshair and, if requested, sends a
-     * {PlotChangeEvent} to all registered listeners.
-     *
-     * @param key  the key.
-     * @param notify  notify listeners?
-     */
-    public void setDomainCrosshairRowKey(R key, boolean notify) {
-        this.domainCrosshairRowKey = key;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the column key for the domain crosshair.
-     *
-     * @return The column key.
-     */
-    public C getDomainCrosshairColumnKey() {
-        return this.domainCrosshairColumnKey;
-    }
-
-    /**
-     * Sets the column key for the domain crosshair and sends
-     * a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param key  the key.
-     */
-    public void setDomainCrosshairColumnKey(C key) {
-        setDomainCrosshairColumnKey(key, true);
-    }
-
-    /**
-     * Sets the column key for the domain crosshair and, if requested, sends
-     * a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param key  the key.
-     * @param notify  notify listeners?
-     */
-    public void setDomainCrosshairColumnKey(C key, boolean notify) {
-        this.domainCrosshairColumnKey = key;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the dataset index for the crosshair.
-     *
-     * @return The dataset index.
-     */
-    public int getCrosshairDatasetIndex() {
-        return this.crosshairDatasetIndex;
-    }
-
-    /**
-     * Sets the dataset index for the crosshair and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param index  the index.
-     */
-    public void setCrosshairDatasetIndex(int index) {
-        setCrosshairDatasetIndex(index, true);
-    }
-
-    /**
-     * Sets the dataset index for the crosshair and, if requested, sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param index  the index.
-     * @param notify  notify listeners?
-     */
-    public void setCrosshairDatasetIndex(int index, boolean notify) {
-        this.crosshairDatasetIndex = index;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the paint used to draw the domain crosshair.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDomainCrosshairPaint(Paint)
-     * @see #getDomainCrosshairStroke()
-     */
-    public Paint getDomainCrosshairPaint() {
-        return this.domainCrosshairPaint;
-    }
-
-    /**
-     * Sets the paint used to draw the domain crosshair.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDomainCrosshairPaint()
-     */
-    public void setDomainCrosshairPaint(Paint paint) {
-        Args.nullNotPermitted(paint, "paint");
-        this.domainCrosshairPaint = paint;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the stroke used to draw the domain crosshair.
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setDomainCrosshairStroke(Stroke)
-     * @see #getDomainCrosshairPaint()
-     */
-    public Stroke getDomainCrosshairStroke() {
-        return this.domainCrosshairStroke;
-    }
-
-    /**
-     * Sets the stroke used to draw the domain crosshair, and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getDomainCrosshairStroke()
-     */
-    public void setDomainCrosshairStroke(Stroke stroke) {
-        Args.nullNotPermitted(stroke, "stroke");
-        this.domainCrosshairStroke = stroke;
-    }
-
-    /**
-     * Returns a flag indicating whether the range crosshair is visible.
-     *
-     * @return The flag.
-     *
-     * @see #setRangeCrosshairVisible(boolean)
-     */
-    public boolean isRangeCrosshairVisible() {
-        return this.rangeCrosshairVisible;
-    }
-
-    /**
-     * Sets the flag indicating whether the range crosshair is visible.
-     *
-     * @param flag  the new value of the flag.
-     *
-     * @see #isRangeCrosshairVisible()
-     */
-    public void setRangeCrosshairVisible(boolean flag) {
-        if (this.rangeCrosshairVisible != flag) {
-            this.rangeCrosshairVisible = flag;
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns a flag indicating whether the crosshair should "lock-on"
-     * to actual data values.
-     *
-     * @return The flag.
-     *
-     * @see #setRangeCrosshairLockedOnData(boolean)
-     */
-    public boolean isRangeCrosshairLockedOnData() {
-        return this.rangeCrosshairLockedOnData;
-    }
-
-    /**
-     * Sets the flag indicating whether the range crosshair should
-     * "lock-on" to actual data values, and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param flag  the flag.
-     *
-     * @see #isRangeCrosshairLockedOnData()
-     */
-    public void setRangeCrosshairLockedOnData(boolean flag) {
-        if (this.rangeCrosshairLockedOnData != flag) {
-            this.rangeCrosshairLockedOnData = flag;
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the range crosshair value.
-     *
-     * @return The value.
-     *
-     * @see #setRangeCrosshairValue(double)
-     */
-    public double getRangeCrosshairValue() {
-        return this.rangeCrosshairValue;
-    }
-
-    /**
-     * Sets the range crosshair value and, if the crosshair is visible, sends
-     * a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param value  the new value.
-     *
-     * @see #getRangeCrosshairValue()
-     */
-    public void setRangeCrosshairValue(double value) {
-        setRangeCrosshairValue(value, true);
-    }
-
-    /**
-     * Sets the range crosshair value and, if requested, sends a
-     * {@link PlotChangeEvent} to all registered listeners (but only if the
-     * crosshair is visible).
-     *
-     * @param value  the new value.
+     * @param range  the range ({@code null} not permitted).
+     * @param turnOffAutoRange  a flag that controls whether the auto
+     *                          range is turned off.
      * @param notify  a flag that controls whether listeners are
      *                notified.
-     *
-     * @see #getRangeCrosshairValue()
-     */
-    public void setRangeCrosshairValue(double value, boolean notify) {
-        this.rangeCrosshairValue = value;
-        if (isRangeCrosshairVisible() && notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the pen-style ({@code Stroke}) used to draw the crosshair
-     * (if visible).
-     *
-     * @return The crosshair stroke (never {@code null}).
-     *
-     * @see #setRangeCrosshairStroke(Stroke)
-     * @see #isRangeCrosshairVisible()
-     * @see #getRangeCrosshairPaint()
-     */
-    public Stroke getRangeCrosshairStroke() {
-        return this.rangeCrosshairStroke;
-    }
-
-    /**
-     * Sets the pen-style ({@code Stroke}) used to draw the range
-     * crosshair (if visible), and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param stroke  the new crosshair stroke ({@code null} not
-     *         permitted).
-     *
-     * @see #getRangeCrosshairStroke()
-     */
-    public void setRangeCrosshairStroke(Stroke stroke) {
-        Args.nullNotPermitted(stroke, "stroke");
-        this.rangeCrosshairStroke = stroke;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the paint used to draw the range crosshair.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setRangeCrosshairPaint(Paint)
-     * @see #isRangeCrosshairVisible()
-     * @see #getRangeCrosshairStroke()
-     */
-    public Paint getRangeCrosshairPaint() {
-        return this.rangeCrosshairPaint;
-    }
-
-    /**
-     * Sets the paint used to draw the range crosshair (if visible) and
-     * sends a {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getRangeCrosshairPaint()
-     */
-    public void setRangeCrosshairPaint(Paint paint) {
-        Args.nullNotPermitted(paint, "paint");
-        this.rangeCrosshairPaint = paint;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the list of annotations.
-     *
-     * @return The list of annotations (never {@code null}).
-     *
-     * @see #addAnnotation(CategoryAnnotation)
-     * @see #clearAnnotations()
-     */
-    public List<CategoryAnnotation> getAnnotations() {
-        return this.annotations;
-    }
-
-    /**
-     * Adds an annotation to the plot and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param annotation  the annotation ({@code null} not permitted).
-     *
-     * @see #removeAnnotation(CategoryAnnotation)
-     */
-    public void addAnnotation(CategoryAnnotation annotation) {
-        addAnnotation(annotation, true);
-    }
-
-    /**
-     * Adds an annotation to the plot and, if requested, sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param annotation  the annotation ({@code null} not permitted).
-     * @param notify  notify listeners?
-     */
-    public void addAnnotation(CategoryAnnotation annotation, boolean notify) {
-        Args.nullNotPermitted(annotation, "annotation");
-        this.annotations.add(annotation);
-        annotation.addChangeListener(this);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Removes an annotation from the plot and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param annotation  the annotation ({@code null} not permitted).
-     *
-     * @return A boolean (indicates whether the annotation was removed).
-     *
-     * @see #addAnnotation(CategoryAnnotation)
-     */
-    public boolean removeAnnotation(CategoryAnnotation annotation) {
-        return removeAnnotation(annotation, true);
-    }
-
-    /**
-     * Removes an annotation from the plot and, if requested, sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param annotation  the annotation ({@code null} not permitted).
-     * @param notify  notify listeners?
-     *
-     * @return A boolean (indicates whether the annotation was removed).
-     */
-    public boolean removeAnnotation(CategoryAnnotation annotation, boolean notify) {
-        Args.nullNotPermitted(annotation, "annotation");
-        boolean removed = this.annotations.remove(annotation);
-        annotation.removeChangeListener(this);
-        if (removed && notify) {
-            fireChangeEvent();
-        }
-        return removed;
-    }
-
-    /**
-     * Clears all the annotations and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     */
-    public void clearAnnotations() {
-        for (CategoryAnnotation annotation : this.annotations) {
-            annotation.removeChangeListener(this);
-        }
-        this.annotations.clear();
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the shadow generator for the plot, if any.
-     *
-     * @return The shadow generator (possibly {@code null}).
-     */
-    public ShadowGenerator getShadowGenerator() {
-        return this.shadowGenerator;
-    }
-
-    /**
-     * Sets the shadow generator for the plot and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     */
-    public void setShadowGenerator(ShadowGenerator generator) {
-        this.shadowGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Calculates the space required for the domain axis/axes.
-     *
-     * @param g2  the graphics device.
-     * @param plotArea  the plot area.
-     * @param space  a carrier for the result ({@code null} permitted).
-     *
-     * @return The required space.
-     */
-    protected AxisSpace calculateDomainAxisSpace(Graphics2D g2, Rectangle2D plotArea, AxisSpace space) {
-        if (space == null) {
-            space = new AxisSpace();
-        }
-        // reserve some space for the domain axis...
-        if (this.fixedDomainAxisSpace != null) {
-            if (this.orientation.isHorizontal()) {
-                space.ensureAtLeast(this.fixedDomainAxisSpace.getLeft(), RectangleEdge.LEFT);
-                space.ensureAtLeast(this.fixedDomainAxisSpace.getRight(), RectangleEdge.RIGHT);
-            } else if (this.orientation.isVertical()) {
-                space.ensureAtLeast(this.fixedDomainAxisSpace.getTop(), RectangleEdge.TOP);
-                space.ensureAtLeast(this.fixedDomainAxisSpace.getBottom(), RectangleEdge.BOTTOM);
-            }
-        } else {
-            // reserve space for the primary domain axis...
-            RectangleEdge domainEdge = Plot.resolveDomainAxisLocation(getDomainAxisLocation(), this.orientation);
-            if (this.drawSharedDomainAxis) {
-                space = getDomainAxis().reserveSpace(g2, this, plotArea, domainEdge, space);
-            }
-            // reserve space for any domain axes...
-            for (CategoryAxis xAxis : this.domainAxes.values()) {
-                if (xAxis != null) {
-                    int i = getDomainAxisIndex(xAxis);
-                    RectangleEdge edge = getDomainAxisEdge(i);
-                    space = xAxis.reserveSpace(g2, this, plotArea, edge, space);
-                }
-            }
-        }
-        return space;
-    }
-
-    /**
-     * Calculates the space required for the range axis/axes.
-     *
-     * @param g2  the graphics device.
-     * @param plotArea  the plot area.
-     * @param space  a carrier for the result ({@code null} permitted).
-     *
-     * @return The required space.
-     */
-    protected AxisSpace calculateRangeAxisSpace(Graphics2D g2, Rectangle2D plotArea, AxisSpace space) {
-        if (space == null) {
-            space = new AxisSpace();
-        }
-        // reserve some space for the range axis...
-        if (this.fixedRangeAxisSpace != null) {
-            if (this.orientation.isHorizontal()) {
-                space.ensureAtLeast(this.fixedRangeAxisSpace.getTop(), RectangleEdge.TOP);
-                space.ensureAtLeast(this.fixedRangeAxisSpace.getBottom(), RectangleEdge.BOTTOM);
-            } else if (this.orientation == PlotOrientation.VERTICAL) {
-                space.ensureAtLeast(this.fixedRangeAxisSpace.getLeft(), RectangleEdge.LEFT);
-                space.ensureAtLeast(this.fixedRangeAxisSpace.getRight(), RectangleEdge.RIGHT);
-            }
-        } else {
-            // reserve space for the range axes (if any)...
-            for (ValueAxis yAxis : this.rangeAxes.values()) {
-                if (yAxis != null) {
-                    int i = findRangeAxisIndex(yAxis);
-                    RectangleEdge edge = getRangeAxisEdge(i);
-                    space = yAxis.reserveSpace(g2, this, plotArea, edge, space);
-                }
-            }
-        }
-        return space;
-    }
-
-    /**
-     * Trims a rectangle to integer coordinates.
-     *
-     * @param rect  the incoming rectangle.
-     *
-     * @return A rectangle with integer coordinates.
-     */
-    private Rectangle integerise(Rectangle2D rect) {
-        int x0 = (int) Math.ceil(rect.getMinX());
-        int y0 = (int) Math.ceil(rect.getMinY());
-        int x1 = (int) Math.floor(rect.getMaxX());
-        int y1 = (int) Math.floor(rect.getMaxY());
-        return new Rectangle(x0, y0, (x1 - x0), (y1 - y0));
-    }
-
-    /**
-     * Calculates the space required for the axes.
-     *
-     * @param g2  the graphics device.
-     * @param plotArea  the plot area.
-     *
-     * @return The space required for the axes.
-     */
-    protected AxisSpace calculateAxisSpace(Graphics2D g2, Rectangle2D plotArea) {
-        AxisSpace space = new AxisSpace();
-        space = calculateRangeAxisSpace(g2, plotArea, space);
-        space = calculateDomainAxisSpace(g2, plotArea, space);
-        return space;
-    }
-
-    /**
-     * Receives a chart element visitor.  Many plot subclasses will override
-     * this method to handle their subcomponents.
-     *
-     * @param visitor  the visitor ({@code null} not permitted).
      */
     @Override
-    public void receive(ChartElementVisitor visitor) {
-        // visit the domain axes
-        for (Entry<Integer, CategoryAxis> entry : this.domainAxes.entrySet()) {
-            if (entry.getValue() != null) {
-                entry.getValue().receive(visitor);
-            }
-        }
-        // visit the range axes
-        for (Entry<Integer, ValueAxis> entry : this.rangeAxes.entrySet()) {
-            if (entry.getValue() != null) {
-                entry.getValue().receive(visitor);
-            }
-        }
-        // visit the renderers
-        for (Entry<Integer, CategoryItemRenderer> entry : this.renderers.entrySet()) {
-            if (entry.getValue() != null) {
-                entry.getValue().receive(visitor);
-            }
-        }
-        // and finally this plot
-        visitor.visit(this);
+    public void setRange(Range range, boolean turnOffAutoRange, boolean notify) {
+        long upper = Math.round(range.getUpperBound());
+        long lower = Math.round(range.getLowerBound());
+        this.first = createInstance(this.autoRangeTimePeriodClass, new Date(lower), this.timeZone, this.locale);
+        this.last = createInstance(this.autoRangeTimePeriodClass, new Date(upper), this.timeZone, this.locale);
+        super.setRange(new Range(this.first.getFirstMillisecond(), this.last.getLastMillisecond() + 1.0), turnOffAutoRange, notify);
     }
 
     /**
-     * Draws the plot on a Java 2D graphics device (such as the screen or a
+     * Configures the axis to work with the current plot.  Override this method
+     * to perform any special processing (such as auto-rescaling).
+     */
+    @Override
+    public void configure() {
+        if (this.isAutoRange()) {
+            autoAdjustRange();
+        }
+    }
+
+    /**
+     * Estimates the space (height or width) required to draw the axis.
+     *
+     * @param g2  the graphics device.
+     * @param plot  the plot that the axis belongs to.
+     * @param plotArea  the area within which the plot (including axes) should
+     *                  be drawn.
+     * @param edge  the axis location.
+     * @param space  space already reserved.
+     *
+     * @return The space required to draw the axis (including pre-reserved
+     *         space).
+     */
+    @Override
+    public AxisSpace reserveSpace(Graphics2D g2, Plot plot, Rectangle2D plotArea, RectangleEdge edge, AxisSpace space) {
+        // create a new space object if one wasn't supplied...
+        if (space == null) {
+            space = new AxisSpace();
+        }
+        // if the axis is not visible, no additional space is required...
+        if (!isVisible()) {
+            return space;
+        }
+        // if the axis has a fixed dimension, return it...
+        double dimension = getFixedDimension();
+        if (dimension > 0.0) {
+            space.ensureAtLeast(dimension, edge);
+        }
+        // get the axis label size and update the space object...
+        Rectangle2D labelEnclosure = getLabelEnclosure(g2, edge);
+        double labelHeight, labelWidth;
+        double tickLabelBandsDimension = 0.0;
+        for (PeriodAxisLabelInfo info : this.labelInfo) {
+            FontMetrics fm = g2.getFontMetrics(info.getLabelFont());
+            tickLabelBandsDimension += info.getPadding().extendHeight(fm.getHeight());
+        }
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            labelHeight = labelEnclosure.getHeight();
+            space.add(labelHeight + tickLabelBandsDimension, edge);
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            labelWidth = labelEnclosure.getWidth();
+            space.add(labelWidth + tickLabelBandsDimension, edge);
+        }
+        // add space for the outer tick labels, if any...
+        double tickMarkSpace = 0.0;
+        if (isTickMarksVisible()) {
+            tickMarkSpace = getTickMarkOutsideLength();
+        }
+        if (this.minorTickMarksVisible) {
+            tickMarkSpace = Math.max(tickMarkSpace, this.minorTickMarkOutsideLength);
+        }
+        space.add(tickMarkSpace, edge);
+        return space;
+    }
+
+    /**
+     * Draws the axis on a Java 2D graphics device (such as the screen or a
      * printer).
-     * <P>
-     * At your option, you may supply an instance of {@link PlotRenderingInfo}.
-     * If you do, it will be populated with information about the drawing,
-     * including various plot dimensions and tooltip info.
-     *
-     * @param g2  the graphics device.
-     * @param area  the area within which the plot (including axes) should
-     *              be drawn.
-     * @param anchor  the anchor point ({@code null} permitted).
-     * @param parentState  the state from the parent plot, if there is one.
-     * @param state  collects info as the chart is drawn (possibly
-     *               {@code null}).
-     */
-    @Override
-    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo state) {
-        // if the plot area is too small, just return...
-        boolean b1 = (area.getWidth() <= MINIMUM_WIDTH_TO_DRAW);
-        boolean b2 = (area.getHeight() <= MINIMUM_HEIGHT_TO_DRAW);
-        if (b1 || b2) {
-            return;
-        }
-        // record the plot area...
-        if (state == null) {
-            // if the incoming state is null, no information will be passed
-            // back to the caller - but we create a temporary state to record
-            // the plot area, since that is used later by the axes
-            state = new PlotRenderingInfo(null);
-        }
-        state.setPlotArea(area);
-        // adjust the drawing area for the plot insets (if any)...
-        RectangleInsets insets = getInsets();
-        insets.trim(area);
-        // calculate the data area...
-        AxisSpace space = calculateAxisSpace(g2, area);
-        Rectangle2D dataArea = space.shrink(area, null);
-        this.axisOffset.trim(dataArea);
-        dataArea = integerise(dataArea);
-        if (dataArea.isEmpty()) {
-            return;
-        }
-        state.setDataArea(dataArea);
-        createAndAddEntity((Rectangle2D) dataArea.clone(), state, null, null);
-        // if there is a renderer, it draws the background, otherwise use the
-        // default background...
-        if (getRenderer() != null) {
-            getRenderer().drawBackground(g2, this, dataArea);
-        } else {
-            drawBackground(g2, dataArea);
-        }
-        Map<Axis, AxisState> axisStateMap = drawAxes(g2, area, dataArea, state);
-        // the anchor point is typically the point where the mouse last
-        // clicked - the crosshairs will be driven off this point...
-        if (anchor != null && !dataArea.contains(anchor)) {
-            anchor = ShapeUtils.getPointInRectangle(anchor.getX(), anchor.getY(), dataArea);
-        }
-        CategoryCrosshairState<R, C> crosshairState = new CategoryCrosshairState<>();
-        crosshairState.setCrosshairDistance(Double.POSITIVE_INFINITY);
-        crosshairState.setAnchor(anchor);
-        // specify the anchor X and Y coordinates in Java2D space, for the
-        // cases where these are not updated during rendering (i.e. no lock
-        // on data)
-        crosshairState.setAnchorX(Double.NaN);
-        crosshairState.setAnchorY(Double.NaN);
-        if (anchor != null) {
-            ValueAxis rangeAxis = getRangeAxis();
-            if (rangeAxis != null) {
-                double y;
-                if (getOrientation() == PlotOrientation.VERTICAL) {
-                    y = rangeAxis.java2DToValue(anchor.getY(), dataArea, getRangeAxisEdge());
-                } else {
-                    y = rangeAxis.java2DToValue(anchor.getX(), dataArea, getRangeAxisEdge());
-                }
-                crosshairState.setAnchorY(y);
-            }
-        }
-        crosshairState.setRowKey(getDomainCrosshairRowKey());
-        crosshairState.setColumnKey(getDomainCrosshairColumnKey());
-        crosshairState.setCrosshairY(getRangeCrosshairValue());
-        // don't let anyone draw outside the data area
-        Shape savedClip = g2.getClip();
-        g2.clip(dataArea);
-        drawDomainGridlines(g2, dataArea);
-        AxisState rangeAxisState = axisStateMap.get(getRangeAxis());
-        if (rangeAxisState == null) {
-            if (parentState != null) {
-                rangeAxisState = parentState.getSharedAxisStates().get(getRangeAxis());
-            }
-        }
-        if (rangeAxisState != null) {
-            drawRangeGridlines(g2, dataArea, rangeAxisState.getTicks());
-            drawZeroRangeBaseline(g2, dataArea);
-        }
-        Graphics2D savedG2 = g2;
-        BufferedImage dataImage = null;
-        boolean suppressShadow = Boolean.TRUE.equals(g2.getRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION));
-        if (this.shadowGenerator != null && !suppressShadow) {
-            dataImage = new BufferedImage((int) dataArea.getWidth(), (int) dataArea.getHeight(), BufferedImage.TYPE_INT_ARGB);
-            g2 = dataImage.createGraphics();
-            g2.translate(-dataArea.getX(), -dataArea.getY());
-            g2.setRenderingHints(savedG2.getRenderingHints());
-        }
-        // draw the markers...
-        for (CategoryItemRenderer renderer : this.renderers.values()) {
-            int i = getIndexOf(renderer);
-            drawDomainMarkers(g2, dataArea, i, Layer.BACKGROUND);
-        }
-        for (CategoryItemRenderer renderer : this.renderers.values()) {
-            int i = getIndexOf(renderer);
-            drawRangeMarkers(g2, dataArea, i, Layer.BACKGROUND);
-        }
-        // now render data items...
-        boolean foundData = false;
-        // set up the alpha-transparency...
-        Composite originalComposite = g2.getComposite();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, getForegroundAlpha()));
-        DatasetRenderingOrder order = getDatasetRenderingOrder();
-        List<Integer> datasetIndices = getDatasetIndices(order);
-        for (int i : datasetIndices) {
-            foundData = render(g2, dataArea, i, state, crosshairState) || foundData;
-        }
-        // draw the foreground markers...
-        List<Integer> rendererIndices = getRendererIndices(order);
-        for (int i : rendererIndices) {
-            drawDomainMarkers(g2, dataArea, i, Layer.FOREGROUND);
-        }
-        for (int i : rendererIndices) {
-            drawRangeMarkers(g2, dataArea, i, Layer.FOREGROUND);
-        }
-        // draw the annotations (if any)...
-        drawAnnotations(g2, dataArea);
-        if (this.shadowGenerator != null && !suppressShadow) {
-            BufferedImage shadowImage = this.shadowGenerator.createDropShadow(dataImage);
-            g2 = savedG2;
-            g2.drawImage(shadowImage, (int) dataArea.getX() + this.shadowGenerator.calculateOffsetX(), (int) dataArea.getY() + this.shadowGenerator.calculateOffsetY(), null);
-            g2.drawImage(dataImage, (int) dataArea.getX(), (int) dataArea.getY(), null);
-        }
-        g2.setClip(savedClip);
-        g2.setComposite(originalComposite);
-        if (!foundData) {
-            drawNoDataMessage(g2, dataArea);
-        }
-        int datasetIndex = crosshairState.getDatasetIndex();
-        setCrosshairDatasetIndex(datasetIndex, false);
-        // draw domain crosshair if required...
-        R rowKey = crosshairState.getRowKey();
-        C columnKey = crosshairState.getColumnKey();
-        setDomainCrosshairRowKey(rowKey, false);
-        setDomainCrosshairColumnKey(columnKey, false);
-        if (isDomainCrosshairVisible() && columnKey != null) {
-            Paint paint = getDomainCrosshairPaint();
-            Stroke stroke = getDomainCrosshairStroke();
-            drawDomainCrosshair(g2, dataArea, this.orientation, datasetIndex, rowKey, columnKey, stroke, paint);
-        }
-        // draw range crosshair if required...
-        ValueAxis yAxis = getRangeAxisForDataset(datasetIndex);
-        RectangleEdge yAxisEdge = getRangeAxisEdge();
-        if (!this.rangeCrosshairLockedOnData && anchor != null) {
-            double yy;
-            if (getOrientation() == PlotOrientation.VERTICAL) {
-                yy = yAxis.java2DToValue(anchor.getY(), dataArea, yAxisEdge);
-            } else {
-                yy = yAxis.java2DToValue(anchor.getX(), dataArea, yAxisEdge);
-            }
-            crosshairState.setCrosshairY(yy);
-        }
-        setRangeCrosshairValue(crosshairState.getCrosshairY(), false);
-        if (isRangeCrosshairVisible()) {
-            double y = getRangeCrosshairValue();
-            Paint paint = getRangeCrosshairPaint();
-            Stroke stroke = getRangeCrosshairStroke();
-            drawRangeCrosshair(g2, dataArea, getOrientation(), y, yAxis, stroke, paint);
-        }
-        // draw an outline around the plot area...
-        if (isOutlineVisible()) {
-            if (getRenderer() != null) {
-                getRenderer().drawOutline(g2, this, dataArea);
-            } else {
-                drawOutline(g2, dataArea);
-            }
-        }
-    }
-
-    /**
-     * Returns the indices of the non-null datasets in the specified order.
-     *
-     * @param order  the order ({@code null} not permitted).
-     *
-     * @return The list of indices.
-     */
-    private List<Integer> getDatasetIndices(DatasetRenderingOrder order) {
-        List<Integer> result = new ArrayList<>();
-        for (Map.Entry<Integer, CategoryDataset<R, C>> entry : this.datasets.entrySet()) {
-            if (entry.getValue() != null) {
-                result.add(entry.getKey());
-            }
-        }
-        Collections.sort(result);
-        if (order == DatasetRenderingOrder.REVERSE) {
-            Collections.reverse(result);
-        }
-        return result;
-    }
-
-    /**
-     * Returns the indices of the non-null renderers for the plot, in the
-     * specified order.
-     *
-     * @param order  the rendering order {@code null} not permitted).
-     *
-     * @return A list of indices.
-     */
-    private List<Integer> getRendererIndices(DatasetRenderingOrder order) {
-        List<Integer> result = new ArrayList<>();
-        for (Map.Entry<Integer, CategoryItemRenderer> entry : this.renderers.entrySet()) {
-            if (entry.getValue() != null) {
-                result.add(entry.getKey());
-            }
-        }
-        Collections.sort(result);
-        if (order == DatasetRenderingOrder.REVERSE) {
-            Collections.reverse(result);
-        }
-        return result;
-    }
-
-    /**
-     * Draws the plot background (the background color and/or image).
-     * <P>
-     * This method will be called during the chart drawing process and is
-     * declared public so that it can be accessed by the renderers used by
-     * certain subclasses.  You shouldn't need to call this method directly.
-     *
-     * @param g2  the graphics device.
-     * @param area  the area within which the plot should be drawn.
-     */
-    @Override
-    public void drawBackground(Graphics2D g2, Rectangle2D area) {
-        fillBackground(g2, area, this.orientation);
-        drawBackgroundImage(g2, area);
-    }
-
-    /**
-     * A utility method for drawing the plot's axes.
-     *
-     * @param g2  the graphics device.
-     * @param plotArea  the plot area.
-     * @param dataArea  the data area.
-     * @param plotState  collects information about the plot ({@code null}
-     *                   permitted).
-     *
-     * @return A map containing the axis states.
-     */
-    protected Map<Axis, AxisState> drawAxes(Graphics2D g2, Rectangle2D plotArea, Rectangle2D dataArea, PlotRenderingInfo plotState) {
-        AxisCollection axisCollection = new AxisCollection();
-        // add domain axes to lists...
-        for (CategoryAxis xAxis : this.domainAxes.values()) {
-            if (xAxis != null) {
-                int index = getDomainAxisIndex(xAxis);
-                axisCollection.add(xAxis, getDomainAxisEdge(index));
-            }
-        }
-        // add range axes to lists...
-        for (ValueAxis yAxis : this.rangeAxes.values()) {
-            if (yAxis != null) {
-                int index = findRangeAxisIndex(yAxis);
-                axisCollection.add(yAxis, getRangeAxisEdge(index));
-            }
-        }
-        Map<Axis, AxisState> axisStateMap = new HashMap<>();
-        // draw the top axes
-        double cursor = dataArea.getMinY() - this.axisOffset.calculateTopOutset(dataArea.getHeight());
-        for (Axis axis : axisCollection.getAxesAtTop()) {
-            if (axis != null) {
-                AxisState axisState = axis.draw(g2, cursor, plotArea, dataArea, RectangleEdge.TOP, plotState);
-                cursor = axisState.getCursor();
-                axisStateMap.put(axis, axisState);
-            }
-        }
-        // draw the bottom axes
-        cursor = dataArea.getMaxY() + this.axisOffset.calculateBottomOutset(dataArea.getHeight());
-        for (Axis axis : axisCollection.getAxesAtBottom()) {
-            if (axis != null) {
-                AxisState axisState = axis.draw(g2, cursor, plotArea, dataArea, RectangleEdge.BOTTOM, plotState);
-                cursor = axisState.getCursor();
-                axisStateMap.put(axis, axisState);
-            }
-        }
-        // draw the left axes
-        cursor = dataArea.getMinX() - this.axisOffset.calculateLeftOutset(dataArea.getWidth());
-        for (Axis axis : axisCollection.getAxesAtLeft()) {
-            if (axis != null) {
-                AxisState axisState = axis.draw(g2, cursor, plotArea, dataArea, RectangleEdge.LEFT, plotState);
-                cursor = axisState.getCursor();
-                axisStateMap.put(axis, axisState);
-            }
-        }
-        // draw the right axes
-        cursor = dataArea.getMaxX() + this.axisOffset.calculateRightOutset(dataArea.getWidth());
-        for (Axis axis : axisCollection.getAxesAtRight()) {
-            if (axis != null) {
-                AxisState axisState = axis.draw(g2, cursor, plotArea, dataArea, RectangleEdge.RIGHT, plotState);
-                cursor = axisState.getCursor();
-                axisStateMap.put(axis, axisState);
-            }
-        }
-        return axisStateMap;
-    }
-
-    /**
-     * Draws a representation of a dataset within the dataArea region using the
-     * appropriate renderer.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the region in which the data is to be drawn.
-     * @param index  the dataset and renderer index.
-     * @param info  an optional object for collection dimension information.
-     * @param crosshairState  a state object for tracking crosshair info
-     *        ({@code null} permitted).
-     *
-     * @return A boolean that indicates whether real data was found.
-     */
-    public boolean render(Graphics2D g2, Rectangle2D dataArea, int index, PlotRenderingInfo info, CategoryCrosshairState<R, C> crosshairState) {
-        boolean foundData = false;
-        CategoryDataset<R, C> currentDataset = getDataset(index);
-        CategoryItemRenderer renderer = getRenderer(index);
-        CategoryAxis domainAxis = getDomainAxisForDataset(index);
-        ValueAxis rangeAxis = getRangeAxisForDataset(index);
-        boolean hasData = !DatasetUtils.isEmptyOrNull(currentDataset);
-        if (hasData && renderer != null) {
-            foundData = true;
-            CategoryItemRendererState state = renderer.initialise(g2, dataArea, this, index, info);
-            state.setCrosshairState(crosshairState);
-            int columnCount = currentDataset.getColumnCount();
-            int rowCount = currentDataset.getRowCount();
-            int passCount = renderer.getPassCount();
-            for (int pass = 0; pass < passCount; pass++) {
-                if (this.columnRenderingOrder == SortOrder.ASCENDING) {
-                    for (int column = 0; column < columnCount; column++) {
-                        if (this.rowRenderingOrder == SortOrder.ASCENDING) {
-                            for (int row = 0; row < rowCount; row++) {
-                                renderer.drawItem(g2, state, dataArea, this, domainAxis, rangeAxis, currentDataset, row, column, pass);
-                            }
-                        } else {
-                            for (int row = rowCount - 1; row >= 0; row--) {
-                                renderer.drawItem(g2, state, dataArea, this, domainAxis, rangeAxis, currentDataset, row, column, pass);
-                            }
-                        }
-                    }
-                } else {
-                    for (int column = columnCount - 1; column >= 0; column--) {
-                        if (this.rowRenderingOrder == SortOrder.ASCENDING) {
-                            for (int row = 0; row < rowCount; row++) {
-                                renderer.drawItem(g2, state, dataArea, this, domainAxis, rangeAxis, currentDataset, row, column, pass);
-                            }
-                        } else {
-                            for (int row = rowCount - 1; row >= 0; row--) {
-                                renderer.drawItem(g2, state, dataArea, this, domainAxis, rangeAxis, currentDataset, row, column, pass);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        return foundData;
-    }
-
-    /**
-     * Draws the domain gridlines for the plot, if they are visible.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area inside the axes.
-     *
-     * @see #drawRangeGridlines(Graphics2D, Rectangle2D, List)
-     */
-    protected void drawDomainGridlines(Graphics2D g2, Rectangle2D dataArea) {
-        if (!isDomainGridlinesVisible()) {
-            return;
-        }
-        CategoryAnchor anchor = getDomainGridlinePosition();
-        RectangleEdge domainAxisEdge = getDomainAxisEdge();
-        CategoryDataset<R, C> dataset = getDataset();
-        if (dataset == null) {
-            return;
-        }
-        CategoryAxis axis = getDomainAxis();
-        if (axis != null) {
-            int columnCount = dataset.getColumnCount();
-            for (int c = 0; c < columnCount; c++) {
-                double xx = axis.getCategoryJava2DCoordinate(anchor, c, columnCount, dataArea, domainAxisEdge);
-                CategoryItemRenderer renderer1 = getRenderer();
-                if (renderer1 != null) {
-                    renderer1.drawDomainGridline(g2, this, dataArea, xx);
-                }
-            }
-        }
-    }
-
-    /**
-     * Draws the range gridlines for the plot, if they are visible.
      *
      * @param g2  the graphics device ({@code null} not permitted).
-     * @param dataArea  the area inside the axes ({@code null} not permitted).
-     * @param ticks  the ticks.
+     * @param cursor  the cursor location (determines where to draw the axis).
+     * @param plotArea  the area within which the axes and plot should be drawn.
+     * @param dataArea  the area within which the data should be drawn.
+     * @param edge  the axis location ({@code null} not permitted).
+     * @param plotState  collects information about the plot
+     *                   ({@code null} permitted).
      *
-     * @see #drawDomainGridlines(Graphics2D, Rectangle2D)
+     * @return The axis state (never {@code null}).
      */
-    protected void drawRangeGridlines(Graphics2D g2, Rectangle2D dataArea, List<ValueTick> ticks) {
-        // draw the range grid lines, if any...
-        if (!isRangeGridlinesVisible() && !isRangeMinorGridlinesVisible()) {
-            return;
+    @Override
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, PlotRenderingInfo plotState) {
+        // if the axis is not visible, don't draw it... bug#198
+        if (!isVisible()) {
+            AxisState state = new AxisState(cursor);
+            // even though the axis is not visible, we need to refresh ticks in
+            // case the grid is being drawn...
+            List ticks = refreshTicks(g2, state, dataArea, edge);
+            state.setTicks(ticks);
+            return state;
         }
-        // no axis, no gridlines...
-        ValueAxis axis = getRangeAxis();
-        if (axis == null) {
-            return;
+        AxisState axisState = new AxisState(cursor);
+        if (isAxisLineVisible()) {
+            drawAxisLine(g2, cursor, dataArea, edge);
         }
-        // no renderer, no gridlines...
-        CategoryItemRenderer r = getRenderer();
-        if (r == null) {
-            return;
+        if (isTickMarksVisible()) {
+            drawTickMarks(g2, axisState, dataArea, edge);
         }
-        Stroke gridStroke = null;
-        Paint gridPaint = null;
-        boolean paintLine;
-        for (ValueTick tick : ticks) {
-            paintLine = false;
-            if ((tick.getTickType() == TickType.MINOR) && isRangeMinorGridlinesVisible()) {
-                gridStroke = getRangeMinorGridlineStroke();
-                gridPaint = getRangeMinorGridlinePaint();
-                paintLine = true;
-            } else if ((tick.getTickType() == TickType.MAJOR) && isRangeGridlinesVisible()) {
-                gridStroke = getRangeGridlineStroke();
-                gridPaint = getRangeGridlinePaint();
-                paintLine = true;
-            }
-            if (((tick.getValue() != 0.0) || !isRangeZeroBaselineVisible()) && paintLine) {
-                r.drawRangeLine(g2, this, axis, dataArea, tick.getValue(), gridPaint, gridStroke);
+        if (isTickLabelsVisible()) {
+            for (int band = 0; band < this.labelInfo.length; band++) {
+                axisState = drawTickLabels(band, g2, axisState, dataArea, edge);
             }
         }
+        if (getAttributedLabel() != null) {
+            axisState = drawAttributedLabel(getAttributedLabel(), g2, plotArea, dataArea, edge, axisState);
+        } else {
+            axisState = drawLabel(getLabel(), g2, plotArea, dataArea, edge, axisState);
+        }
+        return axisState;
     }
 
     /**
-     * Draws a base line across the chart at value zero on the range axis.
+     * Draws the tick marks for the axis.
      *
      * @param g2  the graphics device.
-     * @param area  the data area.
-     *
-     * @see #setRangeZeroBaselineVisible(boolean)
-     */
-    protected void drawZeroRangeBaseline(Graphics2D g2, Rectangle2D area) {
-        if (!isRangeZeroBaselineVisible()) {
-            return;
-        }
-        CategoryItemRenderer r = getRenderer();
-        r.drawRangeLine(g2, this, getRangeAxis(), area, 0.0, this.rangeZeroBaselinePaint, this.rangeZeroBaselineStroke);
-    }
-
-    /**
-     * Draws the annotations.
-     *
-     * @param g2  the graphics device.
+     * @param state  the axis state.
      * @param dataArea  the data area.
+     * @param edge  the edge.
      */
-    protected void drawAnnotations(Graphics2D g2, Rectangle2D dataArea) {
-        if (getAnnotations() != null) {
-            for (CategoryAnnotation annotation : getAnnotations()) {
-                annotation.draw(g2, this, dataArea, getDomainAxis(), getRangeAxis());
-            }
+    protected void drawTickMarks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            drawTickMarksHorizontal(g2, state, dataArea, edge);
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            drawTickMarksVertical(g2, state, dataArea, edge);
         }
     }
 
     /**
-     * Draws the domain markers (if any) for an axis and layer.  This method is
-     * typically called from within the draw() method.
+     * Draws the major and minor tick marks for an axis that lies at the top or
+     * bottom of the plot.
      *
      * @param g2  the graphics device.
+     * @param state  the axis state.
      * @param dataArea  the data area.
-     * @param index  the renderer index.
-     * @param layer  the layer (foreground or background).
-     *
-     * @see #drawRangeMarkers(Graphics2D, Rectangle2D, int, Layer)
+     * @param edge  the edge.
      */
-    protected void drawDomainMarkers(Graphics2D g2, Rectangle2D dataArea, int index, Layer layer) {
-        CategoryItemRenderer r = getRenderer(index);
-        if (r == null) {
-            return;
-        }
-        Collection<CategoryMarker> markers = getDomainMarkers(index, layer);
-        CategoryAxis axis = getDomainAxisForDataset(index);
-        if (markers != null && axis != null) {
-            for (CategoryMarker marker : markers) {
-                r.drawDomainMarker(g2, this, axis, marker, dataArea);
+    protected void drawTickMarksHorizontal(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        List ticks = new ArrayList();
+        double x0;
+        double y0 = state.getCursor();
+        double insideLength = getTickMarkInsideLength();
+        double outsideLength = getTickMarkOutsideLength();
+        RegularTimePeriod t = createInstance(this.majorTickTimePeriodClass, this.first.getStart(), getTimeZone(), this.locale);
+        long t0 = t.getFirstMillisecond();
+        Line2D inside = null;
+        Line2D outside = null;
+        long firstOnAxis = getFirst().getFirstMillisecond();
+        long lastOnAxis = getLast().getLastMillisecond() + 1;
+        while (t0 <= lastOnAxis) {
+            ticks.add(new NumberTick((double) t0, "", TextAnchor.CENTER, TextAnchor.CENTER, 0.0));
+            x0 = valueToJava2D(t0, dataArea, edge);
+            if (edge == RectangleEdge.TOP) {
+                inside = new Line2D.Double(x0, y0, x0, y0 + insideLength);
+                outside = new Line2D.Double(x0, y0, x0, y0 - outsideLength);
+            } else if (edge == RectangleEdge.BOTTOM) {
+                inside = new Line2D.Double(x0, y0, x0, y0 - insideLength);
+                outside = new Line2D.Double(x0, y0, x0, y0 + outsideLength);
             }
+            if (t0 >= firstOnAxis) {
+                g2.setPaint(getTickMarkPaint());
+                g2.setStroke(getTickMarkStroke());
+                g2.draw(inside);
+                g2.draw(outside);
+            }
+            // draw minor tick marks
+            if (this.minorTickMarksVisible) {
+                RegularTimePeriod tminor = createInstance(this.minorTickTimePeriodClass, new Date(t0), getTimeZone(), this.locale);
+                long tt0 = tminor.getFirstMillisecond();
+                while (tt0 < t.getLastMillisecond() && tt0 < lastOnAxis) {
+                    double xx0 = valueToJava2D(tt0, dataArea, edge);
+                    if (edge == RectangleEdge.TOP) {
+                        inside = new Line2D.Double(xx0, y0, xx0, y0 + this.minorTickMarkInsideLength);
+                        outside = new Line2D.Double(xx0, y0, xx0, y0 - this.minorTickMarkOutsideLength);
+                    } else if (edge == RectangleEdge.BOTTOM) {
+                        inside = new Line2D.Double(xx0, y0, xx0, y0 - this.minorTickMarkInsideLength);
+                        outside = new Line2D.Double(xx0, y0, xx0, y0 + this.minorTickMarkOutsideLength);
+                    }
+                    if (tt0 >= firstOnAxis) {
+                        g2.setPaint(this.minorTickMarkPaint);
+                        g2.setStroke(this.minorTickMarkStroke);
+                        g2.draw(inside);
+                        g2.draw(outside);
+                    }
+                    tminor = tminor.next();
+                    tminor.peg(this.calendar);
+                    tt0 = tminor.getFirstMillisecond();
+                }
+            }
+            t = t.next();
+            t.peg(this.calendar);
+            t0 = t.getFirstMillisecond();
         }
+        if (edge == RectangleEdge.TOP) {
+            state.cursorUp(Math.max(outsideLength, this.minorTickMarkOutsideLength));
+        } else if (edge == RectangleEdge.BOTTOM) {
+            state.cursorDown(Math.max(outsideLength, this.minorTickMarkOutsideLength));
+        }
+        state.setTicks(ticks);
     }
 
     /**
-     * Draws the range markers (if any) for an axis and layer.  This method is
-     * typically called from within the draw() method.
+     * Draws the tick marks for a vertical axis.
      *
      * @param g2  the graphics device.
+     * @param state  the axis state.
      * @param dataArea  the data area.
-     * @param index  the renderer index.
-     * @param layer  the layer (foreground or background).
-     *
-     * @see #drawDomainMarkers(Graphics2D, Rectangle2D, int, Layer)
+     * @param edge  the edge.
      */
-    protected void drawRangeMarkers(Graphics2D g2, Rectangle2D dataArea, int index, Layer layer) {
-        CategoryItemRenderer r = getRenderer(index);
-        if (r == null) {
-            return;
-        }
-        Collection<Marker> markers = getRangeMarkers(index, layer);
-        ValueAxis axis = getRangeAxisForDataset(index);
-        if (markers != null && axis != null) {
-            for (Marker marker : markers) {
-                r.drawRangeMarker(g2, this, axis, marker, dataArea);
-            }
-        }
+    protected void drawTickMarksVertical(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        // FIXME:  implement this...
     }
 
     /**
-     * Utility method for drawing a line perpendicular to the range axis (used
-     * for crosshairs).
+     * Draws the tick labels for one "band" of time periods.
+     *
+     * @param band  the band index (zero-based).
+     * @param g2  the graphics device.
+     * @param state  the axis state.
+     * @param dataArea  the data area.
+     * @param edge  the edge where the axis is located.
+     *
+     * @return The updated axis state.
+     */
+    protected AxisState drawTickLabels(int band, Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        // work out the initial gap
+        double delta1 = 0.0;
+        FontMetrics fm = g2.getFontMetrics(this.labelInfo[band].getLabelFont());
+        if (edge == RectangleEdge.BOTTOM) {
+            delta1 = this.labelInfo[band].getPadding().calculateTopOutset(fm.getHeight());
+        } else if (edge == RectangleEdge.TOP) {
+            delta1 = this.labelInfo[band].getPadding().calculateBottomOutset(fm.getHeight());
+        }
+        state.moveCursor(delta1, edge);
+        long axisMin = this.first.getFirstMillisecond();
+        long axisMax = this.last.getLastMillisecond();
+        g2.setFont(this.labelInfo[band].getLabelFont());
+        g2.setPaint(this.labelInfo[band].getLabelPaint());
+        // work out the number of periods to skip for labelling
+        RegularTimePeriod p1 = this.labelInfo[band].createInstance(new Date(axisMin), this.timeZone, this.locale);
+        RegularTimePeriod p2 = this.labelInfo[band].createInstance(new Date(axisMax), this.timeZone, this.locale);
+        DateFormat df = this.labelInfo[band].getDateFormat();
+        df.setTimeZone(this.timeZone);
+        String label1 = df.format(new Date(p1.getMiddleMillisecond()));
+        String label2 = df.format(new Date(p2.getMiddleMillisecond()));
+        Rectangle2D b1 = TextUtils.getTextBounds(label1, g2, g2.getFontMetrics());
+        Rectangle2D b2 = TextUtils.getTextBounds(label2, g2, g2.getFontMetrics());
+        double w = Math.max(b1.getWidth(), b2.getWidth());
+        long ww = Math.round(java2DToValue(dataArea.getX() + w + 5.0, dataArea, edge));
+        if (isInverted()) {
+            ww = axisMax - ww;
+        } else {
+            ww = ww - axisMin;
+        }
+        long length = p1.getLastMillisecond() - p1.getFirstMillisecond();
+        int periods = (int) (ww / length) + 1;
+        RegularTimePeriod p = this.labelInfo[band].createInstance(new Date(axisMin), this.timeZone, this.locale);
+        Rectangle2D b = null;
+        long lastXX = 0L;
+        float y = (float) (state.getCursor());
+        TextAnchor anchor = TextAnchor.TOP_CENTER;
+        float yDelta = (float) b1.getHeight();
+        if (edge == RectangleEdge.TOP) {
+            anchor = TextAnchor.BOTTOM_CENTER;
+            yDelta = -yDelta;
+        }
+        while (p.getFirstMillisecond() <= axisMax) {
+            float x = (float) valueToJava2D(p.getMiddleMillisecond(), dataArea, edge);
+            String label = df.format(new Date(p.getMiddleMillisecond()));
+            long first = p.getFirstMillisecond();
+            long last = p.getLastMillisecond();
+            if (last > axisMax) {
+                // this is the last period, but it is only partially visible
+                // so check that the label will fit before displaying it...
+                Rectangle2D bb = TextUtils.getTextBounds(label, g2, g2.getFontMetrics());
+                if ((x + bb.getWidth() / 2) > dataArea.getMaxX()) {
+                    float xstart = (float) valueToJava2D(Math.max(first, axisMin), dataArea, edge);
+                    if (bb.getWidth() < (dataArea.getMaxX() - xstart)) {
+                        x = ((float) dataArea.getMaxX() + xstart) / 2.0f;
+                    } else {
+                        label = null;
+                    }
+                }
+            }
+            if (first < axisMin) {
+                // this is the first period, but it is only partially visible
+                // so check that the label will fit before displaying it...
+                Rectangle2D bb = TextUtils.getTextBounds(label, g2, g2.getFontMetrics());
+                if ((x - bb.getWidth() / 2) < dataArea.getX()) {
+                    float xlast = (float) valueToJava2D(Math.min(last, axisMax), dataArea, edge);
+                    if (bb.getWidth() < (xlast - dataArea.getX())) {
+                        x = (xlast + (float) dataArea.getX()) / 2.0f;
+                    } else {
+                        label = null;
+                    }
+                }
+            }
+            if (label != null) {
+                g2.setPaint(this.labelInfo[band].getLabelPaint());
+                b = TextUtils.drawAlignedString(label, g2, x, y, anchor);
+            }
+            if (lastXX > 0L) {
+                if (this.labelInfo[band].getDrawDividers()) {
+                    long nextXX = p.getFirstMillisecond();
+                    long mid = (lastXX + nextXX) / 2;
+                    float mid2d = (float) valueToJava2D(mid, dataArea, edge);
+                    g2.setStroke(this.labelInfo[band].getDividerStroke());
+                    g2.setPaint(this.labelInfo[band].getDividerPaint());
+                    g2.draw(new Line2D.Float(mid2d, y, mid2d, y + yDelta));
+                }
+            }
+            lastXX = last;
+            for (int i = 0; i < periods; i++) {
+                p = p.next();
+            }
+            p.peg(this.calendar);
+        }
+        double used = 0.0;
+        if (b != null) {
+            used = b.getHeight();
+            // work out the trailing gap
+            if (edge == RectangleEdge.BOTTOM) {
+                used += this.labelInfo[band].getPadding().calculateBottomOutset(fm.getHeight());
+            } else if (edge == RectangleEdge.TOP) {
+                used += this.labelInfo[band].getPadding().calculateTopOutset(fm.getHeight());
+            }
+        }
+        state.moveCursor(used, edge);
+        return state;
+    }
+
+    /**
+     * Calculates the positions of the ticks for the axis, storing the results
+     * in the tick list (ready for drawing).
      *
      * @param g2  the graphics device.
-     * @param dataArea  the area defined by the axes.
+     * @param state  the axis state.
+     * @param dataArea  the area inside the axes.
+     * @param edge  the edge on which the axis is located.
+     *
+     * @return The list of ticks.
+     */
+    @Override
+    public List refreshTicks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        return Collections.EMPTY_LIST;
+    }
+
+    /**
+     * Converts a data value to a coordinate in Java2D space, assuming that the
+     * axis runs along one edge of the specified dataArea.
+     * <p>
+     * Note that it is possible for the coordinate to fall outside the area.
+     *
      * @param value  the data value.
-     * @param stroke  the line stroke ({@code null} not permitted).
-     * @param paint  the line paint ({@code null} not permitted).
+     * @param area  the area for plotting the data.
+     * @param edge  the edge along which the axis lies.
+     *
+     * @return The Java2D coordinate.
      */
-    protected void drawRangeLine(Graphics2D g2, Rectangle2D dataArea, double value, Stroke stroke, Paint paint) {
-        double java2D = getRangeAxis().valueToJava2D(value, dataArea, getRangeAxisEdge());
-        Line2D line = null;
-        if (this.orientation == PlotOrientation.HORIZONTAL) {
-            line = new Line2D.Double(java2D, dataArea.getMinY(), java2D, dataArea.getMaxY());
-        } else if (this.orientation == PlotOrientation.VERTICAL) {
-            line = new Line2D.Double(dataArea.getMinX(), java2D, dataArea.getMaxX(), java2D);
+    @Override
+    public double valueToJava2D(double value, Rectangle2D area, RectangleEdge edge) {
+        double result = Double.NaN;
+        double axisMin = this.first.getFirstMillisecond();
+        double axisMax = this.last.getLastMillisecond();
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            double minX = area.getX();
+            double maxX = area.getMaxX();
+            if (isInverted()) {
+                result = maxX + ((value - axisMin) / (axisMax - axisMin)) * (minX - maxX);
+            } else {
+                result = minX + ((value - axisMin) / (axisMax - axisMin)) * (maxX - minX);
+            }
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            double minY = area.getMinY();
+            double maxY = area.getMaxY();
+            if (isInverted()) {
+                result = minY + (((value - axisMin) / (axisMax - axisMin)) * (maxY - minY));
+            } else {
+                result = maxY - (((value - axisMin) / (axisMax - axisMin)) * (maxY - minY));
+            }
         }
-        g2.setStroke(stroke);
-        g2.setPaint(paint);
-        g2.draw(line);
+        return result;
     }
 
     /**
-     * Draws a domain crosshair.
+     * Converts a coordinate in Java2D space to the corresponding data value,
+     * assuming that the axis runs along one edge of the specified dataArea.
      *
-     * @param g2  the graphics target.
-     * @param dataArea  the data area.
-     * @param orientation  the plot orientation.
-     * @param datasetIndex  the dataset index.
-     * @param rowKey  the row key.
-     * @param columnKey  the column key.
-     * @param stroke  the stroke used to draw the crosshair line.
-     * @param paint  the paint used to draw the crosshair line.
+     * @param java2DValue  the coordinate in Java2D space.
+     * @param area  the area in which the data is plotted.
+     * @param edge  the edge along which the axis lies.
      *
-     * @see #drawRangeCrosshair(Graphics2D, Rectangle2D, PlotOrientation,
-     *     double, ValueAxis, Stroke, Paint)
+     * @return The data value.
      */
-    protected void drawDomainCrosshair(Graphics2D g2, Rectangle2D dataArea, PlotOrientation orientation, int datasetIndex, R rowKey, C columnKey, Stroke stroke, Paint paint) {
-        CategoryDataset<R, C> dataset = getDataset(datasetIndex);
-        CategoryAxis axis = getDomainAxisForDataset(datasetIndex);
-        CategoryItemRenderer renderer = getRenderer(datasetIndex);
-        Line2D line;
-        if (orientation == PlotOrientation.VERTICAL) {
-            double xx = renderer.getItemMiddle(rowKey, columnKey, dataset, axis, dataArea, RectangleEdge.BOTTOM);
-            line = new Line2D.Double(xx, dataArea.getMinY(), xx, dataArea.getMaxY());
+    @Override
+    public double java2DToValue(double java2DValue, Rectangle2D area, RectangleEdge edge) {
+        double result;
+        double min = 0.0;
+        double max = 0.0;
+        double axisMin = this.first.getFirstMillisecond();
+        double axisMax = this.last.getLastMillisecond();
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            min = area.getX();
+            max = area.getMaxX();
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            min = area.getMaxY();
+            max = area.getY();
+        }
+        if (isInverted()) {
+            result = axisMax - ((java2DValue - min) / (max - min) * (axisMax - axisMin));
         } else {
-            double yy = renderer.getItemMiddle(rowKey, columnKey, dataset, axis, dataArea, RectangleEdge.LEFT);
-            line = new Line2D.Double(dataArea.getMinX(), yy, dataArea.getMaxX(), yy);
+            result = axisMin + ((java2DValue - min) / (max - min) * (axisMax - axisMin));
         }
-        g2.setStroke(stroke);
-        g2.setPaint(paint);
-        g2.draw(line);
+        return result;
     }
 
     /**
-     * Draws a range crosshair.
-     *
-     * @param g2  the graphics target.
-     * @param dataArea  the data area.
-     * @param orientation  the plot orientation.
-     * @param value  the crosshair value.
-     * @param axis  the axis against which the value is measured.
-     * @param stroke  the stroke used to draw the crosshair line.
-     * @param paint  the paint used to draw the crosshair line.
-     *
-     * @see #drawDomainCrosshair(Graphics2D, Rectangle2D, PlotOrientation, int,
-     *      Comparable, Comparable, Stroke, Paint)
+     * Rescales the axis to ensure that all data is visible.
      */
-    protected void drawRangeCrosshair(Graphics2D g2, Rectangle2D dataArea, PlotOrientation orientation, double value, ValueAxis axis, Stroke stroke, Paint paint) {
-        if (!axis.getRange().contains(value)) {
+    @Override
+    protected void autoAdjustRange() {
+        Plot plot = getPlot();
+        if (plot == null) {
+            // no plot, no data
             return;
         }
-        Line2D line;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            double xx = axis.valueToJava2D(value, dataArea, RectangleEdge.BOTTOM);
-            line = new Line2D.Double(xx, dataArea.getMinY(), xx, dataArea.getMaxY());
-        } else {
-            double yy = axis.valueToJava2D(value, dataArea, RectangleEdge.LEFT);
-            line = new Line2D.Double(dataArea.getMinX(), yy, dataArea.getMaxX(), yy);
-        }
-        g2.setStroke(stroke);
-        g2.setPaint(paint);
-        g2.draw(line);
-    }
-
-    /**
-     * Returns the range of data values that will be plotted against the range
-     * axis.  If the dataset is {@code null}, this method returns
-     * {@code null}.
-     *
-     * @param axis  the axis.
-     *
-     * @return The data range.
-     */
-    @Override
-    public Range getDataRange(ValueAxis axis) {
-        Range result = null;
-        List<CategoryDataset<R, C>> mappedDatasets = new ArrayList<>();
-        int rangeIndex = findRangeAxisIndex(axis);
-        if (rangeIndex >= 0) {
-            mappedDatasets.addAll(datasetsMappedToRangeAxis(rangeIndex));
-        } else if (axis == getRangeAxis()) {
-            mappedDatasets.addAll(datasetsMappedToRangeAxis(0));
-        }
-        // iterate through the datasets that map to the axis and get the union
-        // of the ranges.
-        for (CategoryDataset<R, C> d : mappedDatasets) {
-            CategoryItemRenderer r = getRendererForDataset(d);
-            if (r != null) {
-                result = Range.combine(result, r.findRangeBounds(d));
+        if (plot instanceof ValueAxisPlot) {
+            ValueAxisPlot vap = (ValueAxisPlot) plot;
+            Range r = vap.getDataRange(this);
+            if (r == null) {
+                r = getDefaultAutoRange();
             }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a list of the datasets that are mapped to the axis with the
-     * specified index.
-     *
-     * @param axisIndex  the axis index.
-     *
-     * @return The list (possibly empty, but never {@code null}).
-     */
-    private List<CategoryDataset<R, C>> datasetsMappedToDomainAxis(int axisIndex) {
-        List<CategoryDataset<R, C>> result = new ArrayList<>();
-        for (Entry<Integer, CategoryDataset<R, C>> entry : this.datasets.entrySet()) {
-            CategoryDataset<R, C> dataset = entry.getValue();
-            if (dataset == null) {
-                continue;
-            }
-            Integer datasetIndex = entry.getKey();
-            List<Integer> mappedAxes = this.datasetToDomainAxesMap.get(datasetIndex);
-            if (mappedAxes == null) {
-                if (axisIndex == 0) {
-                    result.add(dataset);
-                }
-            } else {
-                if (mappedAxes.contains(axisIndex)) {
-                    result.add(dataset);
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * A utility method that returns a list of datasets that are mapped to a
-     * given range axis.
-     *
-     * @param axisIndex  the axis index.
-     *
-     * @return The list (possibly empty, but never {@code null}).
-     */
-    private List<CategoryDataset<R, C>> datasetsMappedToRangeAxis(int axisIndex) {
-        List<CategoryDataset<R, C>> result = new ArrayList<>();
-        for (Entry<Integer, CategoryDataset<R, C>> entry : this.datasets.entrySet()) {
-            Integer datasetIndex = entry.getKey();
-            CategoryDataset<R, C> dataset = entry.getValue();
-            List<Integer> mappedAxes = this.datasetToRangeAxesMap.get(datasetIndex);
-            if (mappedAxes == null) {
-                if (axisIndex == 0) {
-                    result.add(dataset);
-                }
-            } else {
-                if (mappedAxes.contains(axisIndex)) {
-                    result.add(dataset);
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the weight for this plot when it is used as a subplot within a
-     * combined plot.
-     *
-     * @return The weight.
-     *
-     * @see #setWeight(int)
-     */
-    public int getWeight() {
-        return this.weight;
-    }
-
-    /**
-     * Sets the weight for the plot and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param weight  the weight.
-     *
-     * @see #getWeight()
-     */
-    public void setWeight(int weight) {
-        this.weight = weight;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the fixed domain axis space.
-     *
-     * @return The fixed domain axis space (possibly {@code null}).
-     *
-     * @see #setFixedDomainAxisSpace(AxisSpace)
-     */
-    public AxisSpace getFixedDomainAxisSpace() {
-        return this.fixedDomainAxisSpace;
-    }
-
-    /**
-     * Sets the fixed domain axis space and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param space  the space ({@code null} permitted).
-     *
-     * @see #getFixedDomainAxisSpace()
-     */
-    public void setFixedDomainAxisSpace(AxisSpace space) {
-        setFixedDomainAxisSpace(space, true);
-    }
-
-    /**
-     * Sets the fixed domain axis space and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param space  the space ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getFixedDomainAxisSpace()
-     */
-    public void setFixedDomainAxisSpace(AxisSpace space, boolean notify) {
-        this.fixedDomainAxisSpace = space;
-        if (notify) {
-            fireChangeEvent();
+            long upper = Math.round(r.getUpperBound());
+            long lower = Math.round(r.getLowerBound());
+            this.first = createInstance(this.autoRangeTimePeriodClass, new Date(lower), this.timeZone, this.locale);
+            this.last = createInstance(this.autoRangeTimePeriodClass, new Date(upper), this.timeZone, this.locale);
+            setRange(r, false, false);
         }
     }
 
     /**
-     * Returns the fixed range axis space.
+     * Tests the axis for equality with an arbitrary object.
      *
-     * @return The fixed range axis space (possibly {@code null}).
-     *
-     * @see #setFixedRangeAxisSpace(AxisSpace)
-     */
-    public AxisSpace getFixedRangeAxisSpace() {
-        return this.fixedRangeAxisSpace;
-    }
-
-    /**
-     * Sets the fixed range axis space and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param space  the space ({@code null} permitted).
-     *
-     * @see #getFixedRangeAxisSpace()
-     */
-    public void setFixedRangeAxisSpace(AxisSpace space) {
-        setFixedRangeAxisSpace(space, true);
-    }
-
-    /**
-     * Sets the fixed range axis space and sends a {@link PlotChangeEvent} to
-     * all registered listeners.
-     *
-     * @param space  the space ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getFixedRangeAxisSpace()
-     */
-    public void setFixedRangeAxisSpace(AxisSpace space, boolean notify) {
-        this.fixedRangeAxisSpace = space;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns a list of the categories in the plot's primary dataset.
-     *
-     * @return A list of the categories in the plot's primary dataset.
-     *
-     * @see #getCategoriesForAxis(CategoryAxis)
-     */
-    public List<C> getCategories() {
-        List<C> result = null;
-        if (getDataset() != null) {
-            result = Collections.unmodifiableList(getDataset().getColumnKeys());
-        }
-        return result;
-    }
-
-    /**
-     * Returns a list of the categories that should be displayed for the
-     * specified axis.
-     *
-     * @param axis  the axis ({@code null} not permitted)
-     *
-     * @return The categories.
-     */
-    public List<C> getCategoriesForAxis(CategoryAxis axis) {
-        List<C> result = new ArrayList<>();
-        int axisIndex = getDomainAxisIndex(axis);
-        for (CategoryDataset<R, C> dataset : datasetsMappedToDomainAxis(axisIndex)) {
-            // add the unique categories from this dataset
-            for (int i = 0; i < dataset.getColumnCount(); i++) {
-                C category = dataset.getColumnKey(i);
-                if (!result.contains(category)) {
-                    result.add(category);
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the flag that controls whether the shared domain axis is
-     * drawn for each subplot.
-     *
-     * @return A boolean.
-     *
-     * @see #setDrawSharedDomainAxis(boolean)
-     */
-    public boolean getDrawSharedDomainAxis() {
-        return this.drawSharedDomainAxis;
-    }
-
-    /**
-     * Sets the flag that controls whether the shared domain axis is drawn when
-     * this plot is being used as a subplot.
-     *
-     * @param draw  a boolean.
-     *
-     * @see #getDrawSharedDomainAxis()
-     */
-    public void setDrawSharedDomainAxis(boolean draw) {
-        this.drawSharedDomainAxis = draw;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns {@code false} always, because the plot cannot be panned
-     * along the domain axis/axes.
-     *
-     * @return A boolean.
-     *
-     * @see #isRangePannable()
-     */
-    @Override
-    public boolean isDomainPannable() {
-        return false;
-    }
-
-    /**
-     * Returns {@code true} if panning is enabled for the range axes,
-     * and {@code false} otherwise.
-     *
-     * @return A boolean.
-     *
-     * @see #setRangePannable(boolean)
-     * @see #isDomainPannable()
-     */
-    @Override
-    public boolean isRangePannable() {
-        return this.rangePannable;
-    }
-
-    /**
-     * Sets the flag that enables or disables panning of the plot along
-     * the range axes.
-     *
-     * @param pannable  the new flag value.
-     *
-     * @see #isRangePannable()
-     */
-    public void setRangePannable(boolean pannable) {
-        this.rangePannable = pannable;
-    }
-
-    /**
-     * Pans the domain axes by the specified percentage.
-     *
-     * @param percent  the distance to pan (as a percentage of the axis length).
-     * @param info the plot info
-     * @param source the source point where the pan action started.
-     */
-    @Override
-    public void panDomainAxes(double percent, PlotRenderingInfo info, Point2D source) {
-        // do nothing, because the plot is not pannable along the domain axes
-    }
-
-    /**
-     * Pans the range axes by the specified percentage.
-     *
-     * @param percent  the distance to pan (as a percentage of the axis length).
-     * @param info the plot info
-     * @param source the source point where the pan action started.
-     */
-    @Override
-    public void panRangeAxes(double percent, PlotRenderingInfo info, Point2D source) {
-        if (!isRangePannable()) {
-            return;
-        }
-        for (ValueAxis axis : this.rangeAxes.values()) {
-            if (axis == null) {
-                continue;
-            }
-            double length = axis.getRange().getLength();
-            double adj = percent * length;
-            if (axis.isInverted()) {
-                adj = -adj;
-            }
-            axis.setRange(axis.getLowerBound() + adj, axis.getUpperBound() + adj);
-        }
-    }
-
-    /**
-     * Returns {@code false} to indicate that the domain axes are not
-     * zoomable.
-     *
-     * @return A boolean.
-     *
-     * @see #isRangeZoomable()
-     */
-    @Override
-    public boolean isDomainZoomable() {
-        return false;
-    }
-
-    /**
-     * Returns {@code true} to indicate that the range axes are zoomable.
-     *
-     * @return A boolean.
-     *
-     * @see #isDomainZoomable()
-     */
-    @Override
-    public boolean isRangeZoomable() {
-        return true;
-    }
-
-    /**
-     * This method does nothing, because {@code CategoryPlot} doesn't
-     * support zooming on the domain.
-     *
-     * @param factor  the zoom factor.
-     * @param state  the plot state.
-     * @param source  the source point (in Java2D space) for the zoom.
-     */
-    @Override
-    public void zoomDomainAxes(double factor, PlotRenderingInfo state, Point2D source) {
-        // can't zoom domain axis
-    }
-
-    /**
-     * This method does nothing, because {@code CategoryPlot} doesn't
-     * support zooming on the domain.
-     *
-     * @param lowerPercent  the lower bound.
-     * @param upperPercent  the upper bound.
-     * @param state  the plot state.
-     * @param source  the source point (in Java2D space) for the zoom.
-     */
-    @Override
-    public void zoomDomainAxes(double lowerPercent, double upperPercent, PlotRenderingInfo state, Point2D source) {
-        // can't zoom domain axis
-    }
-
-    /**
-     * This method does nothing, because {@code CategoryPlot} doesn't
-     * support zooming on the domain.
-     *
-     * @param factor  the zoom factor.
-     * @param info  the plot rendering info.
-     * @param source  the source point (in Java2D space).
-     * @param useAnchor  use source point as zoom anchor?
-     *
-     * @see #zoomRangeAxes(double, PlotRenderingInfo, Point2D, boolean)
-     */
-    @Override
-    public void zoomDomainAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
-        // can't zoom domain axis
-    }
-
-    /**
-     * Multiplies the range on the range axis/axes by the specified factor.
-     *
-     * @param factor  the zoom factor.
-     * @param state  the plot state.
-     * @param source  the source point (in Java2D space) for the zoom.
-     */
-    @Override
-    public void zoomRangeAxes(double factor, PlotRenderingInfo state, Point2D source) {
-        // delegate to other method
-        zoomRangeAxes(factor, state, source, false);
-    }
-
-    /**
-     * Multiplies the range on the range axis/axes by the specified factor.
-     *
-     * @param factor  the zoom factor.
-     * @param info  the plot rendering info.
-     * @param source  the source point.
-     * @param useAnchor  a flag that controls whether the source point
-     *         is used for the zoom anchor.
-     *
-     * @see #zoomDomainAxes(double, PlotRenderingInfo, Point2D, boolean)
-     */
-    @Override
-    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
-        // perform the zoom on each range axis
-        for (ValueAxis rangeAxis : this.rangeAxes.values()) {
-            if (rangeAxis == null) {
-                continue;
-            }
-            if (useAnchor) {
-                // get the relevant source coordinate given the plot orientation
-                double sourceY = source.getY();
-                if (this.orientation.isHorizontal()) {
-                    sourceY = source.getX();
-                }
-                double anchorY = rangeAxis.java2DToValue(sourceY, info.getDataArea(), getRangeAxisEdge());
-                rangeAxis.resizeRange2(factor, anchorY);
-            } else {
-                rangeAxis.resizeRange(factor);
-            }
-        }
-    }
-
-    /**
-     * Zooms in on the range axes.
-     *
-     * @param lowerPercent  the lower bound.
-     * @param upperPercent  the upper bound.
-     * @param state  the plot state.
-     * @param source  the source point (in Java2D space) for the zoom.
-     */
-    @Override
-    public void zoomRangeAxes(double lowerPercent, double upperPercent, PlotRenderingInfo state, Point2D source) {
-        for (ValueAxis yAxis : this.rangeAxes.values()) {
-            if (yAxis != null) {
-                yAxis.zoomRange(lowerPercent, upperPercent);
-            }
-        }
-    }
-
-    /**
-     * Returns the anchor value.
-     *
-     * @return The anchor value.
-     *
-     * @see #setAnchorValue(double)
-     */
-    public double getAnchorValue() {
-        return this.anchorValue;
-    }
-
-    /**
-     * Sets the anchor value and sends a {@link PlotChangeEvent} to all
-     * registered listeners.
-     *
-     * @param value  the anchor value.
-     *
-     * @see #getAnchorValue()
-     */
-    public void setAnchorValue(double value) {
-        setAnchorValue(value, true);
-    }
-
-    /**
-     * Sets the anchor value and, if requested, sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     *
-     * @param value  the value.
-     * @param notify  notify listeners?
-     *
-     * @see #getAnchorValue()
-     */
-    public void setAnchorValue(double value, boolean notify) {
-        this.anchorValue = value;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Tests the plot for equality with an arbitrary object.
-     *
-     * @param obj  the object to test against ({@code null} permitted).
+     * @param obj  the object ({@code null} permitted).
      *
      * @return A boolean.
      */
@@ -9373,280 +6040,98 @@ class CategoryPlot<R extends Comparable<R>, C extends Comparable<C>> extends Plo
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof CategoryPlot)) {
+        if (!(obj instanceof PeriodAxis)) {
             return false;
         }
-        @SuppressWarnings("unchecked")
-        CategoryPlot<R, C> that = (CategoryPlot) obj;
-        if (this.orientation != that.orientation) {
+        PeriodAxis that = (PeriodAxis) obj;
+        if (!this.first.equals(that.first)) {
             return false;
         }
-        if (!Objects.equals(this.axisOffset, that.axisOffset)) {
+        if (!this.last.equals(that.last)) {
             return false;
         }
-        if (!Objects.equals(this.domainAxes, that.domainAxes)) {
+        if (!this.timeZone.equals(that.timeZone)) {
             return false;
         }
-        if (!Objects.equals(this.domainAxisLocations, that.domainAxisLocations)) {
+        if (!this.locale.equals(that.locale)) {
             return false;
         }
-        if (this.drawSharedDomainAxis != that.drawSharedDomainAxis) {
+        if (!this.autoRangeTimePeriodClass.equals(that.autoRangeTimePeriodClass)) {
             return false;
         }
-        if (!Objects.equals(this.rangeAxes, that.rangeAxes)) {
+        if (!(isMinorTickMarksVisible() == that.isMinorTickMarksVisible())) {
             return false;
         }
-        if (!Objects.equals(this.rangeAxisLocations, that.rangeAxisLocations)) {
+        if (!this.majorTickTimePeriodClass.equals(that.majorTickTimePeriodClass)) {
             return false;
         }
-        if (!Objects.equals(this.datasetToDomainAxesMap, that.datasetToDomainAxesMap)) {
+        if (!this.minorTickTimePeriodClass.equals(that.minorTickTimePeriodClass)) {
             return false;
         }
-        if (!Objects.equals(this.datasetToRangeAxesMap, that.datasetToRangeAxesMap)) {
+        if (!this.minorTickMarkPaint.equals(that.minorTickMarkPaint)) {
             return false;
         }
-        if (!Objects.equals(this.renderers, that.renderers)) {
+        if (!this.minorTickMarkStroke.equals(that.minorTickMarkStroke)) {
             return false;
         }
-        if (!Objects.equals(this.renderingOrder, that.renderingOrder)) {
-            return false;
-        }
-        if (this.columnRenderingOrder != that.columnRenderingOrder) {
-            return false;
-        }
-        if (!Objects.equals(this.rowRenderingOrder, that.rowRenderingOrder)) {
-            return false;
-        }
-        if (this.domainGridlinesVisible != that.domainGridlinesVisible) {
-            return false;
-        }
-        if (this.rangePannable != that.rangePannable) {
-            return false;
-        }
-        if (this.domainGridlinePosition != that.domainGridlinePosition) {
-            return false;
-        }
-        if (!Objects.equals(this.domainGridlineStroke, that.domainGridlineStroke)) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.domainGridlinePaint, that.domainGridlinePaint)) {
-            return false;
-        }
-        if (this.rangeGridlinesVisible != that.rangeGridlinesVisible) {
-            return false;
-        }
-        if (!Objects.equals(this.rangeGridlineStroke, that.rangeGridlineStroke)) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.rangeGridlinePaint, that.rangeGridlinePaint)) {
-            return false;
-        }
-        if (this.anchorValue != that.anchorValue) {
-            return false;
-        }
-        if (this.rangeCrosshairVisible != that.rangeCrosshairVisible) {
-            return false;
-        }
-        if (this.rangeCrosshairValue != that.rangeCrosshairValue) {
-            return false;
-        }
-        if (!Objects.equals(this.rangeCrosshairStroke, that.rangeCrosshairStroke)) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.rangeCrosshairPaint, that.rangeCrosshairPaint)) {
-            return false;
-        }
-        if (this.rangeCrosshairLockedOnData != that.rangeCrosshairLockedOnData) {
-            return false;
-        }
-        if (!Objects.equals(this.foregroundDomainMarkers, that.foregroundDomainMarkers)) {
-            return false;
-        }
-        if (!Objects.equals(this.datasets, that.datasets)) {
-            return false;
-        }
-        if (!Objects.equals(this.backgroundDomainMarkers, that.backgroundDomainMarkers)) {
-            return false;
-        }
-        if (!Objects.equals(this.foregroundRangeMarkers, that.foregroundRangeMarkers)) {
-            return false;
-        }
-        if (!Objects.equals(this.backgroundRangeMarkers, that.backgroundRangeMarkers)) {
-            return false;
-        }
-        if (!Objects.equals(this.annotations, that.annotations)) {
-            return false;
-        }
-        if (this.weight != that.weight) {
-            return false;
-        }
-        if (!Objects.equals(this.fixedDomainAxisSpace, that.fixedDomainAxisSpace)) {
-            return false;
-        }
-        if (!Objects.equals(this.fixedRangeAxisSpace, that.fixedRangeAxisSpace)) {
-            return false;
-        }
-        if (!Objects.equals(this.fixedLegendItems, that.fixedLegendItems)) {
-            return false;
-        }
-        if (this.domainCrosshairVisible != that.domainCrosshairVisible) {
-            return false;
-        }
-        if (this.crosshairDatasetIndex != that.crosshairDatasetIndex) {
-            return false;
-        }
-        if (!Objects.equals(this.domainCrosshairColumnKey, that.domainCrosshairColumnKey)) {
-            return false;
-        }
-        if (!Objects.equals(this.domainCrosshairRowKey, that.domainCrosshairRowKey)) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.domainCrosshairPaint, that.domainCrosshairPaint)) {
-            return false;
-        }
-        if (!Objects.equals(this.domainCrosshairStroke, that.domainCrosshairStroke)) {
-            return false;
-        }
-        if (this.rangeMinorGridlinesVisible != that.rangeMinorGridlinesVisible) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.rangeMinorGridlinePaint, that.rangeMinorGridlinePaint)) {
-            return false;
-        }
-        if (!Objects.equals(this.rangeMinorGridlineStroke, that.rangeMinorGridlineStroke)) {
-            return false;
-        }
-        if (this.rangeZeroBaselineVisible != that.rangeZeroBaselineVisible) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.rangeZeroBaselinePaint, that.rangeZeroBaselinePaint)) {
-            return false;
-        }
-        if (!Objects.equals(this.rangeZeroBaselineStroke, that.rangeZeroBaselineStroke)) {
-            return false;
-        }
-        if (!Objects.equals(this.shadowGenerator, that.shadowGenerator)) {
+        if (!Arrays.equals(this.labelInfo, that.labelInfo)) {
             return false;
         }
         return super.equals(obj);
     }
 
+    /**
+     * Returns a hash code for this object.
+     *
+     * @return A hash code.
+     */
     @Override
     public int hashCode() {
-        int hash = super.hashCode();
-        hash = 71 * hash + Objects.hashCode(this.orientation);
-        hash = 71 * hash + Objects.hashCode(this.axisOffset);
-        hash = 71 * hash + Objects.hashCode(this.domainAxes);
-        hash = 71 * hash + Objects.hashCode(this.domainAxisLocations);
-        hash = 71 * hash + (this.drawSharedDomainAxis ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.rangeAxes);
-        hash = 71 * hash + Objects.hashCode(this.rangeAxisLocations);
-        hash = 71 * hash + Objects.hashCode(this.datasets);
-        hash = 71 * hash + Objects.hashCode(this.datasetToDomainAxesMap);
-        hash = 71 * hash + Objects.hashCode(this.datasetToRangeAxesMap);
-        hash = 71 * hash + Objects.hashCode(this.renderers);
-        hash = 71 * hash + Objects.hashCode(this.renderingOrder);
-        hash = 71 * hash + Objects.hashCode(this.columnRenderingOrder);
-        hash = 71 * hash + Objects.hashCode(this.rowRenderingOrder);
-        hash = 71 * hash + (this.domainGridlinesVisible ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.domainGridlinePosition);
-        hash = 71 * hash + Objects.hashCode(this.domainGridlineStroke);
-        hash = 71 * hash + Objects.hashCode(this.domainGridlinePaint);
-        hash = 71 * hash + (this.rangeZeroBaselineVisible ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.rangeZeroBaselineStroke);
-        hash = 71 * hash + Objects.hashCode(this.rangeZeroBaselinePaint);
-        hash = 71 * hash + (this.rangeGridlinesVisible ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.rangeGridlineStroke);
-        hash = 71 * hash + Objects.hashCode(this.rangeGridlinePaint);
-        hash = 71 * hash + (this.rangeMinorGridlinesVisible ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.rangeMinorGridlineStroke);
-        hash = 71 * hash + Objects.hashCode(this.rangeMinorGridlinePaint);
-        hash = 71 * hash + Long.hashCode(Double.doubleToLongBits(this.anchorValue));
-        hash = 71 * hash + this.crosshairDatasetIndex;
-        hash = 71 * hash + (this.domainCrosshairVisible ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.domainCrosshairRowKey);
-        hash = 71 * hash + Objects.hashCode(this.domainCrosshairColumnKey);
-        hash = 71 * hash + Objects.hashCode(this.domainCrosshairStroke);
-        hash = 71 * hash + Objects.hashCode(this.domainCrosshairPaint);
-        hash = 71 * hash + (this.rangeCrosshairVisible ? 1 : 0);
-        hash = 71 * hash + Long.hashCode(Double.doubleToLongBits(this.rangeCrosshairValue));
-        hash = 71 * hash + Objects.hashCode(this.rangeCrosshairStroke);
-        hash = 71 * hash + Objects.hashCode(this.rangeCrosshairPaint);
-        hash = 71 * hash + (this.rangeCrosshairLockedOnData ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.foregroundDomainMarkers);
-        hash = 71 * hash + Objects.hashCode(this.backgroundDomainMarkers);
-        hash = 71 * hash + Objects.hashCode(this.foregroundRangeMarkers);
-        hash = 71 * hash + Objects.hashCode(this.backgroundRangeMarkers);
-        hash = 71 * hash + Objects.hashCode(this.annotations);
-        hash = 71 * hash + this.weight;
-        hash = 71 * hash + Objects.hashCode(this.fixedDomainAxisSpace);
-        hash = 71 * hash + Objects.hashCode(this.fixedRangeAxisSpace);
-        hash = 71 * hash + Objects.hashCode(this.fixedLegendItems);
-        hash = 71 * hash + (this.rangePannable ? 1 : 0);
-        hash = 71 * hash + Objects.hashCode(this.shadowGenerator);
-        return hash;
+        return super.hashCode();
     }
 
     /**
-     * Returns a clone of the plot.
+     * Returns a clone of the axis.
      *
      * @return A clone.
      *
-     * @throws CloneNotSupportedException  if the cloning is not supported.
+     * @throws CloneNotSupportedException  this class is cloneable, but
+     *         subclasses may not be.
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        @SuppressWarnings("unchecked")
-        CategoryPlot<R, C> clone = (CategoryPlot) super.clone();
-        clone.domainAxes = CloneUtils.cloneMapValues(this.domainAxes);
-        for (CategoryAxis axis : clone.domainAxes.values()) {
-            if (axis != null) {
-                axis.setPlot(clone);
-                axis.addChangeListener(clone);
-            }
-        }
-        clone.rangeAxes = CloneUtils.cloneMapValues(this.rangeAxes);
-        for (ValueAxis axis : clone.rangeAxes.values()) {
-            if (axis != null) {
-                axis.setPlot(clone);
-                axis.addChangeListener(clone);
-            }
-        }
-        // AxisLocation is immutable, so we can just copy the maps
-        clone.domainAxisLocations = new HashMap<>(this.domainAxisLocations);
-        clone.rangeAxisLocations = new HashMap<>(this.rangeAxisLocations);
-        clone.datasets = new HashMap<>(this.datasets);
-        for (CategoryDataset<R, C> dataset : clone.datasets.values()) {
-            if (dataset != null) {
-                dataset.addChangeListener(clone);
-            }
-        }
-        clone.datasetToDomainAxesMap = new TreeMap<>();
-        clone.datasetToDomainAxesMap.putAll(this.datasetToDomainAxesMap);
-        clone.datasetToRangeAxesMap = new TreeMap<>();
-        clone.datasetToRangeAxesMap.putAll(this.datasetToRangeAxesMap);
-        clone.renderers = CloneUtils.cloneMapValues(this.renderers);
-        for (CategoryItemRenderer renderer : clone.renderers.values()) {
-            if (renderer != null) {
-                renderer.setPlot(clone);
-                renderer.addChangeListener(clone);
-            }
-        }
-        if (this.fixedDomainAxisSpace != null) {
-            clone.fixedDomainAxisSpace = CloneUtils.clone(this.fixedDomainAxisSpace);
-        }
-        if (this.fixedRangeAxisSpace != null) {
-            clone.fixedRangeAxisSpace = CloneUtils.clone(this.fixedRangeAxisSpace);
-        }
-        clone.annotations = CloneUtils.cloneList(this.annotations);
-        clone.foregroundDomainMarkers = CloneUtils.cloneMapValues(this.foregroundDomainMarkers);
-        clone.backgroundDomainMarkers = CloneUtils.cloneMapValues(this.backgroundDomainMarkers);
-        clone.foregroundRangeMarkers = CloneUtils.cloneMapValues(this.foregroundRangeMarkers);
-        clone.backgroundRangeMarkers = CloneUtils.cloneMapValues(this.backgroundRangeMarkers);
-        if (this.fixedLegendItems != null) {
-            clone.fixedLegendItems = CloneUtils.clone(this.fixedLegendItems);
-        }
+        PeriodAxis clone = (PeriodAxis) super.clone();
+        clone.timeZone = (TimeZone) this.timeZone.clone();
+        clone.labelInfo = (PeriodAxisLabelInfo[]) this.labelInfo.clone();
         return clone;
+    }
+
+    /**
+     * A utility method used to create a particular subclass of the
+     * {@link RegularTimePeriod} class that includes the specified millisecond,
+     * assuming the specified time zone.
+     *
+     * @param periodClass  the class.
+     * @param millisecond  the time.
+     * @param zone  the time zone.
+     * @param locale  the locale.
+     *
+     * @return The time period.
+     */
+    private RegularTimePeriod createInstance(Class periodClass, Date millisecond, TimeZone zone, Locale locale) {
+        RegularTimePeriod result = null;
+        try {
+            Constructor c = periodClass.getDeclaredConstructor(new Class[] { Date.class, TimeZone.class, Locale.class });
+            result = (RegularTimePeriod) c.newInstance(new Object[] { millisecond, zone, locale });
+        } catch (Exception e) {
+            try {
+                Constructor c = periodClass.getDeclaredConstructor(new Class[] { Date.class });
+                result = (RegularTimePeriod) c.newInstance(new Object[] { millisecond });
+            } catch (Exception e2) {
+                // do nothing
+            }
+        }
+        return result;
     }
 
     /**
@@ -9658,18 +6143,8 @@ class CategoryPlot<R extends Comparable<R>, C extends Comparable<C>> extends Plo
      */
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
-        SerialUtils.writeStroke(this.domainGridlineStroke, stream);
-        SerialUtils.writePaint(this.domainGridlinePaint, stream);
-        SerialUtils.writeStroke(this.rangeGridlineStroke, stream);
-        SerialUtils.writePaint(this.rangeGridlinePaint, stream);
-        SerialUtils.writeStroke(this.rangeCrosshairStroke, stream);
-        SerialUtils.writePaint(this.rangeCrosshairPaint, stream);
-        SerialUtils.writeStroke(this.domainCrosshairStroke, stream);
-        SerialUtils.writePaint(this.domainCrosshairPaint, stream);
-        SerialUtils.writeStroke(this.rangeMinorGridlineStroke, stream);
-        SerialUtils.writePaint(this.rangeMinorGridlinePaint, stream);
-        SerialUtils.writeStroke(this.rangeZeroBaselineStroke, stream);
-        SerialUtils.writePaint(this.rangeZeroBaselinePaint, stream);
+        SerialUtils.writeStroke(this.minorTickMarkStroke, stream);
+        SerialUtils.writePaint(this.minorTickMarkPaint, stream);
     }
 
     /**
@@ -9682,39 +6157,2866 @@ class CategoryPlot<R extends Comparable<R>, C extends Comparable<C>> extends Plo
      */
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
-        this.domainGridlineStroke = SerialUtils.readStroke(stream);
-        this.domainGridlinePaint = SerialUtils.readPaint(stream);
-        this.rangeGridlineStroke = SerialUtils.readStroke(stream);
-        this.rangeGridlinePaint = SerialUtils.readPaint(stream);
-        this.rangeCrosshairStroke = SerialUtils.readStroke(stream);
-        this.rangeCrosshairPaint = SerialUtils.readPaint(stream);
-        this.domainCrosshairStroke = SerialUtils.readStroke(stream);
-        this.domainCrosshairPaint = SerialUtils.readPaint(stream);
-        this.rangeMinorGridlineStroke = SerialUtils.readStroke(stream);
-        this.rangeMinorGridlinePaint = SerialUtils.readPaint(stream);
-        this.rangeZeroBaselineStroke = SerialUtils.readStroke(stream);
-        this.rangeZeroBaselinePaint = SerialUtils.readPaint(stream);
-        for (CategoryAxis xAxis : this.domainAxes.values()) {
-            if (xAxis != null) {
-                xAxis.setPlot(this);
-                xAxis.addChangeListener(this);
+        this.minorTickMarkStroke = SerialUtils.readStroke(stream);
+        this.minorTickMarkPaint = SerialUtils.readPaint(stream);
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ---------------
+ * ChartPanel.java
+ * ---------------
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Andrzej Porebski;
+ *                   Soren Caspersen;
+ *                   Jonathan Nash;
+ *                   Hans-Jurgen Greiner;
+ *                   Andreas Schneider;
+ *                   Daniel van Enckevort;
+ *                   David M O'Donnell;
+ *                   Arnaud Lelievre;
+ *                   Matthias Rose;
+ *                   Onno vd Akker;
+ *                   Sergei Ivanov;
+ *                   Ulrich Voigt - patch 2686040;
+ *                   Alessandro Borges - patch 1460845;
+ *                   Martin Hoeller;
+ *                   Simon Legner - patch from bug 1129;
+ */
+/**
+ * A Swing GUI component for displaying a {@link JFreeChart} object.
+ * <P>
+ * The panel registers with the chart to receive notification of changes to any
+ * component of the chart.  The chart is redrawn automatically whenever this
+ * notification is received.
+ */
+@SuppressWarnings("unused")
+public class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressListener, ActionListener, MouseListener, MouseMotionListener, OverlayChangeListener, Printable, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = 6046366297214274674L;
+
+    /**
+     * Default setting for buffer usage.  The default has been changed to
+     * {@code true} from version 1.0.13 onwards, because of a severe
+     * performance problem with drawing the zoom rectangle using XOR (which
+     * now happens only when the buffer is NOT used).
+     */
+    public static final boolean DEFAULT_BUFFER_USED = true;
+
+    /**
+     * The default panel width.
+     */
+    public static final int DEFAULT_WIDTH = 1024;
+
+    /**
+     * The default panel height.
+     */
+    public static final int DEFAULT_HEIGHT = 768;
+
+    /**
+     * The default limit below which chart scaling kicks in.
+     */
+    public static final int DEFAULT_MINIMUM_DRAW_WIDTH = 300;
+
+    /**
+     * The default limit below which chart scaling kicks in.
+     */
+    public static final int DEFAULT_MINIMUM_DRAW_HEIGHT = 200;
+
+    /**
+     * The default limit above which chart scaling kicks in.
+     */
+    public static final int DEFAULT_MAXIMUM_DRAW_WIDTH = 1024;
+
+    /**
+     * The default limit above which chart scaling kicks in.
+     */
+    public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 768;
+
+    /**
+     * Properties action command.
+     */
+    public static final String PROPERTIES_COMMAND = "PROPERTIES";
+
+    /**
+     * Copy action command.
+     */
+    public static final String COPY_COMMAND = "COPY";
+
+    /**
+     * Save action command.
+     */
+    public static final String SAVE_COMMAND = "SAVE";
+
+    /**
+     * Action command to save as PNG.
+     */
+    protected static final String SAVE_AS_PNG_COMMAND = "SAVE_AS_PNG";
+
+    /**
+     * Action command to save as PNG - use screen size
+     */
+    protected static final String SAVE_AS_PNG_SIZE_COMMAND = "SAVE_AS_PNG_SIZE";
+
+    /**
+     * Action command to save as SVG.
+     */
+    protected static final String SAVE_AS_SVG_COMMAND = "SAVE_AS_SVG";
+
+    /**
+     * Action command to save as PDF.
+     */
+    protected static final String SAVE_AS_PDF_COMMAND = "SAVE_AS_PDF";
+
+    /**
+     * Print action command.
+     */
+    public static final String PRINT_COMMAND = "PRINT";
+
+    /**
+     * Zoom in (both axes) action command.
+     */
+    public static final String ZOOM_IN_BOTH_COMMAND = "ZOOM_IN_BOTH";
+
+    /**
+     * Zoom in (domain axis only) action command.
+     */
+    public static final String ZOOM_IN_DOMAIN_COMMAND = "ZOOM_IN_DOMAIN";
+
+    /**
+     * Zoom in (range axis only) action command.
+     */
+    public static final String ZOOM_IN_RANGE_COMMAND = "ZOOM_IN_RANGE";
+
+    /**
+     * Zoom out (both axes) action command.
+     */
+    public static final String ZOOM_OUT_BOTH_COMMAND = "ZOOM_OUT_BOTH";
+
+    /**
+     * Zoom out (domain axis only) action command.
+     */
+    public static final String ZOOM_OUT_DOMAIN_COMMAND = "ZOOM_DOMAIN_BOTH";
+
+    /**
+     * Zoom out (range axis only) action command.
+     */
+    public static final String ZOOM_OUT_RANGE_COMMAND = "ZOOM_RANGE_BOTH";
+
+    /**
+     * Zoom reset (both axes) action command.
+     */
+    public static final String ZOOM_RESET_BOTH_COMMAND = "ZOOM_RESET_BOTH";
+
+    /**
+     * Zoom reset (domain axis only) action command.
+     */
+    public static final String ZOOM_RESET_DOMAIN_COMMAND = "ZOOM_RESET_DOMAIN";
+
+    /**
+     * Zoom reset (range axis only) action command.
+     */
+    public static final String ZOOM_RESET_RANGE_COMMAND = "ZOOM_RESET_RANGE";
+
+    // default modifiers for zooming, private to avoid constant inlining,
+    // publicly available through getDefaultDragModifiersEx()
+    private static final int DEFAULT_DRAG_MODIFIERS_EX;
+
+    // mask for all modifier keys to check for
+    private static final int MODIFIERS_EX_MASK = InputEvent.SHIFT_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.ALT_DOWN_MASK;
+
+    static {
+        int dragModifiers = InputEvent.CTRL_DOWN_MASK;
+        // for MacOSX we can't use the CTRL key for mouse drags, see:
+        // http://developer.apple.com/qa/qa2004/qa1362.html
+        String osName = System.getProperty("os.name").toLowerCase();
+        if (osName.startsWith("mac os x")) {
+            dragModifiers = InputEvent.ALT_DOWN_MASK;
+        }
+        DEFAULT_DRAG_MODIFIERS_EX = dragModifiers;
+    }
+
+    /**
+     * The standard mouse button modifiers for alternative drag operations.
+     * There are two kinds of mouse drag operations: pan and zoom.
+     * To distinguish between them, one needs to require modifier keys
+     * to be held down during the dragging.  However, some modifiers
+     * may not be usable on all platforms.  For example, on Mac OS X
+     * it is impossible to perform Ctrl-drags or right-drags, see
+     * <a href="http://developer.apple.com/qa/qa2004/qa1362.html">http://developer.apple.com/qa/qa2004/qa1362.html</a>.
+     * This function returns a non-zero modifier usable for any platform:
+     * Alt for Mac OS X, Ctrl for other platforms.  It is recommended
+     * to use these modifiers for one operation, and zero modifiers for
+     * the other.
+     *
+     * @return modifiers mask, as in {@link InputEvent#getModifiersEx()}
+     * @see #setPanModifiersEx(int, int)
+     * @see #setZoomModifiersEx(int, int)
+     * @see #setDefaultPanModifiersEx(int)
+     * @see #setDefaultZoomModifiersEx(int)
+     */
+    public static int getDefaultDragModifiersEx() {
+        return DEFAULT_DRAG_MODIFIERS_EX;
+    }
+
+    /**
+     * The chart that is displayed in the panel.
+     */
+    protected JFreeChart chart;
+
+    /**
+     * Storage for registered (chart) mouse listeners.
+     */
+    protected transient EventListenerList chartMouseListeners;
+
+    /**
+     * A flag that controls whether the off-screen buffer is used.
+     */
+    protected boolean useBuffer;
+
+    /**
+     * A flag that indicates that the buffer should be refreshed.
+     */
+    protected boolean refreshBuffer;
+
+    /**
+     * A buffer for the rendered chart.
+     */
+    protected transient Image chartBuffer;
+
+    /**
+     * The height of the chart buffer.
+     */
+    protected int chartBufferHeight;
+
+    /**
+     * The width of the chart buffer.
+     */
+    protected int chartBufferWidth;
+
+    /**
+     * The minimum width for drawing a chart (uses scaling for smaller widths).
+     */
+    protected int minimumDrawWidth;
+
+    /**
+     * The minimum height for drawing a chart (uses scaling for smaller
+     * heights).
+     */
+    protected int minimumDrawHeight;
+
+    /**
+     * The maximum width for drawing a chart (uses scaling for bigger
+     * widths).
+     */
+    protected int maximumDrawWidth;
+
+    /**
+     * The maximum height for drawing a chart (uses scaling for bigger
+     * heights).
+     */
+    protected int maximumDrawHeight;
+
+    /**
+     * The popup menu for the frame.
+     */
+    protected JPopupMenu popup;
+
+    /**
+     * The drawing info collected the last time the chart was drawn.
+     */
+    protected ChartRenderingInfo info;
+
+    /**
+     * The chart anchor point.
+     */
+    protected Point2D anchor;
+
+    /**
+     * The scale factor used to draw the chart.
+     */
+    protected double scaleX;
+
+    /**
+     * The scale factor used to draw the chart.
+     */
+    protected double scaleY;
+
+    /**
+     * The plot orientation.
+     */
+    protected PlotOrientation orientation = PlotOrientation.VERTICAL;
+
+    /**
+     * A flag that controls whether domain zooming is enabled.
+     */
+    protected boolean domainZoomable = false;
+
+    /**
+     * A flag that controls whether range zooming is enabled.
+     */
+    protected boolean rangeZoomable = false;
+
+    /**
+     * A strategy to handle zoom rectangle processing and painting.
+     */
+    private SelectionZoomStrategy selectionZoomStrategy = new DefaultSelectionZoomStrategy();
+
+    /**
+     * Menu item for zooming in on a chart (both axes).
+     */
+    protected JMenuItem zoomInBothMenuItem;
+
+    /**
+     * Menu item for zooming in on a chart (domain axis).
+     */
+    protected JMenuItem zoomInDomainMenuItem;
+
+    /**
+     * Menu item for zooming in on a chart (range axis).
+     */
+    protected JMenuItem zoomInRangeMenuItem;
+
+    /**
+     * Menu item for zooming out on a chart.
+     */
+    protected JMenuItem zoomOutBothMenuItem;
+
+    /**
+     * Menu item for zooming out on a chart (domain axis).
+     */
+    protected JMenuItem zoomOutDomainMenuItem;
+
+    /**
+     * Menu item for zooming out on a chart (range axis).
+     */
+    protected JMenuItem zoomOutRangeMenuItem;
+
+    /**
+     * Menu item for resetting the zoom (both axes).
+     */
+    protected JMenuItem zoomResetBothMenuItem;
+
+    /**
+     * Menu item for resetting the zoom (domain axis only).
+     */
+    protected JMenuItem zoomResetDomainMenuItem;
+
+    /**
+     * Menu item for resetting the zoom (range axis only).
+     */
+    protected JMenuItem zoomResetRangeMenuItem;
+
+    /**
+     * The default directory for saving charts to file.
+     */
+    protected File defaultDirectoryForSaveAs;
+
+    /**
+     * A flag that controls whether file extensions are enforced.
+     */
+    protected boolean enforceFileExtensions;
+
+    /**
+     * A flag that indicates if original tooltip delays are changed.
+     */
+    protected boolean ownToolTipDelaysActive;
+
+    /**
+     * Original initial tooltip delay of ToolTipManager.sharedInstance().
+     */
+    protected int originalToolTipInitialDelay;
+
+    /**
+     * Original reshow tooltip delay of ToolTipManager.sharedInstance().
+     */
+    protected int originalToolTipReshowDelay;
+
+    /**
+     * Original dismiss tooltip delay of ToolTipManager.sharedInstance().
+     */
+    protected int originalToolTipDismissDelay;
+
+    /**
+     * Own initial tooltip delay to be used in this chart panel.
+     */
+    protected int ownToolTipInitialDelay;
+
+    /**
+     * Own reshow tooltip delay to be used in this chart panel.
+     */
+    protected int ownToolTipReshowDelay;
+
+    /**
+     * Own dismiss tooltip delay to be used in this chart panel.
+     */
+    protected int ownToolTipDismissDelay;
+
+    /**
+     * The factor used to zoom in on an axis range.
+     */
+    protected double zoomInFactor = 0.5;
+
+    /**
+     * The factor used to zoom out on an axis range.
+     */
+    protected double zoomOutFactor = 2.0;
+
+    /**
+     * A flag that controls whether zoom operations are centred on the
+     * current anchor point, or the centre point of the relevant axis.
+     */
+    protected boolean zoomAroundAnchor;
+
+    /**
+     * The resourceBundle for the localization.
+     */
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.LocalizationBundle");
+
+    /**
+     * Temporary storage for the width and height of the chart
+     * drawing area during panning.
+     */
+    protected double panW, panH;
+
+    /**
+     * The last mouse position during panning.
+     */
+    protected Point panLast;
+
+    /**
+     * The default mask for mouse events to trigger panning.
+     * Since 2.0.0, this mask uses extended modifiers, as returned
+     * by {@link InputEvent#getModifiersEx()}.
+     * Only used if no button-specific modifiers were set in
+     * {@link #panButtonMasks}.
+     */
+    protected int panMask = getDefaultDragModifiersEx();
+
+    /**
+     * The default mask for mouse events to trigger zooming.
+     *
+     * @since 2.0.0
+     */
+    protected int zoomMask = 0;
+
+    /**
+     * The masks for mouse events to trigger panning, per mouse button.
+     *
+     * @since 2.0.0
+     */
+    protected final Map<Integer, Integer> panButtonMasks = new HashMap<>(3);
+
+    /**
+     * The masks for mouse events to trigger zooming, per mouse button.
+     *
+     * @since 2.0.0
+     */
+    protected final Map<Integer, Integer> zoomButtonMasks = new HashMap<>(3);
+
+    /**
+     * A list of overlays for the panel.
+     */
+    protected List<Overlay> overlays;
+
+    /**
+     * Constructs a panel that displays the specified chart.
+     *
+     * @param chart  the chart.
+     */
+    public ChartPanel(JFreeChart chart) {
+        this(// properties
+        chart, // properties
+        DEFAULT_WIDTH, // properties
+        DEFAULT_HEIGHT, // properties
+        DEFAULT_MINIMUM_DRAW_WIDTH, // properties
+        DEFAULT_MINIMUM_DRAW_HEIGHT, // properties
+        DEFAULT_MAXIMUM_DRAW_WIDTH, // properties
+        DEFAULT_MAXIMUM_DRAW_HEIGHT, // properties
+        DEFAULT_BUFFER_USED, // save
+        true, // print
+        true, // zoom
+        true, // tooltips
+        true, true);
+    }
+
+    /**
+     * Constructs a panel containing a chart.  The {@code useBuffer} flag
+     * controls whether an offscreen {@code BufferedImage} is
+     * maintained for the chart.  If the buffer is used, more memory is
+     * consumed, but panel repaints will be a lot quicker in cases where the
+     * chart itself hasn't changed (for example, when another frame is moved
+     * to reveal the panel).  WARNING: If you set the {@code useBuffer}
+     * flag to false, note that the mouse zooming rectangle will (in that case)
+     * be drawn using XOR, and there is a SEVERE performance problem with that
+     * on JRE6 on Windows.
+     *
+     * @param chart  the chart.
+     * @param useBuffer  a flag controlling whether an off-screen buffer
+     *                   is used (read the warning above before setting this
+     *                   to {@code false}).
+     */
+    public ChartPanel(JFreeChart chart, boolean useBuffer) {
+        this(// properties
+        chart, // properties
+        DEFAULT_WIDTH, // properties
+        DEFAULT_HEIGHT, // properties
+        DEFAULT_MINIMUM_DRAW_WIDTH, // properties
+        DEFAULT_MINIMUM_DRAW_HEIGHT, // properties
+        DEFAULT_MAXIMUM_DRAW_WIDTH, // properties
+        DEFAULT_MAXIMUM_DRAW_HEIGHT, // properties
+        useBuffer, // save
+        true, // print
+        true, // zoom
+        true, // tooltips
+        true, true);
+    }
+
+    /**
+     * Constructs a JFreeChart panel.
+     *
+     * @param chart  the chart.
+     * @param properties  a flag indicating whether the chart property
+     *                    editor should be available via the popup menu.
+     * @param save  a flag indicating whether save options should be
+     *              available via the popup menu.
+     * @param print  a flag indicating whether the print option
+     *               should be available via the popup menu.
+     * @param zoom  a flag indicating whether zoom options should
+     *              be added to the popup menu.
+     * @param tooltips  a flag indicating whether tooltips should be
+     *                  enabled for the chart.
+     */
+    public ChartPanel(JFreeChart chart, boolean properties, boolean save, boolean print, boolean zoom, boolean tooltips) {
+        this(chart, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_MINIMUM_DRAW_WIDTH, DEFAULT_MINIMUM_DRAW_HEIGHT, DEFAULT_MAXIMUM_DRAW_WIDTH, DEFAULT_MAXIMUM_DRAW_HEIGHT, DEFAULT_BUFFER_USED, properties, save, print, zoom, tooltips);
+    }
+
+    /**
+     * Constructs a JFreeChart panel.
+     *
+     * @param chart  the chart.
+     * @param width  the preferred width of the panel.
+     * @param height  the preferred height of the panel.
+     * @param minimumDrawWidth  the minimum drawing width.
+     * @param minimumDrawHeight  the minimum drawing height.
+     * @param maximumDrawWidth  the maximum drawing width.
+     * @param maximumDrawHeight  the maximum drawing height.
+     * @param useBuffer  a flag that indicates whether to use the off-screen
+     *                   buffer to improve performance (at the expense of
+     *                   memory).
+     * @param properties  a flag indicating whether the chart property
+     *                    editor should be available via the popup menu.
+     * @param save  a flag indicating whether save options should be
+     *              available via the popup menu.
+     * @param print  a flag indicating whether the print option
+     *               should be available via the popup menu.
+     * @param zoom  a flag indicating whether zoom options should be
+     *              added to the popup menu.
+     * @param tooltips  a flag indicating whether tooltips should be
+     *                  enabled for the chart.
+     */
+    public ChartPanel(JFreeChart chart, int width, int height, int minimumDrawWidth, int minimumDrawHeight, int maximumDrawWidth, int maximumDrawHeight, boolean useBuffer, boolean properties, boolean save, boolean print, boolean zoom, boolean tooltips) {
+        this(chart, width, height, minimumDrawWidth, minimumDrawHeight, maximumDrawWidth, maximumDrawHeight, useBuffer, properties, true, save, print, zoom, tooltips);
+    }
+
+    /**
+     * Constructs a JFreeChart panel.
+     *
+     * @param chart  the chart.
+     * @param width  the preferred width of the panel.
+     * @param height  the preferred height of the panel.
+     * @param minimumDrawWidth  the minimum drawing width.
+     * @param minimumDrawHeight  the minimum drawing height.
+     * @param maximumDrawWidth  the maximum drawing width.
+     * @param maximumDrawHeight  the maximum drawing height.
+     * @param useBuffer  a flag that indicates whether to use the off-screen
+     *                   buffer to improve performance (at the expense of
+     *                   memory).
+     * @param properties  a flag indicating whether the chart property
+     *                    editor should be available via the popup menu.
+     * @param copy  a flag indicating whether a copy option should be
+     *              available via the popup menu.
+     * @param save  a flag indicating whether save options should be
+     *              available via the popup menu.
+     * @param print  a flag indicating whether the print option
+     *               should be available via the popup menu.
+     * @param zoom  a flag indicating whether zoom options should be
+     *              added to the popup menu.
+     * @param tooltips  a flag indicating whether tooltips should be
+     *                  enabled for the chart.
+     */
+    public ChartPanel(JFreeChart chart, int width, int height, int minimumDrawWidth, int minimumDrawHeight, int maximumDrawWidth, int maximumDrawHeight, boolean useBuffer, boolean properties, boolean copy, boolean save, boolean print, boolean zoom, boolean tooltips) {
+        setChart(chart);
+        this.chartMouseListeners = new EventListenerList();
+        this.info = new ChartRenderingInfo();
+        setPreferredSize(new Dimension(width, height));
+        this.useBuffer = useBuffer;
+        this.refreshBuffer = false;
+        this.minimumDrawWidth = minimumDrawWidth;
+        this.minimumDrawHeight = minimumDrawHeight;
+        this.maximumDrawWidth = maximumDrawWidth;
+        this.maximumDrawHeight = maximumDrawHeight;
+        // set up popup menu...
+        this.popup = null;
+        if (properties || copy || save || print || zoom) {
+            this.popup = createPopupMenu(properties, copy, save, print, zoom);
+        }
+        enableEvents(AWTEvent.MOUSE_EVENT_MASK);
+        enableEvents(AWTEvent.MOUSE_MOTION_EVENT_MASK);
+        setDisplayToolTips(tooltips);
+        addMouseListener(this);
+        addMouseMotionListener(this);
+        this.defaultDirectoryForSaveAs = null;
+        this.enforceFileExtensions = true;
+        // initialize ChartPanel-specific tool tip delays with
+        // values the from ToolTipManager.sharedInstance()
+        ToolTipManager ttm = ToolTipManager.sharedInstance();
+        this.ownToolTipInitialDelay = ttm.getInitialDelay();
+        this.ownToolTipDismissDelay = ttm.getDismissDelay();
+        this.ownToolTipReshowDelay = ttm.getReshowDelay();
+        this.zoomAroundAnchor = false;
+        this.overlays = new ArrayList<>();
+    }
+
+    /**
+     * Returns the chart contained in the panel.
+     *
+     * @return The chart (possibly {@code null}).
+     */
+    public JFreeChart getChart() {
+        return this.chart;
+    }
+
+    /**
+     * Sets the chart that is displayed in the panel.
+     *
+     * @param chart  the chart ({@code null} permitted).
+     */
+    public void setChart(JFreeChart chart) {
+        // stop listening for changes to the existing chart
+        if (this.chart != null) {
+            this.chart.removeChangeListener(this);
+            this.chart.removeProgressListener(this);
+        }
+        // add the new chart
+        this.chart = chart;
+        if (chart != null) {
+            this.chart.addChangeListener(this);
+            this.chart.addProgressListener(this);
+            Plot plot = chart.getPlot();
+            this.domainZoomable = false;
+            this.rangeZoomable = false;
+            if (plot instanceof Zoomable) {
+                Zoomable z = (Zoomable) plot;
+                this.domainZoomable = z.isDomainZoomable();
+                this.rangeZoomable = z.isRangeZoomable();
+                this.orientation = z.getOrientation();
+            }
+        } else {
+            this.domainZoomable = false;
+            this.rangeZoomable = false;
+        }
+        if (this.useBuffer) {
+            this.refreshBuffer = true;
+        }
+        repaint();
+    }
+
+    /**
+     * Returns the minimum drawing width for charts.
+     * <P>
+     * If the width available on the panel is less than this, then the chart is
+     * drawn at the minimum width then scaled down to fit.
+     *
+     * @return The minimum drawing width.
+     */
+    public int getMinimumDrawWidth() {
+        return this.minimumDrawWidth;
+    }
+
+    /**
+     * Sets the minimum drawing width for the chart on this panel.
+     * <P>
+     * At the time the chart is drawn on the panel, if the available width is
+     * less than this amount, the chart will be drawn using the minimum width
+     * then scaled down to fit the available space.
+     *
+     * @param width  The width.
+     */
+    public void setMinimumDrawWidth(int width) {
+        this.minimumDrawWidth = width;
+    }
+
+    /**
+     * Returns the maximum drawing width for charts.
+     * <P>
+     * If the width available on the panel is greater than this, then the chart
+     * is drawn at the maximum width then scaled up to fit.
+     *
+     * @return The maximum drawing width.
+     */
+    public int getMaximumDrawWidth() {
+        return this.maximumDrawWidth;
+    }
+
+    /**
+     * Sets the maximum drawing width for the chart on this panel.
+     * <P>
+     * At the time the chart is drawn on the panel, if the available width is
+     * greater than this amount, the chart will be drawn using the maximum
+     * width then scaled up to fit the available space.
+     *
+     * @param width  The width.
+     */
+    public void setMaximumDrawWidth(int width) {
+        this.maximumDrawWidth = width;
+    }
+
+    /**
+     * Returns the minimum drawing height for charts.
+     * <P>
+     * If the height available on the panel is less than this, then the chart
+     * is drawn at the minimum height then scaled down to fit.
+     *
+     * @return The minimum drawing height.
+     */
+    public int getMinimumDrawHeight() {
+        return this.minimumDrawHeight;
+    }
+
+    /**
+     * Sets the minimum drawing height for the chart on this panel.
+     * <P>
+     * At the time the chart is drawn on the panel, if the available height is
+     * less than this amount, the chart will be drawn using the minimum height
+     * then scaled down to fit the available space.
+     *
+     * @param height  The height.
+     */
+    public void setMinimumDrawHeight(int height) {
+        this.minimumDrawHeight = height;
+    }
+
+    /**
+     * Returns the maximum drawing height for charts.
+     * <P>
+     * If the height available on the panel is greater than this, then the
+     * chart is drawn at the maximum height then scaled up to fit.
+     *
+     * @return The maximum drawing height.
+     */
+    public int getMaximumDrawHeight() {
+        return this.maximumDrawHeight;
+    }
+
+    /**
+     * Sets the maximum drawing height for the chart on this panel.
+     * <P>
+     * At the time the chart is drawn on the panel, if the available height is
+     * greater than this amount, the chart will be drawn using the maximum
+     * height then scaled up to fit the available space.
+     *
+     * @param height  The height.
+     */
+    public void setMaximumDrawHeight(int height) {
+        this.maximumDrawHeight = height;
+    }
+
+    /**
+     * Returns the X scale factor for the chart.  This will be 1.0 if no
+     * scaling has been used.
+     *
+     * @return The scale factor.
+     */
+    public double getScaleX() {
+        return this.scaleX;
+    }
+
+    /**
+     * Returns the Y scale factory for the chart.  This will be 1.0 if no
+     * scaling has been used.
+     *
+     * @return The scale factor.
+     */
+    public double getScaleY() {
+        return this.scaleY;
+    }
+
+    /**
+     * Returns the anchor point.
+     *
+     * @return The anchor point (possibly {@code null}).
+     */
+    public Point2D getAnchor() {
+        return this.anchor;
+    }
+
+    /**
+     * Sets the anchor point.  This method is provided for the use of
+     * subclasses, not end users.
+     *
+     * @param anchor  the anchor point ({@code null} permitted).
+     */
+    protected void setAnchor(Point2D anchor) {
+        this.anchor = anchor;
+    }
+
+    /**
+     * Returns the popup menu.
+     *
+     * @return The popup menu.
+     */
+    public JPopupMenu getPopupMenu() {
+        return this.popup;
+    }
+
+    /**
+     * Sets the popup menu for the panel.
+     *
+     * @param popup  the popup menu ({@code null} permitted).
+     */
+    public void setPopupMenu(JPopupMenu popup) {
+        this.popup = popup;
+    }
+
+    /**
+     * Returns the chart rendering info from the most recent chart redraw.
+     *
+     * @return The chart rendering info.
+     */
+    public ChartRenderingInfo getChartRenderingInfo() {
+        return this.info;
+    }
+
+    /**
+     * A convenience method that switches on mouse-based zooming.
+     *
+     * @param flag  {@code true} enables zooming and rectangle fill on
+     *              zoom.
+     */
+    public void setMouseZoomable(boolean flag) {
+        setMouseZoomable(flag, true);
+    }
+
+    /**
+     * A convenience method that switches on mouse-based zooming.
+     *
+     * @param flag  {@code true} if zooming enabled
+     * @param fillRectangle  {@code true} if zoom rectangle is filled,
+     *                       false if rectangle is shown as outline only.
+     */
+    public void setMouseZoomable(boolean flag, boolean fillRectangle) {
+        setDomainZoomable(flag);
+        setRangeZoomable(flag);
+        setFillZoomRectangle(fillRectangle);
+    }
+
+    /**
+     * Sets default modifier keys for pan operations for all mouse buttons.
+     * Modifiers for a specific button can be set with
+     * {@link #setPanModifiersEx(int, int)}.  If there are none set for
+     * a certain button, it will use the modifiers passed to this function,
+     * defaulting to {@link #getDefaultDragModifiersEx()} if this function
+     * was never called.
+     * <p>
+     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
+     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
+     * checked.  To avoid platform-specific problems, it is recommended to use
+     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
+     * for the other.
+     * <p>
+     * If the same modifiers are set for both zooming and panning,
+     * panning will be performed.
+     *
+     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
+     */
+    public void setDefaultPanModifiersEx(int modifiersEx) {
+        this.panMask = modifiersEx;
+    }
+
+    /**
+     * Sets default modifier keys for zoom operations for all mouse buttons.
+     * Modifiers for a specific button can be set with
+     * {@link #setZoomModifiersEx(int, int)}.  If there are none set for
+     * a certain button, it will use the modifiers passed to this function,
+     * defaulting to zero (no modifiers) if this function was never called.
+     * <p>
+     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
+     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
+     * checked.  To avoid platform-specific problems, it is recommended to use
+     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
+     * for the other.
+     * <p>
+     * If the same modifiers are set for both zooming and panning,
+     * panning will be performed.
+     *
+     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
+     */
+    public void setDefaultZoomModifiersEx(int modifiersEx) {
+        this.zoomMask = modifiersEx;
+    }
+
+    /**
+     * Sets modifier keys for panning with a specific mouse button. If there are
+     * none set for a certain button with this function, default modifiers set
+     * with {@link #setDefaultPanModifiersEx(int)} will be used, defaulting to
+     * {@link #getDefaultDragModifiersEx()} if none were set either.<p>
+     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
+     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
+     * checked.  To avoid platform-specific problems, it is recommended to use
+     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
+     * for the other.
+     * <p>
+     * If the same modifiers are set for both zooming and panning,
+     * panning will be performed.
+     *
+     * @param mouseButton  the mouse button
+     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
+     */
+    public void setPanModifiersEx(int mouseButton, int modifiersEx) {
+        panButtonMasks.put(mouseButton, modifiersEx);
+    }
+
+    /**
+     * Sets modifier keys for zooming with a specific mouse button.
+     * If there are none set for a certain button with this function,
+     * default modifiers set with {@link #setDefaultZoomModifiersEx(int)}
+     * will be used, defaulting to zero (no modifiers)
+     * if none were set either.
+     * <p>
+     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
+     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
+     * checked.  To avoid platform-specific problems, it is recommended to use
+     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
+     * for the other.
+     * <p>
+     * If the same modifiers are set for both zooming and panning,
+     * panning will be performed.
+     *
+     * @param mouseButton  the mouse button.
+     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
+     */
+    public void setZoomModifiersEx(int mouseButton, int modifiersEx) {
+        zoomButtonMasks.put(mouseButton, modifiersEx);
+    }
+
+    /**
+     * Returns the flag that determines whether zooming is enabled for
+     * the domain axis.
+     *
+     * @return A boolean.
+     */
+    public boolean isDomainZoomable() {
+        return this.domainZoomable;
+    }
+
+    /**
+     * Sets the flag that controls whether zooming is enabled for the
+     * domain axis.  A check is made to ensure that the current plot supports
+     * zooming for the domain values.
+     *
+     * @param flag  {@code true} enables zooming if possible.
+     */
+    public void setDomainZoomable(boolean flag) {
+        if (flag) {
+            Plot plot = this.chart.getPlot();
+            if (plot instanceof Zoomable) {
+                Zoomable z = (Zoomable) plot;
+                this.domainZoomable = z.isDomainZoomable();
+            }
+        } else {
+            this.domainZoomable = false;
+        }
+    }
+
+    /**
+     * Returns the flag that determines whether zooming is enabled for
+     * the range axis.
+     *
+     * @return A boolean.
+     */
+    public boolean isRangeZoomable() {
+        return this.rangeZoomable;
+    }
+
+    /**
+     * A flag that controls mouse-based zooming on the vertical axis.
+     *
+     * @param flag  {@code true} enables zooming.
+     */
+    public void setRangeZoomable(boolean flag) {
+        if (flag) {
+            Plot plot = this.chart.getPlot();
+            if (plot instanceof Zoomable) {
+                Zoomable z = (Zoomable) plot;
+                this.rangeZoomable = z.isRangeZoomable();
+            }
+        } else {
+            this.rangeZoomable = false;
+        }
+    }
+
+    /**
+     * Returns a strategy used to control and draw zoom rectangle.
+     *
+     * @return A zoom rectangle strategy.
+     */
+    public SelectionZoomStrategy getSelectionZoomStrategy() {
+        return selectionZoomStrategy;
+    }
+
+    /**
+     * A strategy used to control and draw zoom rectangle.
+     *
+     * @param selectionZoomStrategy  A zoom rectangle strategy.
+     */
+    public void setSelectionZoomStrategy(SelectionZoomStrategy selectionZoomStrategy) {
+        this.selectionZoomStrategy = selectionZoomStrategy;
+    }
+
+    /**
+     * Returns the flag that controls whether the zoom rectangle is
+     * filled when drawn.
+     *
+     * @return A boolean.
+     */
+    public boolean getFillZoomRectangle() {
+        return this.selectionZoomStrategy.getFillZoomRectangle();
+    }
+
+    /**
+     * A flag that controls how the zoom rectangle is drawn.
+     *
+     * @param flag  {@code true} instructs to fill the rectangle on
+     *              zoom, otherwise it will be outlined.
+     */
+    public void setFillZoomRectangle(boolean flag) {
+        this.selectionZoomStrategy.setFillZoomRectangle(flag);
+    }
+
+    /**
+     * Returns the zoom trigger distance.  This controls how far the mouse must
+     * move before a zoom action is triggered.
+     *
+     * @return The distance (in Java2D units).
+     */
+    public int getZoomTriggerDistance() {
+        return this.selectionZoomStrategy.getZoomTriggerDistance();
+    }
+
+    /**
+     * Sets the zoom trigger distance.  This controls how far the mouse must
+     * move before a zoom action is triggered.
+     *
+     * @param distance  the distance (in Java2D units).
+     */
+    public void setZoomTriggerDistance(int distance) {
+        this.selectionZoomStrategy.setZoomTriggerDistance(distance);
+    }
+
+    /**
+     * Returns the default directory for the "save as" option.
+     *
+     * @return The default directory (possibly {@code null}).
+     */
+    public File getDefaultDirectoryForSaveAs() {
+        return this.defaultDirectoryForSaveAs;
+    }
+
+    /**
+     * Sets the default directory for the "save as" option.  If you set this
+     * to {@code null}, the user's default directory will be used.
+     *
+     * @param directory  the directory ({@code null} permitted).
+     */
+    public void setDefaultDirectoryForSaveAs(File directory) {
+        if (directory != null) {
+            if (!directory.isDirectory()) {
+                throw new IllegalArgumentException("The 'directory' argument is not a directory.");
             }
         }
-        for (ValueAxis yAxis : this.rangeAxes.values()) {
-            if (yAxis != null) {
-                yAxis.setPlot(this);
-                yAxis.addChangeListener(this);
+        this.defaultDirectoryForSaveAs = directory;
+    }
+
+    /**
+     * Returns {@code true} if file extensions should be enforced, and
+     * {@code false} otherwise.
+     *
+     * @return The flag.
+     *
+     * @see #setEnforceFileExtensions(boolean)
+     */
+    public boolean isEnforceFileExtensions() {
+        return this.enforceFileExtensions;
+    }
+
+    /**
+     * Sets a flag that controls whether file extensions are enforced.
+     *
+     * @param enforce  the new flag value.
+     *
+     * @see #isEnforceFileExtensions()
+     */
+    public void setEnforceFileExtensions(boolean enforce) {
+        this.enforceFileExtensions = enforce;
+    }
+
+    /**
+     * Returns the flag that controls whether zoom operations are
+     * centered around the current anchor point.
+     *
+     * @return A boolean.
+     *
+     * @see #setZoomAroundAnchor(boolean)
+     */
+    public boolean getZoomAroundAnchor() {
+        return this.zoomAroundAnchor;
+    }
+
+    /**
+     * Sets the flag that controls whether zoom operations are
+     * centered around the current anchor point.
+     *
+     * @param zoomAroundAnchor  the new flag value.
+     *
+     * @see #getZoomAroundAnchor()
+     */
+    public void setZoomAroundAnchor(boolean zoomAroundAnchor) {
+        this.zoomAroundAnchor = zoomAroundAnchor;
+    }
+
+    /**
+     * Returns the zoom rectangle fill paint.
+     *
+     * @return The zoom rectangle fill paint (never {@code null}).
+     *
+     * @see #setZoomFillPaint(java.awt.Paint)
+     * @see #setFillZoomRectangle(boolean)
+     */
+    public Paint getZoomFillPaint() {
+        return selectionZoomStrategy.getZoomFillPaint();
+    }
+
+    /**
+     * Sets the zoom rectangle fill paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getZoomFillPaint()
+     * @see #getFillZoomRectangle()
+     */
+    public void setZoomFillPaint(Paint paint) {
+        selectionZoomStrategy.setZoomFillPaint(paint);
+    }
+
+    /**
+     * Returns the zoom rectangle outline paint.
+     *
+     * @return The zoom rectangle outline paint (never {@code null}).
+     *
+     * @see #setZoomOutlinePaint(java.awt.Paint)
+     * @see #setFillZoomRectangle(boolean)
+     */
+    public Paint getZoomOutlinePaint() {
+        return selectionZoomStrategy.getZoomOutlinePaint();
+    }
+
+    /**
+     * Sets the zoom rectangle outline paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getZoomOutlinePaint()
+     * @see #getFillZoomRectangle()
+     */
+    public void setZoomOutlinePaint(Paint paint) {
+        this.selectionZoomStrategy.setZoomOutlinePaint(paint);
+    }
+
+    /**
+     * The mouse wheel handler.
+     */
+    protected MouseWheelHandler mouseWheelHandler;
+
+    /**
+     * Returns {@code true} if the mouse wheel handler is enabled, and
+     * {@code false} otherwise.
+     *
+     * @return A boolean.
+     */
+    public boolean isMouseWheelEnabled() {
+        return this.mouseWheelHandler != null;
+    }
+
+    /**
+     * Enables or disables mouse wheel support for the panel.
+     *
+     * @param flag  a boolean.
+     */
+    public void setMouseWheelEnabled(boolean flag) {
+        if (flag && this.mouseWheelHandler == null) {
+            this.mouseWheelHandler = new MouseWheelHandler(this);
+        } else if (!flag && this.mouseWheelHandler != null) {
+            this.removeMouseWheelListener(this.mouseWheelHandler);
+            this.mouseWheelHandler = null;
+        }
+    }
+
+    /**
+     * Add an overlay to the panel.
+     *
+     * @param overlay  the overlay ({@code null} not permitted).
+     */
+    public void addOverlay(Overlay overlay) {
+        Args.nullNotPermitted(overlay, "overlay");
+        this.overlays.add(overlay);
+        overlay.addChangeListener(this);
+        repaint();
+    }
+
+    /**
+     * Removes an overlay from the panel.
+     *
+     * @param overlay  the overlay to remove ({@code null} not permitted).
+     */
+    public void removeOverlay(Overlay overlay) {
+        Args.nullNotPermitted(overlay, "overlay");
+        boolean removed = this.overlays.remove(overlay);
+        if (removed) {
+            overlay.removeChangeListener(this);
+            repaint();
+        }
+    }
+
+    /**
+     * Handles a change to an overlay by repainting the panel.
+     *
+     * @param event  the event.
+     */
+    @Override
+    public void overlayChanged(OverlayChangeEvent event) {
+        repaint();
+    }
+
+    /**
+     * Switches the display of tooltips for the panel on or off.  Note that
+     * tooltips can only be displayed if the chart has been configured to
+     * generate tooltip items.
+     *
+     * @param flag  {@code true} to enable tooltips, {@code false} to
+     *              disable tooltips.
+     */
+    public void setDisplayToolTips(boolean flag) {
+        if (flag) {
+            ToolTipManager.sharedInstance().registerComponent(this);
+        } else {
+            ToolTipManager.sharedInstance().unregisterComponent(this);
+        }
+    }
+
+    /**
+     * Returns a string for the tooltip.
+     *
+     * @param e  the mouse event.
+     *
+     * @return A tool tip or {@code null} if no tooltip is available.
+     */
+    @Override
+    public String getToolTipText(MouseEvent e) {
+        String result = null;
+        if (this.info != null) {
+            EntityCollection entities = this.info.getEntityCollection();
+            if (entities != null) {
+                Insets insets = getInsets();
+                ChartEntity entity = entities.getEntity((int) ((e.getX() - insets.left) / this.scaleX), (int) ((e.getY() - insets.top) / this.scaleY));
+                if (entity != null) {
+                    result = entity.getToolTipText();
+                }
             }
         }
-        for (CategoryDataset<R, C> dataset : this.datasets.values()) {
-            if (dataset != null) {
-                dataset.addChangeListener(this);
+        return result;
+    }
+
+    /**
+     * Translates a Java2D point on the chart to a screen location.
+     *
+     * @param java2DPoint  the Java2D point.
+     *
+     * @return The screen location.
+     */
+    public Point translateJava2DToScreen(Point2D java2DPoint) {
+        Insets insets = getInsets();
+        int x = (int) (java2DPoint.getX() * this.scaleX + insets.left);
+        int y = (int) (java2DPoint.getY() * this.scaleY + insets.top);
+        return new Point(x, y);
+    }
+
+    /**
+     * Translates a panel (component) location to a Java2D point.
+     *
+     * @param screenPoint  the screen location ({@code null} not
+     *                     permitted).
+     *
+     * @return The Java2D coordinates.
+     */
+    public Point2D translateScreenToJava2D(Point screenPoint) {
+        Insets insets = getInsets();
+        double x = (screenPoint.getX() - insets.left) / this.scaleX;
+        double y = (screenPoint.getY() - insets.top) / this.scaleY;
+        return new Point2D.Double(x, y);
+    }
+
+    /**
+     * Applies any scaling that is in effect for the chart drawing to the
+     * given rectangle.
+     *
+     * @param rect  the rectangle ({@code null} not permitted).
+     *
+     * @return A new scaled rectangle.
+     */
+    public Rectangle2D scale(Rectangle2D rect) {
+        Insets insets = getInsets();
+        double x = rect.getX() * getScaleX() + insets.left;
+        double y = rect.getY() * getScaleY() + insets.top;
+        double w = rect.getWidth() * getScaleX();
+        double h = rect.getHeight() * getScaleY();
+        return new Rectangle2D.Double(x, y, w, h);
+    }
+
+    /**
+     * Returns the chart entity at a given point.
+     * <P>
+     * This method will return null if there is (a) no entity at the given
+     * point, or (b) no entity collection has been generated.
+     *
+     * @param viewX  the x-coordinate.
+     * @param viewY  the y-coordinate.
+     *
+     * @return The chart entity (possibly {@code null}).
+     */
+    public ChartEntity getEntityForPoint(int viewX, int viewY) {
+        ChartEntity result = null;
+        if (this.info != null) {
+            Insets insets = getInsets();
+            double x = (viewX - insets.left) / this.scaleX;
+            double y = (viewY - insets.top) / this.scaleY;
+            EntityCollection entities = this.info.getEntityCollection();
+            result = entities != null ? entities.getEntity(x, y) : null;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the flag that controls whether the offscreen buffer
+     * needs to be refreshed.
+     *
+     * @return A boolean.
+     */
+    public boolean getRefreshBuffer() {
+        return this.refreshBuffer;
+    }
+
+    /**
+     * Sets the refresh buffer flag.  This flag is used to avoid unnecessary
+     * redrawing of the chart when the offscreen image buffer is used.
+     *
+     * @param flag  {@code true} indicates that the buffer should be
+     *              refreshed.
+     */
+    public void setRefreshBuffer(boolean flag) {
+        this.refreshBuffer = flag;
+    }
+
+    /**
+     * Paints the component by drawing the chart to fill the entire component,
+     * but allowing for the insets (which will be non-zero if a border has been
+     * set for this component).  To increase performance (at the expense of
+     * memory), an off-screen buffer image can be used.
+     *
+     * @param g  the graphics device for drawing on.
+     */
+    @Override
+    public void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (this.chart == null) {
+            return;
+        }
+        Graphics2D g2 = (Graphics2D) g.create();
+        // first determine the size of the chart rendering area...
+        Dimension size = getSize();
+        Insets insets = getInsets();
+        Rectangle2D available = new Rectangle2D.Double(insets.left, insets.top, size.getWidth() - insets.left - insets.right, size.getHeight() - insets.top - insets.bottom);
+        // work out if scaling is required...
+        boolean scale = false;
+        double drawWidth = available.getWidth();
+        double drawHeight = available.getHeight();
+        this.scaleX = 1.0;
+        this.scaleY = 1.0;
+        if (drawWidth < this.minimumDrawWidth) {
+            this.scaleX = drawWidth / this.minimumDrawWidth;
+            drawWidth = this.minimumDrawWidth;
+            scale = true;
+        } else if (drawWidth > this.maximumDrawWidth) {
+            this.scaleX = drawWidth / this.maximumDrawWidth;
+            drawWidth = this.maximumDrawWidth;
+            scale = true;
+        }
+        if (drawHeight < this.minimumDrawHeight) {
+            this.scaleY = drawHeight / this.minimumDrawHeight;
+            drawHeight = this.minimumDrawHeight;
+            scale = true;
+        } else if (drawHeight > this.maximumDrawHeight) {
+            this.scaleY = drawHeight / this.maximumDrawHeight;
+            drawHeight = this.maximumDrawHeight;
+            scale = true;
+        }
+        Rectangle2D chartArea = new Rectangle2D.Double(0.0, 0.0, drawWidth, drawHeight);
+        // are we using the chart buffer?
+        if (this.useBuffer) {
+            // for better rendering on the HiDPI monitors upscaling the buffer to the "native" resoution
+            // instead of using logical one provided by Swing
+            final AffineTransform globalTransform = ((Graphics2D) g).getTransform();
+            final double globalScaleX = globalTransform.getScaleX();
+            final double globalScaleY = globalTransform.getScaleY();
+            final int scaledWidth = (int) (available.getWidth() * globalScaleX);
+            final int scaledHeight = (int) (available.getHeight() * globalScaleY);
+            // do we need to resize the buffer?
+            if ((this.chartBuffer == null) || (this.chartBufferWidth != scaledWidth) || (this.chartBufferHeight != scaledHeight)) {
+                this.chartBufferWidth = scaledWidth;
+                this.chartBufferHeight = scaledHeight;
+                GraphicsConfiguration gc = g2.getDeviceConfiguration();
+                this.chartBuffer = gc.createCompatibleImage(this.chartBufferWidth, this.chartBufferHeight, Transparency.TRANSLUCENT);
+                this.refreshBuffer = true;
+            }
+            // do we need to redraw the buffer?
+            if (this.refreshBuffer) {
+                // clear the flag
+                this.refreshBuffer = false;
+                // scale graphics of the buffer to the same value as global
+                // Swing graphics - this allow to paint all elements as usual
+                // but applies all necessary smoothing
+                Graphics2D bufferG2 = (Graphics2D) this.chartBuffer.getGraphics();
+                bufferG2.scale(globalScaleX, globalScaleY);
+                Rectangle2D bufferArea = new Rectangle2D.Double(0, 0, available.getWidth(), available.getHeight());
+                // make the background of the buffer clear and transparent
+                Composite savedComposite = bufferG2.getComposite();
+                bufferG2.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
+                Rectangle r = new Rectangle(0, 0, (int) available.getWidth(), (int) available.getHeight());
+                bufferG2.fill(r);
+                bufferG2.setComposite(savedComposite);
+                if (scale) {
+                    AffineTransform saved = bufferG2.getTransform();
+                    AffineTransform st = AffineTransform.getScaleInstance(this.scaleX, this.scaleY);
+                    bufferG2.transform(st);
+                    this.chart.draw(bufferG2, chartArea, this.anchor, this.info);
+                    bufferG2.setTransform(saved);
+                } else {
+                    this.chart.draw(bufferG2, bufferArea, this.anchor, this.info);
+                }
+                bufferG2.dispose();
+            }
+            // zap the buffer onto the panel...
+            g2.drawImage(this.chartBuffer, insets.left, insets.top, (int) available.getWidth(), (int) available.getHeight(), this);
+            // bug#187
+            g2.addRenderingHints(this.chart.getRenderingHints());
+        } else {
+            // redrawing the chart every time...
+            AffineTransform saved = g2.getTransform();
+            g2.translate(insets.left, insets.top);
+            if (scale) {
+                AffineTransform st = AffineTransform.getScaleInstance(this.scaleX, this.scaleY);
+                g2.transform(st);
+            }
+            this.chart.draw(g2, chartArea, this.anchor, this.info);
+            g2.setTransform(saved);
+        }
+        for (Overlay overlay : this.overlays) {
+            overlay.paintOverlay(g2, this);
+        }
+        // redraw the zoom rectangle (if present) - if useBuffer is false,
+        // we use XOR so we can XOR the rectangle away again without redrawing
+        // the chart
+        selectionZoomStrategy.drawZoomRectangle(g2, !this.useBuffer);
+        g2.dispose();
+        this.anchor = null;
+    }
+
+    /**
+     * Receives notification of changes to the chart, and redraws the chart.
+     *
+     * @param event  details of the chart change event.
+     */
+    @Override
+    public void chartChanged(ChartChangeEvent event) {
+        this.refreshBuffer = true;
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            Zoomable z = (Zoomable) plot;
+            this.orientation = z.getOrientation();
+        }
+        repaint();
+    }
+
+    /**
+     * Receives notification of a chart progress event.
+     *
+     * @param event  the event.
+     */
+    @Override
+    public void chartProgress(ChartProgressEvent event) {
+        // does nothing - override if necessary
+    }
+
+    /**
+     * Handles action events generated by the popup menu.
+     *
+     * @param event  the event.
+     */
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        String command = event.getActionCommand();
+        // many of the zoom methods need a screen location - all we have is
+        // the zoomPoint, but it might be null.  Here we grab the x and y
+        // coordinates, or use defaults...
+        double screenX = -1.0;
+        double screenY = -1.0;
+        Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
+        if (zoomPoint != null) {
+            screenX = zoomPoint.getX();
+            screenY = zoomPoint.getY();
+        }
+        switch(command) {
+            case PROPERTIES_COMMAND:
+                doEditChartProperties();
+                break;
+            case COPY_COMMAND:
+                doCopy();
+                break;
+            case SAVE_AS_PNG_COMMAND:
+                try {
+                    doSaveAs();
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(this, "I/O error occurred.", localizationResources.getString("Save_as_PNG"), JOptionPane.WARNING_MESSAGE);
+                }
+                break;
+            case SAVE_AS_PNG_SIZE_COMMAND:
+                try {
+                    final Dimension ss = Toolkit.getDefaultToolkit().getScreenSize();
+                    doSaveAs(ss.width, ss.height);
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(ChartPanel.this, "I/O error occurred.", localizationResources.getString("Save_as_PNG"), JOptionPane.WARNING_MESSAGE);
+                }
+                break;
+            case SAVE_AS_SVG_COMMAND:
+                try {
+                    saveAsSVG(null);
+                } catch (IOException e) {
+                    JOptionPane.showMessageDialog(this, "I/O error occurred.", localizationResources.getString("Save_as_SVG"), JOptionPane.WARNING_MESSAGE);
+                }
+                break;
+            case SAVE_AS_PDF_COMMAND:
+                saveAsPDF(null);
+                break;
+            case PRINT_COMMAND:
+                createChartPrintJob();
+                break;
+            case ZOOM_IN_BOTH_COMMAND:
+                zoomInBoth(screenX, screenY);
+                break;
+            case ZOOM_IN_DOMAIN_COMMAND:
+                zoomInDomain(screenX, screenY);
+                break;
+            case ZOOM_IN_RANGE_COMMAND:
+                zoomInRange(screenX, screenY);
+                break;
+            case ZOOM_OUT_BOTH_COMMAND:
+                zoomOutBoth(screenX, screenY);
+                break;
+            case ZOOM_OUT_DOMAIN_COMMAND:
+                zoomOutDomain(screenX, screenY);
+                break;
+            case ZOOM_OUT_RANGE_COMMAND:
+                zoomOutRange(screenX, screenY);
+                break;
+            case ZOOM_RESET_BOTH_COMMAND:
+                restoreAutoBounds();
+                break;
+            case ZOOM_RESET_DOMAIN_COMMAND:
+                restoreAutoDomainBounds();
+                break;
+            case ZOOM_RESET_RANGE_COMMAND:
+                restoreAutoRangeBounds();
+                break;
+        }
+    }
+
+    /**
+     * Handles a 'mouse entered' event. This method changes the tooltip delays
+     * of ToolTipManager.sharedInstance() to the possibly different values set
+     * for this chart panel.
+     *
+     * @param e  the mouse event.
+     */
+    @Override
+    public void mouseEntered(MouseEvent e) {
+        if (!this.ownToolTipDelaysActive) {
+            ToolTipManager ttm = ToolTipManager.sharedInstance();
+            this.originalToolTipInitialDelay = ttm.getInitialDelay();
+            ttm.setInitialDelay(this.ownToolTipInitialDelay);
+            this.originalToolTipReshowDelay = ttm.getReshowDelay();
+            ttm.setReshowDelay(this.ownToolTipReshowDelay);
+            this.originalToolTipDismissDelay = ttm.getDismissDelay();
+            ttm.setDismissDelay(this.ownToolTipDismissDelay);
+            this.ownToolTipDelaysActive = true;
+        }
+    }
+
+    /**
+     * Handles a 'mouse exited' event. This method resets the tooltip delays of
+     * ToolTipManager.sharedInstance() to their
+     * original values in effect before mouseEntered()
+     *
+     * @param e  the mouse event.
+     */
+    @Override
+    public void mouseExited(MouseEvent e) {
+        if (this.ownToolTipDelaysActive) {
+            // restore original tooltip dealys
+            ToolTipManager ttm = ToolTipManager.sharedInstance();
+            ttm.setInitialDelay(this.originalToolTipInitialDelay);
+            ttm.setReshowDelay(this.originalToolTipReshowDelay);
+            ttm.setDismissDelay(this.originalToolTipDismissDelay);
+            this.ownToolTipDelaysActive = false;
+        }
+    }
+
+    /**
+     * Handles a 'mouse pressed' event.
+     * <P>
+     * This event is the popup trigger on Unix/Linux.  For Windows, the popup
+     * trigger is the 'mouse released' event.
+     *
+     * @param e  The mouse event.
+     */
+    @Override
+    public void mousePressed(MouseEvent e) {
+        if (this.chart == null) {
+            return;
+        }
+        Plot plot = this.chart.getPlot();
+        int button = e.getButton();
+        int mods = e.getModifiersEx();
+        if ((mods & MODIFIERS_EX_MASK) == panButtonMasks.getOrDefault(button, panMask)) {
+            // can we pan this plot?
+            if (plot instanceof Pannable) {
+                Pannable pannable = (Pannable) plot;
+                if (pannable.isDomainPannable() || pannable.isRangePannable()) {
+                    Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
+                    if (screenDataArea != null && screenDataArea.contains(e.getPoint())) {
+                        this.panW = screenDataArea.getWidth();
+                        this.panH = screenDataArea.getHeight();
+                        this.panLast = e.getPoint();
+                        setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
+                    }
+                }
+                // the actual panning occurs later in the mouseDragged()
+                // method
+            }
+        } else if (!this.selectionZoomStrategy.isActivated()) {
+            if ((mods & MODIFIERS_EX_MASK) == zoomButtonMasks.getOrDefault(button, zoomMask)) {
+                Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
+                if (screenDataArea != null) {
+                    Point2D zoomPoint = getPointInRectangle(e.getX(), e.getY(), screenDataArea);
+                    selectionZoomStrategy.setZoomPoint(zoomPoint);
+                } else {
+                    selectionZoomStrategy.setZoomPoint(null);
+                }
+            }
+            if (e.isPopupTrigger()) {
+                if (this.popup != null) {
+                    displayPopupMenu(e.getX(), e.getY());
+                }
             }
         }
-        for (CategoryItemRenderer renderer : this.renderers.values()) {
-            if (renderer != null) {
-                renderer.addChangeListener(this);
+    }
+
+    /**
+     * Returns a point based on (x, y) but constrained to be within the bounds
+     * of the given rectangle.  This method could be moved to JCommon.
+     *
+     * @param x  the x-coordinate.
+     * @param y  the y-coordinate.
+     * @param area  the rectangle ({@code null} not permitted).
+     *
+     * @return A point within the rectangle.
+     */
+    protected Point2D getPointInRectangle(int x, int y, Rectangle2D area) {
+        double xx = Math.max(area.getMinX(), Math.min(x, area.getMaxX()));
+        double yy = Math.max(area.getMinY(), Math.min(y, area.getMaxY()));
+        return new Point2D.Double(xx, yy);
+    }
+
+    /**
+     * Handles a 'mouse dragged' event.
+     *
+     * @param e  the mouse event.
+     */
+    @Override
+    public void mouseDragged(MouseEvent e) {
+        // if the popup menu has already been triggered, then ignore dragging...
+        if (this.popup != null && this.popup.isShowing()) {
+            return;
+        }
+        // handle panning if we have a start point
+        if (this.panLast != null) {
+            double dx = e.getX() - this.panLast.getX();
+            double dy = e.getY() - this.panLast.getY();
+            if (dx == 0.0 && dy == 0.0) {
+                return;
             }
+            double wPercent = -dx / this.panW;
+            double hPercent = dy / this.panH;
+            boolean old = this.chart.getPlot().isNotify();
+            this.chart.getPlot().setNotify(false);
+            Pannable p = (Pannable) this.chart.getPlot();
+            if (p.getOrientation() == PlotOrientation.VERTICAL) {
+                p.panDomainAxes(wPercent, this.info.getPlotInfo(), this.panLast);
+                p.panRangeAxes(hPercent, this.info.getPlotInfo(), this.panLast);
+            } else {
+                p.panDomainAxes(hPercent, this.info.getPlotInfo(), this.panLast);
+                p.panRangeAxes(wPercent, this.info.getPlotInfo(), this.panLast);
+            }
+            this.panLast = e.getPoint();
+            this.chart.getPlot().setNotify(old);
+            return;
+        }
+        // if no initial zoom point was set, ignore dragging...
+        if (this.selectionZoomStrategy.getZoomPoint() == null) {
+            return;
+        }
+        Graphics2D g2 = (Graphics2D) getGraphics();
+        // erase the previous zoom rectangle (if any).  We only need to do
+        // this is we are using XOR mode, which we do when we're not using
+        // the buffer (if there is a buffer, then at the end of this method we
+        // just trigger a repaint)
+        if (!this.useBuffer) {
+            selectionZoomStrategy.drawZoomRectangle(g2, true);
+        }
+        boolean hZoom, vZoom;
+        if (this.orientation == PlotOrientation.HORIZONTAL) {
+            hZoom = this.rangeZoomable;
+            vZoom = this.domainZoomable;
+        } else {
+            hZoom = this.domainZoomable;
+            vZoom = this.rangeZoomable;
+        }
+        Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
+        Rectangle2D scaledDataArea = getScreenDataArea((int) zoomPoint.getX(), (int) zoomPoint.getY());
+        selectionZoomStrategy.updateZoomRectangleSelection(e, hZoom, vZoom, scaledDataArea);
+        // Draw the new zoom rectangle...
+        if (this.useBuffer) {
+            repaint();
+        } else {
+            // with no buffer, we use XOR to draw the rectangle "over" the
+            // chart...
+            selectionZoomStrategy.drawZoomRectangle(g2, true);
+        }
+        g2.dispose();
+    }
+
+    /**
+     * Handles a 'mouse released' event.  On Windows, we need to check if this
+     * is a popup trigger, but only if we haven't already been tracking a zoom
+     * rectangle.
+     *
+     * @param e  information about the event.
+     */
+    @Override
+    public void mouseReleased(MouseEvent e) {
+        // if we've been panning, we need to reset now that the mouse is
+        // released...
+        if (this.panLast != null) {
+            this.panLast = null;
+            setCursor(Cursor.getDefaultCursor());
+        } else if (this.selectionZoomStrategy.isActivated()) {
+            boolean hZoom, vZoom;
+            if (this.orientation == PlotOrientation.HORIZONTAL) {
+                hZoom = this.rangeZoomable;
+                vZoom = this.domainZoomable;
+            } else {
+                hZoom = this.domainZoomable;
+                vZoom = this.rangeZoomable;
+            }
+            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
+            boolean zoomTrigger1 = hZoom && Math.abs(e.getX() - zoomPoint.getX()) >= this.selectionZoomStrategy.getZoomTriggerDistance();
+            boolean zoomTrigger2 = vZoom && Math.abs(e.getY() - zoomPoint.getY()) >= this.selectionZoomStrategy.getZoomTriggerDistance();
+            if (zoomTrigger1 || zoomTrigger2) {
+                if ((hZoom && (e.getX() < zoomPoint.getX())) || (vZoom && (e.getY() < zoomPoint.getY()))) {
+                    restoreAutoBounds();
+                } else {
+                    Rectangle2D screenDataArea = getScreenDataArea((int) zoomPoint.getX(), (int) zoomPoint.getY());
+                    Rectangle2D zoomArea = selectionZoomStrategy.getZoomRectangle(hZoom, vZoom, screenDataArea);
+                    zoom(zoomArea);
+                }
+                this.selectionZoomStrategy.reset();
+            } else {
+                // erase the zoom rectangle
+                Graphics2D g2 = (Graphics2D) getGraphics();
+                if (this.useBuffer) {
+                    repaint();
+                } else {
+                    selectionZoomStrategy.drawZoomRectangle(g2, true);
+                }
+                g2.dispose();
+                this.selectionZoomStrategy.reset();
+            }
+        } else if (e.isPopupTrigger()) {
+            if (this.popup != null) {
+                displayPopupMenu(e.getX(), e.getY());
+            }
+        }
+    }
+
+    /**
+     * Receives notification of mouse clicks on the panel. These are
+     * translated and passed on to any registered {@link ChartMouseListener}s.
+     *
+     * @param event  Information about the mouse event.
+     */
+    @Override
+    public void mouseClicked(MouseEvent event) {
+        Insets insets = getInsets();
+        int x = (int) ((event.getX() - insets.left) / this.scaleX);
+        int y = (int) ((event.getY() - insets.top) / this.scaleY);
+        this.anchor = new Point2D.Double(x, y);
+        if (this.chart == null) {
+            return;
+        }
+        // force a redraw
+        this.chart.setNotify(true);
+        // new entity code...
+        Object[] listeners = this.chartMouseListeners.getListeners(ChartMouseListener.class);
+        if (listeners.length == 0) {
+            return;
+        }
+        ChartEntity entity = null;
+        if (this.info != null) {
+            EntityCollection entities = this.info.getEntityCollection();
+            if (entities != null) {
+                entity = entities.getEntity(x, y);
+            }
+        }
+        ChartMouseEvent chartEvent = new ChartMouseEvent(getChart(), event, entity);
+        for (int i = listeners.length - 1; i >= 0; i -= 1) {
+            ((ChartMouseListener) listeners[i]).chartMouseClicked(chartEvent);
+        }
+    }
+
+    /**
+     * Implementation of the MouseMotionListener's method.
+     *
+     * @param e  the event.
+     */
+    @Override
+    public void mouseMoved(MouseEvent e) {
+        Graphics2D g2 = (Graphics2D) getGraphics();
+        g2.dispose();
+        Object[] listeners = this.chartMouseListeners.getListeners(ChartMouseListener.class);
+        if (listeners.length == 0) {
+            return;
+        }
+        Insets insets = getInsets();
+        int x = (int) ((e.getX() - insets.left) / this.scaleX);
+        int y = (int) ((e.getY() - insets.top) / this.scaleY);
+        ChartEntity entity = null;
+        if (this.info != null) {
+            EntityCollection entities = this.info.getEntityCollection();
+            if (entities != null) {
+                entity = entities.getEntity(x, y);
+            }
+        }
+        // we can only generate events if the panel's chart is not null
+        // (see bug report 1556951)
+        if (this.chart != null) {
+            ChartMouseEvent event = new ChartMouseEvent(getChart(), e, entity);
+            for (int i = listeners.length - 1; i >= 0; i -= 1) {
+                ((ChartMouseListener) listeners[i]).chartMouseMoved(event);
+            }
+        }
+    }
+
+    /**
+     * Zooms in on an anchor point (specified in screen coordinate space).
+     *
+     * @param x  the x value (in screen coordinates).
+     * @param y  the y value (in screen coordinates).
+     */
+    public void zoomInBoth(double x, double y) {
+        Plot plot = this.chart.getPlot();
+        if (plot == null) {
+            return;
+        }
+        // here we tweak the notify flag on the plot so that only
+        // one notification happens even though we update multiple
+        // axes...
+        boolean savedNotify = plot.isNotify();
+        plot.setNotify(false);
+        zoomInDomain(x, y);
+        zoomInRange(x, y);
+        plot.setNotify(savedNotify);
+    }
+
+    /**
+     * Decreases the length of the domain axis, centered about the given
+     * coordinate on the screen.  The length of the domain axis is reduced
+     * by the value of {@link #getZoomInFactor()}.
+     *
+     * @param x  the x coordinate (in screen coordinates).
+     * @param y  the y-coordinate (in screen coordinates).
+     */
+    public void zoomInDomain(double x, double y) {
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            // here we tweak the notify flag on the plot so that only
+            // one notification happens even though we update multiple
+            // axes...
+            boolean savedNotify = plot.isNotify();
+            plot.setNotify(false);
+            Zoomable z = (Zoomable) plot;
+            z.zoomDomainAxes(this.zoomInFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
+            plot.setNotify(savedNotify);
+        }
+    }
+
+    /**
+     * Decreases the length of the range axis, centered about the given
+     * coordinate on the screen.  The length of the range axis is reduced by
+     * the value of {@link #getZoomInFactor()}.
+     *
+     * @param x  the x-coordinate (in screen coordinates).
+     * @param y  the y coordinate (in screen coordinates).
+     */
+    public void zoomInRange(double x, double y) {
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            // here we tweak the notify flag on the plot so that only
+            // one notification happens even though we update multiple
+            // axes...
+            boolean savedNotify = plot.isNotify();
+            plot.setNotify(false);
+            Zoomable z = (Zoomable) plot;
+            z.zoomRangeAxes(this.zoomInFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
+            plot.setNotify(savedNotify);
+        }
+    }
+
+    /**
+     * Zooms out on an anchor point (specified in screen coordinate space).
+     *
+     * @param x  the x value (in screen coordinates).
+     * @param y  the y value (in screen coordinates).
+     */
+    public void zoomOutBoth(double x, double y) {
+        Plot plot = this.chart.getPlot();
+        if (plot == null) {
+            return;
+        }
+        // here we tweak the notify flag on the plot so that only
+        // one notification happens even though we update multiple
+        // axes...
+        boolean savedNotify = plot.isNotify();
+        plot.setNotify(false);
+        zoomOutDomain(x, y);
+        zoomOutRange(x, y);
+        plot.setNotify(savedNotify);
+    }
+
+    /**
+     * Increases the length of the domain axis, centered about the given
+     * coordinate on the screen.  The length of the domain axis is increased
+     * by the value of {@link #getZoomOutFactor()}.
+     *
+     * @param x  the x coordinate (in screen coordinates).
+     * @param y  the y-coordinate (in screen coordinates).
+     */
+    public void zoomOutDomain(double x, double y) {
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            // here we tweak the notify flag on the plot so that only
+            // one notification happens even though we update multiple
+            // axes...
+            boolean savedNotify = plot.isNotify();
+            plot.setNotify(false);
+            Zoomable z = (Zoomable) plot;
+            z.zoomDomainAxes(this.zoomOutFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
+            plot.setNotify(savedNotify);
+        }
+    }
+
+    /**
+     * Increases the length the range axis, centered about the given
+     * coordinate on the screen.  The length of the range axis is increased
+     * by the value of {@link #getZoomOutFactor()}.
+     *
+     * @param x  the x coordinate (in screen coordinates).
+     * @param y  the y-coordinate (in screen coordinates).
+     */
+    public void zoomOutRange(double x, double y) {
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            // here we tweak the notify flag on the plot so that only
+            // one notification happens even though we update multiple
+            // axes...
+            boolean savedNotify = plot.isNotify();
+            plot.setNotify(false);
+            Zoomable z = (Zoomable) plot;
+            z.zoomRangeAxes(this.zoomOutFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
+            plot.setNotify(savedNotify);
+        }
+    }
+
+    /**
+     * Zooms in on a selected region.
+     *
+     * @param selection  the selected region.
+     */
+    public void zoom(Rectangle2D selection) {
+        // get the origin of the zoom selection in the Java2D space used for
+        // drawing the chart (that is, before any scaling to fit the panel)
+        Point2D selectOrigin = translateScreenToJava2D(new Point((int) Math.ceil(selection.getX()), (int) Math.ceil(selection.getY())));
+        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
+        Rectangle2D scaledDataArea = getScreenDataArea((int) selection.getCenterX(), (int) selection.getCenterY());
+        if ((selection.getHeight() > 0) && (selection.getWidth() > 0)) {
+            double hLower = (selection.getMinX() - scaledDataArea.getMinX()) / scaledDataArea.getWidth();
+            double hUpper = (selection.getMaxX() - scaledDataArea.getMinX()) / scaledDataArea.getWidth();
+            double vLower = (scaledDataArea.getMaxY() - selection.getMaxY()) / scaledDataArea.getHeight();
+            double vUpper = (scaledDataArea.getMaxY() - selection.getMinY()) / scaledDataArea.getHeight();
+            Plot p = this.chart.getPlot();
+            if (p instanceof Zoomable) {
+                // here we tweak the notify flag on the plot so that only
+                // one notification happens even though we update multiple
+                // axes...
+                boolean savedNotify = p.isNotify();
+                p.setNotify(false);
+                Zoomable z = (Zoomable) p;
+                if (z.getOrientation() == PlotOrientation.HORIZONTAL) {
+                    z.zoomDomainAxes(vLower, vUpper, plotInfo, selectOrigin);
+                    z.zoomRangeAxes(hLower, hUpper, plotInfo, selectOrigin);
+                } else {
+                    z.zoomDomainAxes(hLower, hUpper, plotInfo, selectOrigin);
+                    z.zoomRangeAxes(vLower, vUpper, plotInfo, selectOrigin);
+                }
+                p.setNotify(savedNotify);
+            }
+        }
+    }
+
+    /**
+     * Restores the auto-range calculation on both axes.
+     */
+    public void restoreAutoBounds() {
+        Plot plot = this.chart.getPlot();
+        if (plot == null) {
+            return;
+        }
+        // here we tweak the notify flag on the plot so that only
+        // one notification happens even though we update multiple
+        // axes...
+        boolean savedNotify = plot.isNotify();
+        plot.setNotify(false);
+        restoreAutoDomainBounds();
+        restoreAutoRangeBounds();
+        plot.setNotify(savedNotify);
+    }
+
+    /**
+     * Restores the auto-range calculation on the domain axis.
+     */
+    public void restoreAutoDomainBounds() {
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            Zoomable z = (Zoomable) plot;
+            // here we tweak the notify flag on the plot so that only
+            // one notification happens even though we update multiple
+            // axes...
+            boolean savedNotify = plot.isNotify();
+            plot.setNotify(false);
+            // we need to guard against this.zoomPoint being null
+            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
+            Point2D zp = zoomPoint != null ? zoomPoint : new Point();
+            z.zoomDomainAxes(0.0, this.info.getPlotInfo(), zp);
+            plot.setNotify(savedNotify);
+        }
+    }
+
+    /**
+     * Restores the auto-range calculation on the range axis.
+     */
+    public void restoreAutoRangeBounds() {
+        Plot plot = this.chart.getPlot();
+        if (plot instanceof Zoomable) {
+            Zoomable z = (Zoomable) plot;
+            // here we tweak the notify flag on the plot so that only
+            // one notification happens even though we update multiple
+            // axes...
+            boolean savedNotify = plot.isNotify();
+            plot.setNotify(false);
+            // we need to guard against this.zoomPoint being null
+            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
+            Point2D zp = zoomPoint != null ? zoomPoint : new Point();
+            z.zoomRangeAxes(0.0, this.info.getPlotInfo(), zp);
+            plot.setNotify(savedNotify);
+        }
+    }
+
+    /**
+     * Returns the data area for the chart (the area inside the axes) with the
+     * current scaling applied (that is, the area as it appears on screen).
+     *
+     * @return The scaled data area.
+     */
+    public Rectangle2D getScreenDataArea() {
+        Rectangle2D dataArea = this.info.getPlotInfo().getDataArea();
+        Insets insets = getInsets();
+        double x = dataArea.getX() * this.scaleX + insets.left;
+        double y = dataArea.getY() * this.scaleY + insets.top;
+        double w = dataArea.getWidth() * this.scaleX;
+        double h = dataArea.getHeight() * this.scaleY;
+        return new Rectangle2D.Double(x, y, w, h);
+    }
+
+    /**
+     * Returns the data area (the area inside the axes) for the plot or subplot,
+     * with the current scaling applied.
+     *
+     * @param x  the x-coordinate (for subplot selection).
+     * @param y  the y-coordinate (for subplot selection).
+     *
+     * @return The scaled data area.
+     */
+    public Rectangle2D getScreenDataArea(int x, int y) {
+        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
+        Rectangle2D result;
+        if (plotInfo.getSubplotCount() == 0) {
+            result = getScreenDataArea();
+        } else {
+            // get the origin of the zoom selection in the Java2D space used for
+            // drawing the chart (that is, before any scaling to fit the panel)
+            Point2D selectOrigin = translateScreenToJava2D(new Point(x, y));
+            int subplotIndex = plotInfo.getSubplotIndex(selectOrigin);
+            if (subplotIndex == -1) {
+                return null;
+            }
+            result = scale(plotInfo.getSubplotInfo(subplotIndex).getDataArea());
+        }
+        return result;
+    }
+
+    /**
+     * Returns the initial tooltip delay value used inside this chart panel.
+     *
+     * @return An integer representing the initial delay value, in milliseconds.
+     *
+     * @see javax.swing.ToolTipManager#getInitialDelay()
+     */
+    public int getInitialDelay() {
+        return this.ownToolTipInitialDelay;
+    }
+
+    /**
+     * Returns the reshow tooltip delay value used inside this chart panel.
+     *
+     * @return An integer representing the reshow  delay value, in milliseconds.
+     *
+     * @see javax.swing.ToolTipManager#getReshowDelay()
+     */
+    public int getReshowDelay() {
+        return this.ownToolTipReshowDelay;
+    }
+
+    /**
+     * Returns the dismissal tooltip delay value used inside this chart panel.
+     *
+     * @return An integer representing the dismissal delay value, in
+     *         milliseconds.
+     *
+     * @see javax.swing.ToolTipManager#getDismissDelay()
+     */
+    public int getDismissDelay() {
+        return this.ownToolTipDismissDelay;
+    }
+
+    /**
+     * Specifies the initial delay value for this chart panel.
+     *
+     * @param delay  the number of milliseconds to delay (after the cursor has
+     *               paused) before displaying.
+     *
+     * @see javax.swing.ToolTipManager#setInitialDelay(int)
+     */
+    public void setInitialDelay(int delay) {
+        this.ownToolTipInitialDelay = delay;
+    }
+
+    /**
+     * Specifies the amount of time before the user has to wait initialDelay
+     * milliseconds before a tooltip will be shown.
+     *
+     * @param delay  time in milliseconds
+     *
+     * @see javax.swing.ToolTipManager#setReshowDelay(int)
+     */
+    public void setReshowDelay(int delay) {
+        this.ownToolTipReshowDelay = delay;
+    }
+
+    /**
+     * Specifies the dismissal delay value for this chart panel.
+     *
+     * @param delay the number of milliseconds to delay before taking away the
+     *              tooltip
+     *
+     * @see javax.swing.ToolTipManager#setDismissDelay(int)
+     */
+    public void setDismissDelay(int delay) {
+        this.ownToolTipDismissDelay = delay;
+    }
+
+    /**
+     * Returns the zoom in factor.
+     *
+     * @return The zoom in factor.
+     *
+     * @see #setZoomInFactor(double)
+     */
+    public double getZoomInFactor() {
+        return this.zoomInFactor;
+    }
+
+    /**
+     * Sets the zoom in factor.
+     *
+     * @param factor  the factor.
+     *
+     * @see #getZoomInFactor()
+     */
+    public void setZoomInFactor(double factor) {
+        this.zoomInFactor = factor;
+    }
+
+    /**
+     * Returns the zoom out factor.
+     *
+     * @return The zoom out factor.
+     *
+     * @see #setZoomOutFactor(double)
+     */
+    public double getZoomOutFactor() {
+        return this.zoomOutFactor;
+    }
+
+    /**
+     * Sets the zoom out factor.
+     *
+     * @param factor  the factor.
+     *
+     * @see #getZoomOutFactor()
+     */
+    public void setZoomOutFactor(double factor) {
+        this.zoomOutFactor = factor;
+    }
+
+    /**
+     * Displays a dialog that allows the user to edit the properties for the
+     * current chart.
+     */
+    public void doEditChartProperties() {
+        ChartEditor editor = ChartEditorManager.getChartEditor(this.chart);
+        int result = JOptionPane.showConfirmDialog(this, editor, localizationResources.getString("Chart_Properties"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            editor.updateChart(this.chart);
+        }
+    }
+
+    /**
+     * Copies the current chart to the system clipboard.
+     */
+    public void doCopy() {
+        Clipboard systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+        Insets insets = getInsets();
+        int w = getWidth() - insets.left - insets.right;
+        int h = getHeight() - insets.top - insets.bottom;
+        ChartTransferable selection = new ChartTransferable(this.chart, w, h, getMinimumDrawWidth(), getMinimumDrawHeight(), getMaximumDrawWidth(), getMaximumDrawHeight(), true);
+        systemClipboard.setContents(selection, null);
+    }
+
+    /**
+     * Opens a file chooser and gives the user an opportunity to save the chart
+     * in PNG format.
+     *
+     * @throws IOException if there is an I/O error.
+     */
+    public void doSaveAs() throws IOException {
+        doSaveAs(-1, -1);
+    }
+
+    /**
+     * Opens a file chooser and gives the user an opportunity to save the chart
+     * in PNG format.
+     *
+     * @param w  the width for the saved image (if less than or equal to zero,
+     *      the panel width will be used);
+     * @param h  the height for the PNG image (if less than or equal to zero,
+     *      the panel height will be used);
+     *
+     * @throws IOException if there is an I/O error.
+     */
+    public void doSaveAs(int w, int h) throws IOException {
+        JFileChooser fileChooser = new JFileChooser();
+        fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
+        FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("PNG_Image_Files"), "png");
+        fileChooser.addChoosableFileFilter(filter);
+        fileChooser.setFileFilter(filter);
+        int option = fileChooser.showSaveDialog(this);
+        if (option == JFileChooser.APPROVE_OPTION) {
+            String filename = fileChooser.getSelectedFile().getPath();
+            if (isEnforceFileExtensions()) {
+                if (!filename.endsWith(".png")) {
+                    filename = filename + ".png";
+                }
+            }
+            if (w <= 0) {
+                w = getWidth();
+            }
+            if (h <= 0) {
+                h = getHeight();
+            }
+            ChartUtils.saveChartAsPNG(new File(filename), this.chart, w, h);
+        }
+    }
+
+    /**
+     * Saves the chart in SVG format (a filechooser will be displayed so that
+     * the user can specify the filename).  Note that this method only works
+     * if the JFreeSVG library is on the classpath...if this library is not
+     * present, the method will fail.
+     *
+     * @param f  the file.
+     *
+     * @throws IOException if there is an exception.
+     */
+    protected void saveAsSVG(File f) throws IOException {
+        File file = f;
+        if (file == null) {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("SVG_Files"), "svg");
+            fileChooser.addChoosableFileFilter(filter);
+            fileChooser.setFileFilter(filter);
+            int option = fileChooser.showSaveDialog(this);
+            if (option == JFileChooser.APPROVE_OPTION) {
+                String filename = fileChooser.getSelectedFile().getPath();
+                if (isEnforceFileExtensions()) {
+                    if (!filename.endsWith(".svg")) {
+                        filename = filename + ".svg";
+                    }
+                }
+                file = new File(filename);
+                if (file.exists()) {
+                    String fileExists = localizationResources.getString("FILE_EXISTS_CONFIRM_OVERWRITE");
+                    int response = JOptionPane.showConfirmDialog(this, fileExists, localizationResources.getString("Save_as_SVG"), JOptionPane.OK_CANCEL_OPTION);
+                    if (response == JOptionPane.CANCEL_OPTION) {
+                        file = null;
+                    }
+                }
+            }
+        }
+        if (file != null) {
+            // use reflection to get the SVG string
+            String svg = generateSVG(getWidth(), getHeight());
+            BufferedWriter writer = null;
+            Exception originalException = null;
+            try {
+                writer = new BufferedWriter(new FileWriter(file));
+                writer.write("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
+                writer.write(svg + "\n");
+                writer.flush();
+            } catch (Exception e) {
+                originalException = e;
+            }
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException ex) {
+                RuntimeException th = new RuntimeException(ex);
+                if (originalException != null)
+                    th.addSuppressed(originalException);
+                throw th;
+            }
+        }
+    }
+
+    /**
+     * Generates a string containing a rendering of the chart in SVG format.
+     * This feature is only supported if the JFreeSVG library is included on
+     * the classpath.
+     *
+     * @param width  the width.
+     * @param height  the height.
+     *
+     * @return A string containing an SVG element for the current chart, or
+     *     {@code null} if there is a problem with the method invocation
+     *     by reflection.
+     */
+    protected String generateSVG(int width, int height) {
+        Graphics2D g2 = createSVGGraphics2D(width, height);
+        if (g2 == null) {
+            throw new IllegalStateException("JFreeSVG library is not present.");
+        }
+        // we suppress shadow generation, because SVG is a vector format and
+        // the shadow effect is applied via bitmap effects...
+        g2.setRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION, true);
+        String svg = null;
+        Rectangle2D drawArea = new Rectangle2D.Double(0, 0, width, height);
+        this.chart.draw(g2, drawArea);
+        try {
+            Method m = g2.getClass().getMethod("getSVGElement");
+            svg = (String) m.invoke(g2);
+        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+            // null will be returned
+        }
+        return svg;
+    }
+
+    /**
+     * Creates an {@code SVGGraphics2D} instance (from JFreeSVG) using reflection.
+     * If JFreeSVG is not on the classpath, this method returns {@code null}.
+     *
+     * @param w  the width.
+     * @param h  the height.
+     *
+     * @return An {@code SVGGraphics2D} instance or {@code null}.
+     */
+    protected Graphics2D createSVGGraphics2D(int w, int h) {
+        try {
+            Class<?> svgGraphics2d = Class.forName("org.jfree.graphics2d.svg.SVGGraphics2D");
+            Constructor<?> ctor = svgGraphics2d.getConstructor(int.class, int.class);
+            return (Graphics2D) ctor.newInstance(w, h);
+        } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+            return null;
+        }
+    }
+
+    /**
+     * Saves the chart in PDF format (a filechooser will be displayed so that
+     * the user can specify the filename).  Note that this method only works
+     * if the OrsonPDF library is on the classpath...if this library is not
+     * present, the method will fail.
+     *
+     * @param f  the file.
+     */
+    protected void saveAsPDF(File f) {
+        File file = f;
+        if (file == null) {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
+            FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("PDF_Files"), "pdf");
+            fileChooser.addChoosableFileFilter(filter);
+            fileChooser.setFileFilter(filter);
+            int option = fileChooser.showSaveDialog(this);
+            if (option == JFileChooser.APPROVE_OPTION) {
+                String filename = fileChooser.getSelectedFile().getPath();
+                if (isEnforceFileExtensions()) {
+                    if (!filename.endsWith(".pdf")) {
+                        filename = filename + ".pdf";
+                    }
+                }
+                file = new File(filename);
+                if (file.exists()) {
+                    String fileExists = localizationResources.getString("FILE_EXISTS_CONFIRM_OVERWRITE");
+                    int response = JOptionPane.showConfirmDialog(this, fileExists, localizationResources.getString("Save_as_PDF"), JOptionPane.OK_CANCEL_OPTION);
+                    if (response == JOptionPane.CANCEL_OPTION) {
+                        file = null;
+                    }
+                }
+            }
+        }
+        if (file != null) {
+            writeAsPDF(file, getWidth(), getHeight());
+        }
+    }
+
+    /**
+     * Writes the current chart to the specified file in PDF format.  This
+     * will only work when the OrsonPDF library is found on the classpath.
+     * Reflection is used to ensure there is no compile-time dependency on
+     * OrsonPDF (which is non-free software).
+     *
+     * @param file  the output file ({@code null} not permitted).
+     * @param w  the chart width.
+     * @param h  the chart height.
+     */
+    private void writeAsPDF(File file, int w, int h) {
+        if (!ChartUtils.isOrsonPDFAvailable()) {
+            throw new IllegalStateException("OrsonPDF is not present on the classpath.");
+        }
+        Args.nullNotPermitted(file, "file");
+        try {
+            Class<?> pdfDocClass = Class.forName("com.orsonpdf.PDFDocument");
+            Object pdfDoc = pdfDocClass.getDeclaredConstructor().newInstance();
+            Method m = pdfDocClass.getMethod("createPage", Rectangle2D.class);
+            Rectangle2D rect = new Rectangle(w, h);
+            Object page = m.invoke(pdfDoc, rect);
+            Method m2 = page.getClass().getMethod("getGraphics2D");
+            Graphics2D g2 = (Graphics2D) m2.invoke(page);
+            // we suppress shadow generation, because PDF is a vector format and
+            // the shadow effect is applied via bitmap effects...
+            g2.setRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION, true);
+            Rectangle2D drawArea = new Rectangle2D.Double(0, 0, w, h);
+            this.chart.draw(g2, drawArea);
+            Method m3 = pdfDocClass.getMethod("writeToFile", File.class);
+            m3.invoke(pdfDoc, file);
+        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | SecurityException | IllegalArgumentException | InvocationTargetException ex) {
+            throw new RuntimeException(ex);
+        }
+    }
+
+    /**
+     * Creates a print job for the chart.
+     */
+    public void createChartPrintJob() {
+        PrinterJob job = PrinterJob.getPrinterJob();
+        PageFormat pf = job.defaultPage();
+        PageFormat pf2 = job.pageDialog(pf);
+        if (pf2 != pf) {
+            job.setPrintable(this, pf2);
+            if (job.printDialog()) {
+                try {
+                    job.print();
+                } catch (PrinterException e) {
+                    JOptionPane.showMessageDialog(this, e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Prints the chart on a single page.
+     *
+     * @param g  the graphics context.
+     * @param pf  the page format to use.
+     * @param pageIndex  the index of the page. If not {@code 0}, nothing
+     *                   gets printed.
+     *
+     * @return The result of printing.
+     */
+    @Override
+    public int print(Graphics g, PageFormat pf, int pageIndex) {
+        if (pageIndex != 0) {
+            return NO_SUCH_PAGE;
+        }
+        Graphics2D g2 = (Graphics2D) g;
+        double x = pf.getImageableX();
+        double y = pf.getImageableY();
+        double w = pf.getImageableWidth();
+        double h = pf.getImageableHeight();
+        this.chart.draw(g2, new Rectangle2D.Double(x, y, w, h), this.anchor, null);
+        return PAGE_EXISTS;
+    }
+
+    /**
+     * Adds a listener to the list of objects listening for chart mouse events.
+     *
+     * @param listener  the listener ({@code null} not permitted).
+     */
+    public void addChartMouseListener(ChartMouseListener listener) {
+        Args.nullNotPermitted(listener, "listener");
+        this.chartMouseListeners.add(ChartMouseListener.class, listener);
+    }
+
+    /**
+     * Removes a listener from the list of objects listening for chart mouse
+     * events.
+     *
+     * @param listener  the listener.
+     */
+    public void removeChartMouseListener(ChartMouseListener listener) {
+        this.chartMouseListeners.remove(ChartMouseListener.class, listener);
+    }
+
+    /**
+     * Returns an array of the listeners of the given type registered with the
+     * panel.
+     *
+     * @param listenerType  the listener type.
+     *
+     * @return An array of listeners.
+     */
+    @Override
+    public <T extends EventListener> T[] getListeners(Class<T> listenerType) {
+        if (listenerType == ChartMouseListener.class) {
+            // fetch listeners from local storage
+            return this.chartMouseListeners.getListeners(listenerType);
+        } else {
+            return super.getListeners(listenerType);
+        }
+    }
+
+    /**
+     * Creates a popup menu for the panel.  This method includes code that
+     * auto-detects JFreeSVG and OrsonPDF (via reflection) and, if they are
+     * present (and the {@code save} argument is {@code true}, adds a menu item
+     * for each.
+     *
+     * @param properties  include a menu item for the chart property editor.
+     * @param copy include a menu item for copying to the clipboard.
+     * @param save  include one or more menu items for saving the chart to
+     *     supported image formats.
+     * @param print  include a menu item for printing the chart.
+     * @param zoom  include menu items for zooming.
+     *
+     * @return The popup menu.
+     */
+    protected JPopupMenu createPopupMenu(boolean properties, boolean copy, boolean save, boolean print, boolean zoom) {
+        JPopupMenu result = new JPopupMenu(localizationResources.getString("Chart") + ":");
+        boolean separator = false;
+        if (properties) {
+            JMenuItem propertiesItem = new JMenuItem(localizationResources.getString("Properties..."));
+            propertiesItem.setActionCommand(PROPERTIES_COMMAND);
+            propertiesItem.addActionListener(this);
+            result.add(propertiesItem);
+            separator = true;
+        }
+        if (copy) {
+            if (separator) {
+                result.addSeparator();
+            }
+            JMenuItem copyItem = new JMenuItem(localizationResources.getString("Copy"));
+            copyItem.setActionCommand(COPY_COMMAND);
+            copyItem.addActionListener(this);
+            result.add(copyItem);
+            separator = !save;
+        }
+        if (save) {
+            if (separator) {
+                result.addSeparator();
+            }
+            JMenu saveSubMenu = new JMenu(localizationResources.getString("Save_as"));
+            // PNG - current res
+            {
+                JMenuItem pngItem = new JMenuItem(localizationResources.getString("PNG..."));
+                pngItem.setActionCommand(SAVE_AS_PNG_COMMAND);
+                pngItem.addActionListener(this);
+                saveSubMenu.add(pngItem);
+            }
+            // PNG - screen res
+            {
+                final Dimension ss = Toolkit.getDefaultToolkit().getScreenSize();
+                final String pngName = "PNG (" + ss.width + "x" + ss.height + ") ...";
+                JMenuItem pngItem = new JMenuItem(pngName);
+                pngItem.setActionCommand(SAVE_AS_PNG_SIZE_COMMAND);
+                pngItem.addActionListener(this);
+                saveSubMenu.add(pngItem);
+            }
+            if (ChartUtils.isJFreeSVGAvailable()) {
+                JMenuItem svgItem = new JMenuItem(localizationResources.getString("SVG..."));
+                svgItem.setActionCommand(SAVE_AS_SVG_COMMAND);
+                svgItem.addActionListener(this);
+                saveSubMenu.add(svgItem);
+            }
+            if (ChartUtils.isOrsonPDFAvailable()) {
+                JMenuItem pdfItem = new JMenuItem(localizationResources.getString("PDF..."));
+                pdfItem.setActionCommand(SAVE_AS_PDF_COMMAND);
+                pdfItem.addActionListener(this);
+                saveSubMenu.add(pdfItem);
+            }
+            result.add(saveSubMenu);
+            separator = true;
+        }
+        if (print) {
+            if (separator) {
+                result.addSeparator();
+            }
+            JMenuItem printItem = new JMenuItem(localizationResources.getString("Print..."));
+            printItem.setActionCommand(PRINT_COMMAND);
+            printItem.addActionListener(this);
+            result.add(printItem);
+            separator = true;
+        }
+        if (zoom) {
+            if (separator) {
+                result.addSeparator();
+            }
+            JMenu zoomInMenu = new JMenu(localizationResources.getString("Zoom_In"));
+            this.zoomInBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
+            this.zoomInBothMenuItem.setActionCommand(ZOOM_IN_BOTH_COMMAND);
+            this.zoomInBothMenuItem.addActionListener(this);
+            zoomInMenu.add(this.zoomInBothMenuItem);
+            zoomInMenu.addSeparator();
+            this.zoomInDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
+            this.zoomInDomainMenuItem.setActionCommand(ZOOM_IN_DOMAIN_COMMAND);
+            this.zoomInDomainMenuItem.addActionListener(this);
+            zoomInMenu.add(this.zoomInDomainMenuItem);
+            this.zoomInRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
+            this.zoomInRangeMenuItem.setActionCommand(ZOOM_IN_RANGE_COMMAND);
+            this.zoomInRangeMenuItem.addActionListener(this);
+            zoomInMenu.add(this.zoomInRangeMenuItem);
+            result.add(zoomInMenu);
+            JMenu zoomOutMenu = new JMenu(localizationResources.getString("Zoom_Out"));
+            this.zoomOutBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
+            this.zoomOutBothMenuItem.setActionCommand(ZOOM_OUT_BOTH_COMMAND);
+            this.zoomOutBothMenuItem.addActionListener(this);
+            zoomOutMenu.add(this.zoomOutBothMenuItem);
+            zoomOutMenu.addSeparator();
+            this.zoomOutDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
+            this.zoomOutDomainMenuItem.setActionCommand(ZOOM_OUT_DOMAIN_COMMAND);
+            this.zoomOutDomainMenuItem.addActionListener(this);
+            zoomOutMenu.add(this.zoomOutDomainMenuItem);
+            this.zoomOutRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
+            this.zoomOutRangeMenuItem.setActionCommand(ZOOM_OUT_RANGE_COMMAND);
+            this.zoomOutRangeMenuItem.addActionListener(this);
+            zoomOutMenu.add(this.zoomOutRangeMenuItem);
+            result.add(zoomOutMenu);
+            JMenu autoRangeMenu = new JMenu(localizationResources.getString("Auto_Range"));
+            this.zoomResetBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
+            this.zoomResetBothMenuItem.setActionCommand(ZOOM_RESET_BOTH_COMMAND);
+            this.zoomResetBothMenuItem.addActionListener(this);
+            autoRangeMenu.add(this.zoomResetBothMenuItem);
+            autoRangeMenu.addSeparator();
+            this.zoomResetDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
+            this.zoomResetDomainMenuItem.setActionCommand(ZOOM_RESET_DOMAIN_COMMAND);
+            this.zoomResetDomainMenuItem.addActionListener(this);
+            autoRangeMenu.add(this.zoomResetDomainMenuItem);
+            this.zoomResetRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
+            this.zoomResetRangeMenuItem.setActionCommand(ZOOM_RESET_RANGE_COMMAND);
+            this.zoomResetRangeMenuItem.addActionListener(this);
+            autoRangeMenu.add(this.zoomResetRangeMenuItem);
+            result.addSeparator();
+            result.add(autoRangeMenu);
+        }
+        return result;
+    }
+
+    /**
+     * The idea is to modify the zooming options depending on the type of chart
+     * being displayed by the panel.
+     *
+     * @param x  horizontal position of the popup.
+     * @param y  vertical position of the popup.
+     */
+    protected void displayPopupMenu(int x, int y) {
+        if (this.popup == null) {
+            return;
+        }
+        // go through each zoom menu item and decide whether to
+        // enable it...
+        boolean isDomainZoomable = false;
+        boolean isRangeZoomable = false;
+        Plot plot = (this.chart != null ? this.chart.getPlot() : null);
+        if (plot instanceof Zoomable) {
+            Zoomable z = (Zoomable) plot;
+            isDomainZoomable = z.isDomainZoomable();
+            isRangeZoomable = z.isRangeZoomable();
+        }
+        if (this.zoomInDomainMenuItem != null) {
+            this.zoomInDomainMenuItem.setEnabled(isDomainZoomable);
+        }
+        if (this.zoomOutDomainMenuItem != null) {
+            this.zoomOutDomainMenuItem.setEnabled(isDomainZoomable);
+        }
+        if (this.zoomResetDomainMenuItem != null) {
+            this.zoomResetDomainMenuItem.setEnabled(isDomainZoomable);
+        }
+        if (this.zoomInRangeMenuItem != null) {
+            this.zoomInRangeMenuItem.setEnabled(isRangeZoomable);
+        }
+        if (this.zoomOutRangeMenuItem != null) {
+            this.zoomOutRangeMenuItem.setEnabled(isRangeZoomable);
+        }
+        if (this.zoomResetRangeMenuItem != null) {
+            this.zoomResetRangeMenuItem.setEnabled(isRangeZoomable);
+        }
+        if (this.zoomInBothMenuItem != null) {
+            this.zoomInBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
+        }
+        if (this.zoomOutBothMenuItem != null) {
+            this.zoomOutBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
+        }
+        if (this.zoomResetBothMenuItem != null) {
+            this.zoomResetBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
+        }
+        this.popup.show(this, x, y);
+    }
+
+    /**
+     * Updates the UI for a LookAndFeel change.
+     */
+    @Override
+    public void updateUI() {
+        // here we need to update the UI for the popup menu, if the panel
+        // has one...
+        if (this.popup != null) {
+            SwingUtilities.updateComponentTreeUI(this.popup);
+        }
+        super.updateUI();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    protected void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    protected void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        // we create a new but empty chartMouseListeners list
+        this.chartMouseListeners = new EventListenerList();
+        // register as a listener with sub-components...
+        if (this.chart != null) {
+            this.chart.addChangeListener(this);
         }
     }
 }
@@ -9744,304 +9046,418 @@ class CategoryPlot<R extends Comparable<R>, C extends Comparable<C>> extends Plo
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * --------------------------
- * XYDataImageAnnotation.java
- * --------------------------
- * (C) Copyright 2008-present, by David Gilbert and Contributors.
+ * ----------
+ * Range.java
+ * ----------
+ * (C) Copyright 2002-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Peter Kolb (patch 2809117);
- *
+ * Contributor(s):   Chuanhao Chiu;
+ *                   Bill Kelemen;
+ *                   Nicolas Brodu;
+ *                   Sergei Ivanov;
+ * 
  */
 /**
- * An annotation that allows an image to be placed within a rectangle specified
- * in data coordinates on an {@link XYPlot}.  Note that this annotation
- * is not currently serializable, so don't use it if you plan on serializing
- * your chart(s).
+ * Represents an immutable range of values.
  */
-class XYDataImageAnnotation extends AbstractXYAnnotation implements Cloneable, PublicCloneable, XYAnnotationBoundsInfo {
+public strictfp class Range implements Serializable {
 
     /**
-     * The image.
+     * For serialization.
      */
-    private transient Image image;
+    private static final long serialVersionUID = -906333695431863380L;
 
     /**
-     * The x-coordinate (in data space).
+     * The lower bound of the range.
      */
-    private double x;
+    private final double lower;
 
     /**
-     * The y-coordinate (in data space).
+     * The upper bound of the range.
      */
-    private double y;
+    private final double upper;
 
     /**
-     * The image display area width in data coordinates.
-     */
-    private double w;
-
-    /**
-     * The image display area height in data coordinates.
-     */
-    private double h;
-
-    /**
-     * A flag indicating whether the annotation should contribute to
-     * the data range for a plot/renderer.
-     */
-    private boolean includeInDataBounds;
-
-    /**
-     * Creates a new annotation to be displayed within the specified rectangle.
+     * Creates a new range.
      *
-     * @param image  the image ({@code null} not permitted).
-     * @param x  the x-coordinate (in data space).
-     * @param y  the y-coordinate (in data space).
-     * @param w  the image display area width.
-     * @param h  the image display area height.
+     * @param lower  the lower bound (must be &lt;= upper bound).
+     * @param upper  the upper bound (must be &gt;= lower bound).
      */
-    public XYDataImageAnnotation(Image image, double x, double y, double w, double h) {
-        this(image, x, y, w, h, false);
+    public Range(double lower, double upper) {
+        if (lower > upper) {
+            String msg = "Range(double, double): require lower (" + lower + ") <= upper (" + upper + ").";
+            throw new IllegalArgumentException(msg);
+        }
+        this.lower = lower;
+        this.upper = upper;
     }
 
     /**
-     * Creates a new annotation to be displayed within the specified rectangle.
+     * Returns the lower bound for the range.
      *
-     * @param image  the image ({@code null} not permitted).
-     * @param x  the x-coordinate (in data space).
-     * @param y  the y-coordinate (in data space).
-     * @param w  the image display area width.
-     * @param h  the image display area height.
-     * @param includeInDataBounds  a flag that controls whether the
-     *     annotation is included in the data bounds for the axis autoRange.
+     * @return The lower bound.
      */
-    public XYDataImageAnnotation(Image image, double x, double y, double w, double h, boolean includeInDataBounds) {
-        super();
-        Args.nullNotPermitted(image, "image");
-        this.image = image;
-        this.x = x;
-        this.y = y;
-        this.w = w;
-        this.h = h;
-        this.includeInDataBounds = includeInDataBounds;
+    public double getLowerBound() {
+        return this.lower;
     }
 
     /**
-     * Returns the image for the annotation.
+     * Returns the upper bound for the range.
      *
-     * @return The image.
+     * @return The upper bound.
      */
-    public Image getImage() {
-        return this.image;
+    public double getUpperBound() {
+        return this.upper;
     }
 
     /**
-     * Returns the x-coordinate (in data space) for the annotation.
+     * Returns the length of the range.
      *
-     * @return The x-coordinate.
+     * @return The length.
      */
-    public double getX() {
-        return this.x;
+    public double getLength() {
+        return this.upper - this.lower;
     }
 
     /**
-     * Returns the y-coordinate (in data space) for the annotation.
+     * Returns the central value for the range.
      *
-     * @return The y-coordinate.
+     * @return The central value.
      */
-    public double getY() {
-        return this.y;
+    public double getCentralValue() {
+        return this.lower / 2.0 + this.upper / 2.0;
     }
 
     /**
-     * Returns the width (in data space) of the data rectangle into which the
-     * image will be drawn.
+     * Returns {@code true} if the range contains the specified value and
+     * {@code false} otherwise.
      *
-     * @return The width.
+     * @param value  the value to lookup.
+     *
+     * @return {@code true} if the range contains the specified value.
      */
-    public double getWidth() {
-        return this.w;
+    public boolean contains(double value) {
+        return (value >= this.lower && value <= this.upper);
     }
 
     /**
-     * Returns the height (in data space) of the data rectangle into which the
-     * image will be drawn.
+     * Returns {@code true} if the range intersects with the specified
+     * range, and {@code false} otherwise.
      *
-     * @return The height.
-     */
-    public double getHeight() {
-        return this.h;
-    }
-
-    /**
-     * Returns the flag that controls whether the annotation should
-     * contribute to the autoRange for the axis it is plotted against.
+     * @param b0  the lower bound (should be &lt;= b1).
+     * @param b1  the upper bound (should be &gt;= b0).
      *
      * @return A boolean.
      */
-    @Override
-    public boolean getIncludeInDataBounds() {
-        return this.includeInDataBounds;
-    }
-
-    /**
-     * Returns the x-range for the annotation.
-     *
-     * @return The range.
-     */
-    @Override
-    public Range getXRange() {
-        return new Range(this.x, this.x + this.w);
-    }
-
-    /**
-     * Returns the y-range for the annotation.
-     *
-     * @return The range.
-     */
-    @Override
-    public Range getYRange() {
-        return new Range(this.y, this.y + this.h);
-    }
-
-    /**
-     * Draws the annotation.  This method is called by the drawing code in the
-     * {@link XYPlot} class, you don't normally need to call this method
-     * directly.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the data area.
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param rendererIndex  the renderer index.
-     * @param info  if supplied, this info object will be populated with
-     *              entity information.
-     */
-    @Override
-    public void draw(Graphics2D g2, XYPlot plot, Rectangle2D dataArea, ValueAxis domainAxis, ValueAxis rangeAxis, int rendererIndex, PlotRenderingInfo info) {
-        PlotOrientation orientation = plot.getOrientation();
-        AxisLocation xAxisLocation = plot.getDomainAxisLocation();
-        AxisLocation yAxisLocation = plot.getRangeAxisLocation();
-        RectangleEdge xEdge = Plot.resolveDomainAxisLocation(xAxisLocation, orientation);
-        RectangleEdge yEdge = Plot.resolveRangeAxisLocation(yAxisLocation, orientation);
-        float j2DX0 = (float) domainAxis.valueToJava2D(this.x, dataArea, xEdge);
-        float j2DY0 = (float) rangeAxis.valueToJava2D(this.y, dataArea, yEdge);
-        float j2DX1 = (float) domainAxis.valueToJava2D(this.x + this.w, dataArea, xEdge);
-        float j2DY1 = (float) rangeAxis.valueToJava2D(this.y + this.h, dataArea, yEdge);
-        float xx0 = 0.0f;
-        float yy0 = 0.0f;
-        float xx1 = 0.0f;
-        float yy1 = 0.0f;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            xx0 = j2DY0;
-            xx1 = j2DY1;
-            yy0 = j2DX0;
-            yy1 = j2DX1;
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            xx0 = j2DX0;
-            xx1 = j2DX1;
-            yy0 = j2DY0;
-            yy1 = j2DY1;
+    public boolean intersects(double b0, double b1) {
+        if (b0 <= this.lower) {
+            return (b1 > this.lower);
+        } else {
+            return (b0 < this.upper && b1 >= b0);
         }
-        // TODO: rotate the image when drawn with horizontal orientation?
-        g2.drawImage(this.image, (int) xx0, (int) Math.min(yy0, yy1), (int) (xx1 - xx0), (int) Math.abs(yy1 - yy0), null);
-        String toolTip = getToolTipText();
-        String url = getURL();
-        if (toolTip != null || url != null) {
-            addEntity(info, new Rectangle2D.Float(xx0, yy0, (xx1 - xx0), (yy1 - yy0)), rendererIndex, toolTip, url);
+    }
+
+    /**
+     * Returns {@code true} if the range intersects with the specified
+     * range, and {@code false} otherwise.
+     *
+     * @param range  another range ({@code null} not permitted).
+     *
+     * @return A boolean.
+     *
+     * @since 1.0.9
+     */
+    public boolean intersects(Range range) {
+        return intersects(range.getLowerBound(), range.getUpperBound());
+    }
+
+    /**
+     * Returns the value within the range that is closest to the specified
+     * value.
+     *
+     * @param value  the value.
+     *
+     * @return The constrained value.
+     */
+    public double constrain(double value) {
+        if (contains(value)) {
+            return value;
         }
+        if (value > this.upper) {
+            return this.upper;
+        }
+        if (value < this.lower) {
+            return this.lower;
+        }
+        // covers Double.NaN
+        return value;
+    }
+
+    /**
+     * Creates a new range by combining two existing ranges.
+     * <P>
+     * Note that:
+     * <ul>
+     *   <li>either range can be {@code null}, in which case the other
+     *       range is returned;</li>
+     *   <li>if both ranges are {@code null} the return value is
+     *       {@code null}.</li>
+     * </ul>
+     *
+     * @param range1  the first range ({@code null} permitted).
+     * @param range2  the second range ({@code null} permitted).
+     *
+     * @return A new range (possibly {@code null}).
+     */
+    public static Range combine(Range range1, Range range2) {
+        if (range1 == null) {
+            return range2;
+        }
+        if (range2 == null) {
+            return range1;
+        }
+        double l = Math.min(range1.getLowerBound(), range2.getLowerBound());
+        double u = Math.max(range1.getUpperBound(), range2.getUpperBound());
+        return new Range(l, u);
+    }
+
+    /**
+     * Returns a new range that spans both {@code range1} and
+     * {@code range2}.  This method has a special handling to ignore
+     * Double.NaN values.
+     *
+     * @param range1  the first range ({@code null} permitted).
+     * @param range2  the second range ({@code null} permitted).
+     *
+     * @return A new range (possibly {@code null}).
+     *
+     * @since 1.0.15
+     */
+    public static Range combineIgnoringNaN(Range range1, Range range2) {
+        if (range1 == null) {
+            if (range2 != null && range2.isNaNRange()) {
+                return null;
+            }
+            return range2;
+        }
+        if (range2 == null) {
+            if (range1.isNaNRange()) {
+                return null;
+            }
+            return range1;
+        }
+        double l = min(range1.getLowerBound(), range2.getLowerBound());
+        double u = max(range1.getUpperBound(), range2.getUpperBound());
+        if (Double.isNaN(l) && Double.isNaN(u)) {
+            return null;
+        }
+        return new Range(l, u);
+    }
+
+    /**
+     * Returns the minimum value.  If either value is NaN, the other value is
+     * returned.  If both are NaN, NaN is returned.
+     *
+     * @param d1  value 1.
+     * @param d2  value 2.
+     *
+     * @return The minimum of the two values.
+     */
+    private static double min(double d1, double d2) {
+        if (Double.isNaN(d1)) {
+            return d2;
+        }
+        if (Double.isNaN(d2)) {
+            return d1;
+        }
+        return Math.min(d1, d2);
+    }
+
+    private static double max(double d1, double d2) {
+        if (Double.isNaN(d1)) {
+            return d2;
+        }
+        if (Double.isNaN(d2)) {
+            return d1;
+        }
+        return Math.max(d1, d2);
+    }
+
+    /**
+     * Returns a range that includes all the values in the specified
+     * {@code range} AND the specified {@code value}.
+     *
+     * @param range  the range ({@code null} permitted).
+     * @param value  the value that must be included.
+     *
+     * @return A range.
+     *
+     * @since 1.0.1
+     */
+    public static Range expandToInclude(Range range, double value) {
+        if (range == null) {
+            return new Range(value, value);
+        }
+        if (value < range.getLowerBound()) {
+            return new Range(value, range.getUpperBound());
+        } else if (value > range.getUpperBound()) {
+            return new Range(range.getLowerBound(), value);
+        } else {
+            return range;
+        }
+    }
+
+    /**
+     * Creates a new range by adding margins to an existing range.
+     *
+     * @param range  the range ({@code null} not permitted).
+     * @param lowerMargin  the lower margin (expressed as a percentage of the
+     *                     range length).
+     * @param upperMargin  the upper margin (expressed as a percentage of the
+     *                     range length).
+     *
+     * @return The expanded range.
+     */
+    public static Range expand(Range range, double lowerMargin, double upperMargin) {
+        Args.nullNotPermitted(range, "range");
+        double length = range.getLength();
+        double lower = range.getLowerBound() - length * lowerMargin;
+        double upper = range.getUpperBound() + length * upperMargin;
+        if (lower > upper) {
+            lower = lower / 2.0 + upper / 2.0;
+            upper = lower;
+        }
+        return new Range(lower, upper);
+    }
+
+    /**
+     * Shifts the range by the specified amount.
+     *
+     * @param base  the base range ({@code null} not permitted).
+     * @param delta  the shift amount.
+     *
+     * @return A new range.
+     */
+    public static Range shift(Range base, double delta) {
+        return shift(base, delta, false);
+    }
+
+    /**
+     * Shifts the range by the specified amount.
+     *
+     * @param base  the base range ({@code null} not permitted).
+     * @param delta  the shift amount.
+     * @param allowZeroCrossing  a flag that determines whether the
+     *                           bounds of the range are allowed to cross
+     *                           zero after adjustment.
+     *
+     * @return A new range.
+     */
+    public static Range shift(Range base, double delta, boolean allowZeroCrossing) {
+        Args.nullNotPermitted(base, "base");
+        if (allowZeroCrossing) {
+            return new Range(base.getLowerBound() + delta, base.getUpperBound() + delta);
+        } else {
+            return new Range(shiftWithNoZeroCrossing(base.getLowerBound(), delta), shiftWithNoZeroCrossing(base.getUpperBound(), delta));
+        }
+    }
+
+    /**
+     * Returns the given {@code value} adjusted by {@code delta} but
+     * with a check to prevent the result from crossing {@code 0.0}.
+     *
+     * @param value  the value.
+     * @param delta  the adjustment.
+     *
+     * @return The adjusted value.
+     */
+    private static double shiftWithNoZeroCrossing(double value, double delta) {
+        if (value > 0.0) {
+            return Math.max(value + delta, 0.0);
+        } else if (value < 0.0) {
+            return Math.min(value + delta, 0.0);
+        } else {
+            return value + delta;
+        }
+    }
+
+    /**
+     * Scales the range by the specified factor.
+     *
+     * @param base the base range ({@code null} not permitted).
+     * @param factor the scaling factor (must be non-negative).
+     *
+     * @return A new range.
+     *
+     * @since 1.0.9
+     */
+    public static Range scale(Range base, double factor) {
+        Args.nullNotPermitted(base, "base");
+        if (factor < 0) {
+            throw new IllegalArgumentException("Negative 'factor' argument.");
+        }
+        return new Range(base.getLowerBound() * factor, base.getUpperBound() * factor);
     }
 
     /**
      * Tests this object for equality with an arbitrary object.
      *
-     * @param obj  the object ({@code null} permitted).
+     * @param obj  the object to test against ({@code null} permitted).
      *
      * @return A boolean.
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        // now try to reject equality...
-        if (!super.equals(obj)) {
+        if (!(obj instanceof Range)) {
             return false;
         }
-        if (!(obj instanceof XYDataImageAnnotation)) {
+        Range range = (Range) obj;
+        if (!(this.lower == range.lower)) {
             return false;
         }
-        XYDataImageAnnotation that = (XYDataImageAnnotation) obj;
-        if (this.x != that.x) {
+        if (!(this.upper == range.upper)) {
             return false;
         }
-        if (this.y != that.y) {
-            return false;
-        }
-        if (this.w != that.w) {
-            return false;
-        }
-        if (this.h != that.h) {
-            return false;
-        }
-        if (this.includeInDataBounds != that.includeInDataBounds) {
-            return false;
-        }
-        if (!Objects.equals(this.image, that.image)) {
-            return false;
-        }
-        // seems to be the same...
         return true;
     }
 
     /**
-     * Returns a hash code for this object.
+     * Returns {@code true} if both the lower and upper bounds are
+     * {@code Double.NaN}, and {@code false} otherwise.
+     *
+     * @return A boolean.
+     *
+     * @since 1.0.18
+     */
+    public boolean isNaNRange() {
+        return Double.isNaN(this.lower) && Double.isNaN(this.upper);
+    }
+
+    /**
+     * Returns a hash code.
      *
      * @return A hash code.
      */
     @Override
     public int hashCode() {
-        return this.image.hashCode();
+        int result;
+        long temp;
+        temp = Double.doubleToLongBits(this.lower);
+        result = (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(this.upper);
+        result = 29 * result + (int) (temp ^ (temp >>> 32));
+        return result;
     }
 
     /**
-     * Returns a clone of the annotation.
+     * Returns a string representation of this Range.
      *
-     * @return A clone.
-     *
-     * @throws CloneNotSupportedException  if the annotation can't be cloned.
+     * @return A String "Range[lower,upper]" where lower=lower range and
+     *         upper=upper range.
      */
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the output stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     */
-    private void writeObject(ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
-        // FIXME
-        //SerialUtils.writeImage(this.image, stream);
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the input stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
-     */
-    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-        // FIXME
-        //this.image = SerialUtils.readImage(stream);
+    public String toString() {
+        return ("Range[" + this.lower + "," + this.upper + "]");
     }
 }

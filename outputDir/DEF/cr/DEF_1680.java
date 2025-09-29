@@ -61,7 +61,7 @@ package DEF.cr;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5134,2808 +5134,1537 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * ChartPanel.java
- * ---------------
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ * -------------
+ * XYSeries.java
+ * -------------
+ * (C) Copyright 2001-present, David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Andrzej Porebski;
- *                   Soren Caspersen;
- *                   Jonathan Nash;
- *                   Hans-Jurgen Greiner;
- *                   Andreas Schneider;
- *                   Daniel van Enckevort;
- *                   David M O'Donnell;
- *                   Arnaud Lelievre;
- *                   Matthias Rose;
- *                   Onno vd Akker;
- *                   Sergei Ivanov;
- *                   Ulrich Voigt - patch 2686040;
- *                   Alessandro Borges - patch 1460845;
- *                   Martin Hoeller;
- *                   Simon Legner - patch from bug 1129;
+ * Contributor(s):   Aaron Metzger;
+ *                   Jonathan Gabbai;
+ *                   Richard Atkinson;
+ *                   Michel Santos;
+ *                   Ted Schwartz (fix for bug 1955483);
  */
 /**
- * A Swing GUI component for displaying a {@link JFreeChart} object.
- * <P>
- * The panel registers with the chart to receive notification of changes to any
- * component of the chart.  The chart is redrawn automatically whenever this
- * notification is received.
+ * Represents a sequence of zero or more data items in the form (x, y).  By
+ * default, items in the series will be sorted into ascending order by x-value,
+ * and duplicate x-values are permitted.  Both the sorting and duplicate
+ * defaults can be changed in the constructor.  Y-values can be
+ * {@code null} to represent missing values.
+ *
+ * @param <K> the series key type.
  */
-@SuppressWarnings("unused")
-class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressListener, ActionListener, MouseListener, MouseMotionListener, OverlayChangeListener, Printable, Serializable {
+public class XYSeries<K extends Comparable<K>> extends Series<K> implements Cloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 6046366297214274674L;
+    private static final long serialVersionUID = -5908509288197150436L;
+
+    // In version 0.9.12, in response to several developer requests, I changed
+    // the 'data' attribute from 'private' to 'protected', so that others can
+    // make subclasses that work directly with the underlying data structure.
+    /**
+     * Storage for the data items in the series.
+     */
+    protected List<XYDataItem> data;
 
     /**
-     * Default setting for buffer usage.  The default has been changed to
-     * {@code true} from version 1.0.13 onwards, because of a severe
-     * performance problem with drawing the zoom rectangle using XOR (which
-     * now happens only when the buffer is NOT used).
+     * The maximum number of items for the series.
      */
-    public static final boolean DEFAULT_BUFFER_USED = true;
+    private int maximumItemCount = Integer.MAX_VALUE;
 
     /**
-     * The default panel width.
+     * A flag that controls whether the items are automatically sorted
+     * (by x-value ascending).
      */
-    public static final int DEFAULT_WIDTH = 1024;
+    private final boolean autoSort;
 
     /**
-     * The default panel height.
+     * A flag that controls whether duplicate x-values are allowed.
      */
-    public static final int DEFAULT_HEIGHT = 768;
+    private final boolean allowDuplicateXValues;
 
     /**
-     * The default limit below which chart scaling kicks in.
+     * The lowest x-value in the series, excluding Double.NaN values.
      */
-    public static final int DEFAULT_MINIMUM_DRAW_WIDTH = 300;
+    private double minX;
 
     /**
-     * The default limit below which chart scaling kicks in.
+     * The highest x-value in the series, excluding Double.NaN values.
      */
-    public static final int DEFAULT_MINIMUM_DRAW_HEIGHT = 200;
+    private double maxX;
 
     /**
-     * The default limit above which chart scaling kicks in.
+     * The lowest y-value in the series, excluding Double.NaN values.
      */
-    public static final int DEFAULT_MAXIMUM_DRAW_WIDTH = 1024;
+    private double minY;
 
     /**
-     * The default limit above which chart scaling kicks in.
+     * The highest y-value in the series, excluding Double.NaN values.
      */
-    public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 768;
+    private double maxY;
 
     /**
-     * Properties action command.
+     * Creates a new empty series.  By default, items added to the series will
+     * be sorted into ascending order by x-value, and duplicate x-values will
+     * be allowed (these defaults can be modified with another constructor).
+     *
+     * @param key  the series key ({@code null} not permitted).
      */
-    public static final String PROPERTIES_COMMAND = "PROPERTIES";
-
-    /**
-     * Copy action command.
-     */
-    public static final String COPY_COMMAND = "COPY";
-
-    /**
-     * Save action command.
-     */
-    public static final String SAVE_COMMAND = "SAVE";
-
-    /**
-     * Action command to save as PNG.
-     */
-    protected static final String SAVE_AS_PNG_COMMAND = "SAVE_AS_PNG";
-
-    /**
-     * Action command to save as PNG - use screen size
-     */
-    protected static final String SAVE_AS_PNG_SIZE_COMMAND = "SAVE_AS_PNG_SIZE";
-
-    /**
-     * Action command to save as SVG.
-     */
-    protected static final String SAVE_AS_SVG_COMMAND = "SAVE_AS_SVG";
-
-    /**
-     * Action command to save as PDF.
-     */
-    protected static final String SAVE_AS_PDF_COMMAND = "SAVE_AS_PDF";
-
-    /**
-     * Print action command.
-     */
-    public static final String PRINT_COMMAND = "PRINT";
-
-    /**
-     * Zoom in (both axes) action command.
-     */
-    public static final String ZOOM_IN_BOTH_COMMAND = "ZOOM_IN_BOTH";
-
-    /**
-     * Zoom in (domain axis only) action command.
-     */
-    public static final String ZOOM_IN_DOMAIN_COMMAND = "ZOOM_IN_DOMAIN";
-
-    /**
-     * Zoom in (range axis only) action command.
-     */
-    public static final String ZOOM_IN_RANGE_COMMAND = "ZOOM_IN_RANGE";
-
-    /**
-     * Zoom out (both axes) action command.
-     */
-    public static final String ZOOM_OUT_BOTH_COMMAND = "ZOOM_OUT_BOTH";
-
-    /**
-     * Zoom out (domain axis only) action command.
-     */
-    public static final String ZOOM_OUT_DOMAIN_COMMAND = "ZOOM_DOMAIN_BOTH";
-
-    /**
-     * Zoom out (range axis only) action command.
-     */
-    public static final String ZOOM_OUT_RANGE_COMMAND = "ZOOM_RANGE_BOTH";
-
-    /**
-     * Zoom reset (both axes) action command.
-     */
-    public static final String ZOOM_RESET_BOTH_COMMAND = "ZOOM_RESET_BOTH";
-
-    /**
-     * Zoom reset (domain axis only) action command.
-     */
-    public static final String ZOOM_RESET_DOMAIN_COMMAND = "ZOOM_RESET_DOMAIN";
-
-    /**
-     * Zoom reset (range axis only) action command.
-     */
-    public static final String ZOOM_RESET_RANGE_COMMAND = "ZOOM_RESET_RANGE";
-
-    // default modifiers for zooming, private to avoid constant inlining,
-    // publicly available through getDefaultDragModifiersEx()
-    private static final int DEFAULT_DRAG_MODIFIERS_EX;
-
-    // mask for all modifier keys to check for
-    private static final int MODIFIERS_EX_MASK = InputEvent.SHIFT_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.ALT_DOWN_MASK;
-
-    static {
-        int dragModifiers = InputEvent.CTRL_DOWN_MASK;
-        // for MacOSX we can't use the CTRL key for mouse drags, see:
-        // http://developer.apple.com/qa/qa2004/qa1362.html
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.startsWith("mac os x")) {
-            dragModifiers = InputEvent.ALT_DOWN_MASK;
-        }
-        DEFAULT_DRAG_MODIFIERS_EX = dragModifiers;
+    public XYSeries(K key) {
+        this(key, true, true);
     }
 
     /**
-     * The standard mouse button modifiers for alternative drag operations.
-     * There are two kinds of mouse drag operations: pan and zoom.
-     * To distinguish between them, one needs to require modifier keys
-     * to be held down during the dragging.  However, some modifiers
-     * may not be usable on all platforms.  For example, on Mac OS X
-     * it is impossible to perform Ctrl-drags or right-drags, see
-     * <a href="http://developer.apple.com/qa/qa2004/qa1362.html">http://developer.apple.com/qa/qa2004/qa1362.html</a>.
-     * This function returns a non-zero modifier usable for any platform:
-     * Alt for Mac OS X, Ctrl for other platforms.  It is recommended
-     * to use these modifiers for one operation, and zero modifiers for
-     * the other.
+     * Constructs a new empty series, with the auto-sort flag set as requested,
+     * and duplicate values allowed.
      *
-     * @return modifiers mask, as in {@link InputEvent#getModifiersEx()}
-     * @see #setPanModifiersEx(int, int)
-     * @see #setZoomModifiersEx(int, int)
-     * @see #setDefaultPanModifiersEx(int)
-     * @see #setDefaultZoomModifiersEx(int)
+     * @param key  the series key ({@code null} not permitted).
+     * @param autoSort  a flag that controls whether the items in the
+     *                  series are sorted.
      */
-    public static int getDefaultDragModifiersEx() {
-        return DEFAULT_DRAG_MODIFIERS_EX;
+    public XYSeries(K key, boolean autoSort) {
+        this(key, autoSort, true);
     }
 
     /**
-     * The chart that is displayed in the panel.
-     */
-    protected JFreeChart chart;
-
-    /**
-     * Storage for registered (chart) mouse listeners.
-     */
-    protected transient EventListenerList chartMouseListeners;
-
-    /**
-     * A flag that controls whether the off-screen buffer is used.
-     */
-    protected boolean useBuffer;
-
-    /**
-     * A flag that indicates that the buffer should be refreshed.
-     */
-    protected boolean refreshBuffer;
-
-    /**
-     * A buffer for the rendered chart.
-     */
-    protected transient Image chartBuffer;
-
-    /**
-     * The height of the chart buffer.
-     */
-    protected int chartBufferHeight;
-
-    /**
-     * The width of the chart buffer.
-     */
-    protected int chartBufferWidth;
-
-    /**
-     * The minimum width for drawing a chart (uses scaling for smaller widths).
-     */
-    protected int minimumDrawWidth;
-
-    /**
-     * The minimum height for drawing a chart (uses scaling for smaller
-     * heights).
-     */
-    protected int minimumDrawHeight;
-
-    /**
-     * The maximum width for drawing a chart (uses scaling for bigger
-     * widths).
-     */
-    protected int maximumDrawWidth;
-
-    /**
-     * The maximum height for drawing a chart (uses scaling for bigger
-     * heights).
-     */
-    protected int maximumDrawHeight;
-
-    /**
-     * The popup menu for the frame.
-     */
-    protected JPopupMenu popup;
-
-    /**
-     * The drawing info collected the last time the chart was drawn.
-     */
-    protected ChartRenderingInfo info;
-
-    /**
-     * The chart anchor point.
-     */
-    protected Point2D anchor;
-
-    /**
-     * The scale factor used to draw the chart.
-     */
-    protected double scaleX;
-
-    /**
-     * The scale factor used to draw the chart.
-     */
-    protected double scaleY;
-
-    /**
-     * The plot orientation.
-     */
-    protected PlotOrientation orientation = PlotOrientation.VERTICAL;
-
-    /**
-     * A flag that controls whether domain zooming is enabled.
-     */
-    protected boolean domainZoomable = false;
-
-    /**
-     * A flag that controls whether range zooming is enabled.
-     */
-    protected boolean rangeZoomable = false;
-
-    /**
-     * A strategy to handle zoom rectangle processing and painting.
-     */
-    private SelectionZoomStrategy selectionZoomStrategy = new DefaultSelectionZoomStrategy();
-
-    /**
-     * Menu item for zooming in on a chart (both axes).
-     */
-    protected JMenuItem zoomInBothMenuItem;
-
-    /**
-     * Menu item for zooming in on a chart (domain axis).
-     */
-    protected JMenuItem zoomInDomainMenuItem;
-
-    /**
-     * Menu item for zooming in on a chart (range axis).
-     */
-    protected JMenuItem zoomInRangeMenuItem;
-
-    /**
-     * Menu item for zooming out on a chart.
-     */
-    protected JMenuItem zoomOutBothMenuItem;
-
-    /**
-     * Menu item for zooming out on a chart (domain axis).
-     */
-    protected JMenuItem zoomOutDomainMenuItem;
-
-    /**
-     * Menu item for zooming out on a chart (range axis).
-     */
-    protected JMenuItem zoomOutRangeMenuItem;
-
-    /**
-     * Menu item for resetting the zoom (both axes).
-     */
-    protected JMenuItem zoomResetBothMenuItem;
-
-    /**
-     * Menu item for resetting the zoom (domain axis only).
-     */
-    protected JMenuItem zoomResetDomainMenuItem;
-
-    /**
-     * Menu item for resetting the zoom (range axis only).
-     */
-    protected JMenuItem zoomResetRangeMenuItem;
-
-    /**
-     * The default directory for saving charts to file.
-     */
-    protected File defaultDirectoryForSaveAs;
-
-    /**
-     * A flag that controls whether file extensions are enforced.
-     */
-    protected boolean enforceFileExtensions;
-
-    /**
-     * A flag that indicates if original tooltip delays are changed.
-     */
-    protected boolean ownToolTipDelaysActive;
-
-    /**
-     * Original initial tooltip delay of ToolTipManager.sharedInstance().
-     */
-    protected int originalToolTipInitialDelay;
-
-    /**
-     * Original reshow tooltip delay of ToolTipManager.sharedInstance().
-     */
-    protected int originalToolTipReshowDelay;
-
-    /**
-     * Original dismiss tooltip delay of ToolTipManager.sharedInstance().
-     */
-    protected int originalToolTipDismissDelay;
-
-    /**
-     * Own initial tooltip delay to be used in this chart panel.
-     */
-    protected int ownToolTipInitialDelay;
-
-    /**
-     * Own reshow tooltip delay to be used in this chart panel.
-     */
-    protected int ownToolTipReshowDelay;
-
-    /**
-     * Own dismiss tooltip delay to be used in this chart panel.
-     */
-    protected int ownToolTipDismissDelay;
-
-    /**
-     * The factor used to zoom in on an axis range.
-     */
-    protected double zoomInFactor = 0.5;
-
-    /**
-     * The factor used to zoom out on an axis range.
-     */
-    protected double zoomOutFactor = 2.0;
-
-    /**
-     * A flag that controls whether zoom operations are centred on the
-     * current anchor point, or the centre point of the relevant axis.
-     */
-    protected boolean zoomAroundAnchor;
-
-    /**
-     * The resourceBundle for the localization.
-     */
-    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.LocalizationBundle");
-
-    /**
-     * Temporary storage for the width and height of the chart
-     * drawing area during panning.
-     */
-    protected double panW, panH;
-
-    /**
-     * The last mouse position during panning.
-     */
-    protected Point panLast;
-
-    /**
-     * The default mask for mouse events to trigger panning.
-     * Since 2.0.0, this mask uses extended modifiers, as returned
-     * by {@link InputEvent#getModifiersEx()}.
-     * Only used if no button-specific modifiers were set in
-     * {@link #panButtonMasks}.
-     */
-    protected int panMask = getDefaultDragModifiersEx();
-
-    /**
-     * The default mask for mouse events to trigger zooming.
+     * Constructs a new xy-series that contains no data.  You can specify
+     * whether duplicate x-values are allowed for the series.
      *
-     * @since 2.0.0
+     * @param key  the series key ({@code null} not permitted).
+     * @param autoSort  a flag that controls whether the items in the
+     *                  series are sorted.
+     * @param allowDuplicateXValues  a flag that controls whether duplicate
+     *                               x-values are allowed.
      */
-    protected int zoomMask = 0;
-
-    /**
-     * The masks for mouse events to trigger panning, per mouse button.
-     *
-     * @since 2.0.0
-     */
-    protected final Map<Integer, Integer> panButtonMasks = new HashMap<>(3);
-
-    /**
-     * The masks for mouse events to trigger zooming, per mouse button.
-     *
-     * @since 2.0.0
-     */
-    protected final Map<Integer, Integer> zoomButtonMasks = new HashMap<>(3);
-
-    /**
-     * A list of overlays for the panel.
-     */
-    protected List<Overlay> overlays;
-
-    /**
-     * Constructs a panel that displays the specified chart.
-     *
-     * @param chart  the chart.
-     */
-    public ChartPanel(JFreeChart chart) {
-        this(// properties
-        chart, // properties
-        DEFAULT_WIDTH, // properties
-        DEFAULT_HEIGHT, // properties
-        DEFAULT_MINIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MINIMUM_DRAW_HEIGHT, // properties
-        DEFAULT_MAXIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MAXIMUM_DRAW_HEIGHT, // properties
-        DEFAULT_BUFFER_USED, // save
-        true, // print
-        true, // zoom
-        true, // tooltips
-        true, true);
+    public XYSeries(K key, boolean autoSort, boolean allowDuplicateXValues) {
+        super(key);
+        this.data = new java.util.ArrayList<>();
+        this.autoSort = autoSort;
+        this.allowDuplicateXValues = allowDuplicateXValues;
+        this.minX = Double.NaN;
+        this.maxX = Double.NaN;
+        this.minY = Double.NaN;
+        this.maxY = Double.NaN;
     }
 
     /**
-     * Constructs a panel containing a chart.  The {@code useBuffer} flag
-     * controls whether an offscreen {@code BufferedImage} is
-     * maintained for the chart.  If the buffer is used, more memory is
-     * consumed, but panel repaints will be a lot quicker in cases where the
-     * chart itself hasn't changed (for example, when another frame is moved
-     * to reveal the panel).  WARNING: If you set the {@code useBuffer}
-     * flag to false, note that the mouse zooming rectangle will (in that case)
-     * be drawn using XOR, and there is a SEVERE performance problem with that
-     * on JRE6 on Windows.
+     * Returns the smallest x-value in the series, ignoring any Double.NaN
+     * values.  This method returns Double.NaN if there is no smallest x-value
+     * (for example, when the series is empty).
      *
-     * @param chart  the chart.
-     * @param useBuffer  a flag controlling whether an off-screen buffer
-     *                   is used (read the warning above before setting this
-     *                   to {@code false}).
+     * @return The smallest x-value.
+     *
+     * @see #getMaxX()
+     *
+     * @since 1.0.13
      */
-    public ChartPanel(JFreeChart chart, boolean useBuffer) {
-        this(// properties
-        chart, // properties
-        DEFAULT_WIDTH, // properties
-        DEFAULT_HEIGHT, // properties
-        DEFAULT_MINIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MINIMUM_DRAW_HEIGHT, // properties
-        DEFAULT_MAXIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MAXIMUM_DRAW_HEIGHT, // properties
-        useBuffer, // save
-        true, // print
-        true, // zoom
-        true, // tooltips
-        true, true);
+    public double getMinX() {
+        return this.minX;
     }
 
     /**
-     * Constructs a JFreeChart panel.
+     * Returns the largest x-value in the series, ignoring any Double.NaN
+     * values.  This method returns Double.NaN if there is no largest x-value
+     * (for example, when the series is empty).
      *
-     * @param chart  the chart.
-     * @param properties  a flag indicating whether the chart property
-     *                    editor should be available via the popup menu.
-     * @param save  a flag indicating whether save options should be
-     *              available via the popup menu.
-     * @param print  a flag indicating whether the print option
-     *               should be available via the popup menu.
-     * @param zoom  a flag indicating whether zoom options should
-     *              be added to the popup menu.
-     * @param tooltips  a flag indicating whether tooltips should be
-     *                  enabled for the chart.
+     * @return The largest x-value.
+     *
+     * @see #getMinX()
+     *
+     * @since 1.0.13
      */
-    public ChartPanel(JFreeChart chart, boolean properties, boolean save, boolean print, boolean zoom, boolean tooltips) {
-        this(chart, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_MINIMUM_DRAW_WIDTH, DEFAULT_MINIMUM_DRAW_HEIGHT, DEFAULT_MAXIMUM_DRAW_WIDTH, DEFAULT_MAXIMUM_DRAW_HEIGHT, DEFAULT_BUFFER_USED, properties, save, print, zoom, tooltips);
+    public double getMaxX() {
+        return this.maxX;
     }
 
     /**
-     * Constructs a JFreeChart panel.
+     * Returns the smallest y-value in the series, ignoring any null and
+     * Double.NaN values.  This method returns Double.NaN if there is no
+     * smallest y-value (for example, when the series is empty).
      *
-     * @param chart  the chart.
-     * @param width  the preferred width of the panel.
-     * @param height  the preferred height of the panel.
-     * @param minimumDrawWidth  the minimum drawing width.
-     * @param minimumDrawHeight  the minimum drawing height.
-     * @param maximumDrawWidth  the maximum drawing width.
-     * @param maximumDrawHeight  the maximum drawing height.
-     * @param useBuffer  a flag that indicates whether to use the off-screen
-     *                   buffer to improve performance (at the expense of
-     *                   memory).
-     * @param properties  a flag indicating whether the chart property
-     *                    editor should be available via the popup menu.
-     * @param save  a flag indicating whether save options should be
-     *              available via the popup menu.
-     * @param print  a flag indicating whether the print option
-     *               should be available via the popup menu.
-     * @param zoom  a flag indicating whether zoom options should be
-     *              added to the popup menu.
-     * @param tooltips  a flag indicating whether tooltips should be
-     *                  enabled for the chart.
+     * @return The smallest y-value.
+     *
+     * @see #getMaxY()
+     *
+     * @since 1.0.13
      */
-    public ChartPanel(JFreeChart chart, int width, int height, int minimumDrawWidth, int minimumDrawHeight, int maximumDrawWidth, int maximumDrawHeight, boolean useBuffer, boolean properties, boolean save, boolean print, boolean zoom, boolean tooltips) {
-        this(chart, width, height, minimumDrawWidth, minimumDrawHeight, maximumDrawWidth, maximumDrawHeight, useBuffer, properties, true, save, print, zoom, tooltips);
+    public double getMinY() {
+        return this.minY;
     }
 
     /**
-     * Constructs a JFreeChart panel.
+     * Returns the largest y-value in the series, ignoring any Double.NaN
+     * values.  This method returns Double.NaN if there is no largest y-value
+     * (for example, when the series is empty).
      *
-     * @param chart  the chart.
-     * @param width  the preferred width of the panel.
-     * @param height  the preferred height of the panel.
-     * @param minimumDrawWidth  the minimum drawing width.
-     * @param minimumDrawHeight  the minimum drawing height.
-     * @param maximumDrawWidth  the maximum drawing width.
-     * @param maximumDrawHeight  the maximum drawing height.
-     * @param useBuffer  a flag that indicates whether to use the off-screen
-     *                   buffer to improve performance (at the expense of
-     *                   memory).
-     * @param properties  a flag indicating whether the chart property
-     *                    editor should be available via the popup menu.
-     * @param copy  a flag indicating whether a copy option should be
-     *              available via the popup menu.
-     * @param save  a flag indicating whether save options should be
-     *              available via the popup menu.
-     * @param print  a flag indicating whether the print option
-     *               should be available via the popup menu.
-     * @param zoom  a flag indicating whether zoom options should be
-     *              added to the popup menu.
-     * @param tooltips  a flag indicating whether tooltips should be
-     *                  enabled for the chart.
+     * @return The largest y-value.
+     *
+     * @see #getMinY()
+     *
+     * @since 1.0.13
      */
-    public ChartPanel(JFreeChart chart, int width, int height, int minimumDrawWidth, int minimumDrawHeight, int maximumDrawWidth, int maximumDrawHeight, boolean useBuffer, boolean properties, boolean copy, boolean save, boolean print, boolean zoom, boolean tooltips) {
-        setChart(chart);
-        this.chartMouseListeners = new EventListenerList();
-        this.info = new ChartRenderingInfo();
-        setPreferredSize(new Dimension(width, height));
-        this.useBuffer = useBuffer;
-        this.refreshBuffer = false;
-        this.minimumDrawWidth = minimumDrawWidth;
-        this.minimumDrawHeight = minimumDrawHeight;
-        this.maximumDrawWidth = maximumDrawWidth;
-        this.maximumDrawHeight = maximumDrawHeight;
-        // set up popup menu...
-        this.popup = null;
-        if (properties || copy || save || print || zoom) {
-            this.popup = createPopupMenu(properties, copy, save, print, zoom);
-        }
-        enableEvents(AWTEvent.MOUSE_EVENT_MASK);
-        enableEvents(AWTEvent.MOUSE_MOTION_EVENT_MASK);
-        setDisplayToolTips(tooltips);
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        this.defaultDirectoryForSaveAs = null;
-        this.enforceFileExtensions = true;
-        // initialize ChartPanel-specific tool tip delays with
-        // values the from ToolTipManager.sharedInstance()
-        ToolTipManager ttm = ToolTipManager.sharedInstance();
-        this.ownToolTipInitialDelay = ttm.getInitialDelay();
-        this.ownToolTipDismissDelay = ttm.getDismissDelay();
-        this.ownToolTipReshowDelay = ttm.getReshowDelay();
-        this.zoomAroundAnchor = false;
-        this.overlays = new ArrayList<>();
+    public double getMaxY() {
+        return this.maxY;
     }
 
     /**
-     * Returns the chart contained in the panel.
+     * Updates the cached values for the minimum and maximum data values.
      *
-     * @return The chart (possibly {@code null}).
-     */
-    public JFreeChart getChart() {
-        return this.chart;
-    }
-
-    /**
-     * Sets the chart that is displayed in the panel.
+     * @param item  the item added ({@code null} not permitted).
      *
-     * @param chart  the chart ({@code null} permitted).
+     * @since 1.0.13
      */
-    public void setChart(JFreeChart chart) {
-        // stop listening for changes to the existing chart
-        if (this.chart != null) {
-            this.chart.removeChangeListener(this);
-            this.chart.removeProgressListener(this);
-        }
-        // add the new chart
-        this.chart = chart;
-        if (chart != null) {
-            this.chart.addChangeListener(this);
-            this.chart.addProgressListener(this);
-            Plot plot = chart.getPlot();
-            this.domainZoomable = false;
-            this.rangeZoomable = false;
-            if (plot instanceof Zoomable) {
-                Zoomable z = (Zoomable) plot;
-                this.domainZoomable = z.isDomainZoomable();
-                this.rangeZoomable = z.isRangeZoomable();
-                this.orientation = z.getOrientation();
-            }
-        } else {
-            this.domainZoomable = false;
-            this.rangeZoomable = false;
-        }
-        if (this.useBuffer) {
-            this.refreshBuffer = true;
-        }
-        repaint();
-    }
-
-    /**
-     * Returns the minimum drawing width for charts.
-     * <P>
-     * If the width available on the panel is less than this, then the chart is
-     * drawn at the minimum width then scaled down to fit.
-     *
-     * @return The minimum drawing width.
-     */
-    public int getMinimumDrawWidth() {
-        return this.minimumDrawWidth;
-    }
-
-    /**
-     * Sets the minimum drawing width for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available width is
-     * less than this amount, the chart will be drawn using the minimum width
-     * then scaled down to fit the available space.
-     *
-     * @param width  The width.
-     */
-    public void setMinimumDrawWidth(int width) {
-        this.minimumDrawWidth = width;
-    }
-
-    /**
-     * Returns the maximum drawing width for charts.
-     * <P>
-     * If the width available on the panel is greater than this, then the chart
-     * is drawn at the maximum width then scaled up to fit.
-     *
-     * @return The maximum drawing width.
-     */
-    public int getMaximumDrawWidth() {
-        return this.maximumDrawWidth;
-    }
-
-    /**
-     * Sets the maximum drawing width for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available width is
-     * greater than this amount, the chart will be drawn using the maximum
-     * width then scaled up to fit the available space.
-     *
-     * @param width  The width.
-     */
-    public void setMaximumDrawWidth(int width) {
-        this.maximumDrawWidth = width;
-    }
-
-    /**
-     * Returns the minimum drawing height for charts.
-     * <P>
-     * If the height available on the panel is less than this, then the chart
-     * is drawn at the minimum height then scaled down to fit.
-     *
-     * @return The minimum drawing height.
-     */
-    public int getMinimumDrawHeight() {
-        return this.minimumDrawHeight;
-    }
-
-    /**
-     * Sets the minimum drawing height for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available height is
-     * less than this amount, the chart will be drawn using the minimum height
-     * then scaled down to fit the available space.
-     *
-     * @param height  The height.
-     */
-    public void setMinimumDrawHeight(int height) {
-        this.minimumDrawHeight = height;
-    }
-
-    /**
-     * Returns the maximum drawing height for charts.
-     * <P>
-     * If the height available on the panel is greater than this, then the
-     * chart is drawn at the maximum height then scaled up to fit.
-     *
-     * @return The maximum drawing height.
-     */
-    public int getMaximumDrawHeight() {
-        return this.maximumDrawHeight;
-    }
-
-    /**
-     * Sets the maximum drawing height for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available height is
-     * greater than this amount, the chart will be drawn using the maximum
-     * height then scaled up to fit the available space.
-     *
-     * @param height  The height.
-     */
-    public void setMaximumDrawHeight(int height) {
-        this.maximumDrawHeight = height;
-    }
-
-    /**
-     * Returns the X scale factor for the chart.  This will be 1.0 if no
-     * scaling has been used.
-     *
-     * @return The scale factor.
-     */
-    public double getScaleX() {
-        return this.scaleX;
-    }
-
-    /**
-     * Returns the Y scale factory for the chart.  This will be 1.0 if no
-     * scaling has been used.
-     *
-     * @return The scale factor.
-     */
-    public double getScaleY() {
-        return this.scaleY;
-    }
-
-    /**
-     * Returns the anchor point.
-     *
-     * @return The anchor point (possibly {@code null}).
-     */
-    public Point2D getAnchor() {
-        return this.anchor;
-    }
-
-    /**
-     * Sets the anchor point.  This method is provided for the use of
-     * subclasses, not end users.
-     *
-     * @param anchor  the anchor point ({@code null} permitted).
-     */
-    protected void setAnchor(Point2D anchor) {
-        this.anchor = anchor;
-    }
-
-    /**
-     * Returns the popup menu.
-     *
-     * @return The popup menu.
-     */
-    public JPopupMenu getPopupMenu() {
-        return this.popup;
-    }
-
-    /**
-     * Sets the popup menu for the panel.
-     *
-     * @param popup  the popup menu ({@code null} permitted).
-     */
-    public void setPopupMenu(JPopupMenu popup) {
-        this.popup = popup;
-    }
-
-    /**
-     * Returns the chart rendering info from the most recent chart redraw.
-     *
-     * @return The chart rendering info.
-     */
-    public ChartRenderingInfo getChartRenderingInfo() {
-        return this.info;
-    }
-
-    /**
-     * A convenience method that switches on mouse-based zooming.
-     *
-     * @param flag  {@code true} enables zooming and rectangle fill on
-     *              zoom.
-     */
-    public void setMouseZoomable(boolean flag) {
-        setMouseZoomable(flag, true);
-    }
-
-    /**
-     * A convenience method that switches on mouse-based zooming.
-     *
-     * @param flag  {@code true} if zooming enabled
-     * @param fillRectangle  {@code true} if zoom rectangle is filled,
-     *                       false if rectangle is shown as outline only.
-     */
-    public void setMouseZoomable(boolean flag, boolean fillRectangle) {
-        setDomainZoomable(flag);
-        setRangeZoomable(flag);
-        setFillZoomRectangle(fillRectangle);
-    }
-
-    /**
-     * Sets default modifier keys for pan operations for all mouse buttons.
-     * Modifiers for a specific button can be set with
-     * {@link #setPanModifiersEx(int, int)}.  If there are none set for
-     * a certain button, it will use the modifiers passed to this function,
-     * defaulting to {@link #getDefaultDragModifiersEx()} if this function
-     * was never called.
-     * <p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
-     *
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setDefaultPanModifiersEx(int modifiersEx) {
-        this.panMask = modifiersEx;
-    }
-
-    /**
-     * Sets default modifier keys for zoom operations for all mouse buttons.
-     * Modifiers for a specific button can be set with
-     * {@link #setZoomModifiersEx(int, int)}.  If there are none set for
-     * a certain button, it will use the modifiers passed to this function,
-     * defaulting to zero (no modifiers) if this function was never called.
-     * <p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
-     *
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setDefaultZoomModifiersEx(int modifiersEx) {
-        this.zoomMask = modifiersEx;
-    }
-
-    /**
-     * Sets modifier keys for panning with a specific mouse button. If there are
-     * none set for a certain button with this function, default modifiers set
-     * with {@link #setDefaultPanModifiersEx(int)} will be used, defaulting to
-     * {@link #getDefaultDragModifiersEx()} if none were set either.<p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
-     *
-     * @param mouseButton  the mouse button
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setPanModifiersEx(int mouseButton, int modifiersEx) {
-        panButtonMasks.put(mouseButton, modifiersEx);
-    }
-
-    /**
-     * Sets modifier keys for zooming with a specific mouse button.
-     * If there are none set for a certain button with this function,
-     * default modifiers set with {@link #setDefaultZoomModifiersEx(int)}
-     * will be used, defaulting to zero (no modifiers)
-     * if none were set either.
-     * <p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
-     *
-     * @param mouseButton  the mouse button.
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setZoomModifiersEx(int mouseButton, int modifiersEx) {
-        zoomButtonMasks.put(mouseButton, modifiersEx);
-    }
-
-    /**
-     * Returns the flag that determines whether zooming is enabled for
-     * the domain axis.
-     *
-     * @return A boolean.
-     */
-    public boolean isDomainZoomable() {
-        return this.domainZoomable;
-    }
-
-    /**
-     * Sets the flag that controls whether zooming is enabled for the
-     * domain axis.  A check is made to ensure that the current plot supports
-     * zooming for the domain values.
-     *
-     * @param flag  {@code true} enables zooming if possible.
-     */
-    public void setDomainZoomable(boolean flag) {
-        if (flag) {
-            Plot plot = this.chart.getPlot();
-            if (plot instanceof Zoomable) {
-                Zoomable z = (Zoomable) plot;
-                this.domainZoomable = z.isDomainZoomable();
-            }
-        } else {
-            this.domainZoomable = false;
+    private void updateBoundsForAddedItem(XYDataItem item) {
+        double x = item.getXValue();
+        this.minX = minIgnoreNaN(this.minX, x);
+        this.maxX = maxIgnoreNaN(this.maxX, x);
+        if (item.getY() != null) {
+            double y = item.getYValue();
+            this.minY = minIgnoreNaN(this.minY, y);
+            this.maxY = maxIgnoreNaN(this.maxY, y);
         }
     }
 
     /**
-     * Returns the flag that determines whether zooming is enabled for
-     * the range axis.
+     * Updates the cached values for the minimum and maximum data values on
+     * the basis that the specified item has just been removed.
      *
-     * @return A boolean.
-     */
-    public boolean isRangeZoomable() {
-        return this.rangeZoomable;
-    }
-
-    /**
-     * A flag that controls mouse-based zooming on the vertical axis.
+     * @param item  the item added ({@code null} not permitted).
      *
-     * @param flag  {@code true} enables zooming.
+     * @since 1.0.13
      */
-    public void setRangeZoomable(boolean flag) {
-        if (flag) {
-            Plot plot = this.chart.getPlot();
-            if (plot instanceof Zoomable) {
-                Zoomable z = (Zoomable) plot;
-                this.rangeZoomable = z.isRangeZoomable();
-            }
-        } else {
-            this.rangeZoomable = false;
-        }
-    }
-
-    /**
-     * Returns a strategy used to control and draw zoom rectangle.
-     *
-     * @return A zoom rectangle strategy.
-     */
-    public SelectionZoomStrategy getSelectionZoomStrategy() {
-        return selectionZoomStrategy;
-    }
-
-    /**
-     * A strategy used to control and draw zoom rectangle.
-     *
-     * @param selectionZoomStrategy  A zoom rectangle strategy.
-     */
-    public void setSelectionZoomStrategy(SelectionZoomStrategy selectionZoomStrategy) {
-        this.selectionZoomStrategy = selectionZoomStrategy;
-    }
-
-    /**
-     * Returns the flag that controls whether the zoom rectangle is
-     * filled when drawn.
-     *
-     * @return A boolean.
-     */
-    public boolean getFillZoomRectangle() {
-        return this.selectionZoomStrategy.getFillZoomRectangle();
-    }
-
-    /**
-     * A flag that controls how the zoom rectangle is drawn.
-     *
-     * @param flag  {@code true} instructs to fill the rectangle on
-     *              zoom, otherwise it will be outlined.
-     */
-    public void setFillZoomRectangle(boolean flag) {
-        this.selectionZoomStrategy.setFillZoomRectangle(flag);
-    }
-
-    /**
-     * Returns the zoom trigger distance.  This controls how far the mouse must
-     * move before a zoom action is triggered.
-     *
-     * @return The distance (in Java2D units).
-     */
-    public int getZoomTriggerDistance() {
-        return this.selectionZoomStrategy.getZoomTriggerDistance();
-    }
-
-    /**
-     * Sets the zoom trigger distance.  This controls how far the mouse must
-     * move before a zoom action is triggered.
-     *
-     * @param distance  the distance (in Java2D units).
-     */
-    public void setZoomTriggerDistance(int distance) {
-        this.selectionZoomStrategy.setZoomTriggerDistance(distance);
-    }
-
-    /**
-     * Returns the default directory for the "save as" option.
-     *
-     * @return The default directory (possibly {@code null}).
-     */
-    public File getDefaultDirectoryForSaveAs() {
-        return this.defaultDirectoryForSaveAs;
-    }
-
-    /**
-     * Sets the default directory for the "save as" option.  If you set this
-     * to {@code null}, the user's default directory will be used.
-     *
-     * @param directory  the directory ({@code null} permitted).
-     */
-    public void setDefaultDirectoryForSaveAs(File directory) {
-        if (directory != null) {
-            if (!directory.isDirectory()) {
-                throw new IllegalArgumentException("The 'directory' argument is not a directory.");
+    private void updateBoundsForRemovedItem(XYDataItem item) {
+        boolean itemContributesToXBounds = false;
+        boolean itemContributesToYBounds = false;
+        double x = item.getXValue();
+        if (!Double.isNaN(x)) {
+            if (x <= this.minX || x >= this.maxX) {
+                itemContributesToXBounds = true;
             }
         }
-        this.defaultDirectoryForSaveAs = directory;
-    }
-
-    /**
-     * Returns {@code true} if file extensions should be enforced, and
-     * {@code false} otherwise.
-     *
-     * @return The flag.
-     *
-     * @see #setEnforceFileExtensions(boolean)
-     */
-    public boolean isEnforceFileExtensions() {
-        return this.enforceFileExtensions;
-    }
-
-    /**
-     * Sets a flag that controls whether file extensions are enforced.
-     *
-     * @param enforce  the new flag value.
-     *
-     * @see #isEnforceFileExtensions()
-     */
-    public void setEnforceFileExtensions(boolean enforce) {
-        this.enforceFileExtensions = enforce;
-    }
-
-    /**
-     * Returns the flag that controls whether zoom operations are
-     * centered around the current anchor point.
-     *
-     * @return A boolean.
-     *
-     * @see #setZoomAroundAnchor(boolean)
-     */
-    public boolean getZoomAroundAnchor() {
-        return this.zoomAroundAnchor;
-    }
-
-    /**
-     * Sets the flag that controls whether zoom operations are
-     * centered around the current anchor point.
-     *
-     * @param zoomAroundAnchor  the new flag value.
-     *
-     * @see #getZoomAroundAnchor()
-     */
-    public void setZoomAroundAnchor(boolean zoomAroundAnchor) {
-        this.zoomAroundAnchor = zoomAroundAnchor;
-    }
-
-    /**
-     * Returns the zoom rectangle fill paint.
-     *
-     * @return The zoom rectangle fill paint (never {@code null}).
-     *
-     * @see #setZoomFillPaint(java.awt.Paint)
-     * @see #setFillZoomRectangle(boolean)
-     */
-    public Paint getZoomFillPaint() {
-        return selectionZoomStrategy.getZoomFillPaint();
-    }
-
-    /**
-     * Sets the zoom rectangle fill paint.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getZoomFillPaint()
-     * @see #getFillZoomRectangle()
-     */
-    public void setZoomFillPaint(Paint paint) {
-        selectionZoomStrategy.setZoomFillPaint(paint);
-    }
-
-    /**
-     * Returns the zoom rectangle outline paint.
-     *
-     * @return The zoom rectangle outline paint (never {@code null}).
-     *
-     * @see #setZoomOutlinePaint(java.awt.Paint)
-     * @see #setFillZoomRectangle(boolean)
-     */
-    public Paint getZoomOutlinePaint() {
-        return selectionZoomStrategy.getZoomOutlinePaint();
-    }
-
-    /**
-     * Sets the zoom rectangle outline paint.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getZoomOutlinePaint()
-     * @see #getFillZoomRectangle()
-     */
-    public void setZoomOutlinePaint(Paint paint) {
-        this.selectionZoomStrategy.setZoomOutlinePaint(paint);
-    }
-
-    /**
-     * The mouse wheel handler.
-     */
-    protected MouseWheelHandler mouseWheelHandler;
-
-    /**
-     * Returns {@code true} if the mouse wheel handler is enabled, and
-     * {@code false} otherwise.
-     *
-     * @return A boolean.
-     */
-    public boolean isMouseWheelEnabled() {
-        return this.mouseWheelHandler != null;
-    }
-
-    /**
-     * Enables or disables mouse wheel support for the panel.
-     *
-     * @param flag  a boolean.
-     */
-    public void setMouseWheelEnabled(boolean flag) {
-        if (flag && this.mouseWheelHandler == null) {
-            this.mouseWheelHandler = new MouseWheelHandler(this);
-        } else if (!flag && this.mouseWheelHandler != null) {
-            this.removeMouseWheelListener(this.mouseWheelHandler);
-            this.mouseWheelHandler = null;
-        }
-    }
-
-    /**
-     * Add an overlay to the panel.
-     *
-     * @param overlay  the overlay ({@code null} not permitted).
-     */
-    public void addOverlay(Overlay overlay) {
-        Args.nullNotPermitted(overlay, "overlay");
-        this.overlays.add(overlay);
-        overlay.addChangeListener(this);
-        repaint();
-    }
-
-    /**
-     * Removes an overlay from the panel.
-     *
-     * @param overlay  the overlay to remove ({@code null} not permitted).
-     */
-    public void removeOverlay(Overlay overlay) {
-        Args.nullNotPermitted(overlay, "overlay");
-        boolean removed = this.overlays.remove(overlay);
-        if (removed) {
-            overlay.removeChangeListener(this);
-            repaint();
-        }
-    }
-
-    /**
-     * Handles a change to an overlay by repainting the panel.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void overlayChanged(OverlayChangeEvent event) {
-        repaint();
-    }
-
-    /**
-     * Switches the display of tooltips for the panel on or off.  Note that
-     * tooltips can only be displayed if the chart has been configured to
-     * generate tooltip items.
-     *
-     * @param flag  {@code true} to enable tooltips, {@code false} to
-     *              disable tooltips.
-     */
-    public void setDisplayToolTips(boolean flag) {
-        if (flag) {
-            ToolTipManager.sharedInstance().registerComponent(this);
-        } else {
-            ToolTipManager.sharedInstance().unregisterComponent(this);
-        }
-    }
-
-    /**
-     * Returns a string for the tooltip.
-     *
-     * @param e  the mouse event.
-     *
-     * @return A tool tip or {@code null} if no tooltip is available.
-     */
-    @Override
-    public String getToolTipText(MouseEvent e) {
-        String result = null;
-        if (this.info != null) {
-            EntityCollection entities = this.info.getEntityCollection();
-            if (entities != null) {
-                Insets insets = getInsets();
-                ChartEntity entity = entities.getEntity((int) ((e.getX() - insets.left) / this.scaleX), (int) ((e.getY() - insets.top) / this.scaleY));
-                if (entity != null) {
-                    result = entity.getToolTipText();
+        if (item.getY() != null) {
+            double y = item.getYValue();
+            if (!Double.isNaN(y)) {
+                if (y <= this.minY || y >= this.maxY) {
+                    itemContributesToYBounds = true;
                 }
             }
         }
-        return result;
-    }
-
-    /**
-     * Translates a Java2D point on the chart to a screen location.
-     *
-     * @param java2DPoint  the Java2D point.
-     *
-     * @return The screen location.
-     */
-    public Point translateJava2DToScreen(Point2D java2DPoint) {
-        Insets insets = getInsets();
-        int x = (int) (java2DPoint.getX() * this.scaleX + insets.left);
-        int y = (int) (java2DPoint.getY() * this.scaleY + insets.top);
-        return new Point(x, y);
-    }
-
-    /**
-     * Translates a panel (component) location to a Java2D point.
-     *
-     * @param screenPoint  the screen location ({@code null} not
-     *                     permitted).
-     *
-     * @return The Java2D coordinates.
-     */
-    public Point2D translateScreenToJava2D(Point screenPoint) {
-        Insets insets = getInsets();
-        double x = (screenPoint.getX() - insets.left) / this.scaleX;
-        double y = (screenPoint.getY() - insets.top) / this.scaleY;
-        return new Point2D.Double(x, y);
-    }
-
-    /**
-     * Applies any scaling that is in effect for the chart drawing to the
-     * given rectangle.
-     *
-     * @param rect  the rectangle ({@code null} not permitted).
-     *
-     * @return A new scaled rectangle.
-     */
-    public Rectangle2D scale(Rectangle2D rect) {
-        Insets insets = getInsets();
-        double x = rect.getX() * getScaleX() + insets.left;
-        double y = rect.getY() * getScaleY() + insets.top;
-        double w = rect.getWidth() * getScaleX();
-        double h = rect.getHeight() * getScaleY();
-        return new Rectangle2D.Double(x, y, w, h);
-    }
-
-    /**
-     * Returns the chart entity at a given point.
-     * <P>
-     * This method will return null if there is (a) no entity at the given
-     * point, or (b) no entity collection has been generated.
-     *
-     * @param viewX  the x-coordinate.
-     * @param viewY  the y-coordinate.
-     *
-     * @return The chart entity (possibly {@code null}).
-     */
-    public ChartEntity getEntityForPoint(int viewX, int viewY) {
-        ChartEntity result = null;
-        if (this.info != null) {
-            Insets insets = getInsets();
-            double x = (viewX - insets.left) / this.scaleX;
-            double y = (viewY - insets.top) / this.scaleY;
-            EntityCollection entities = this.info.getEntityCollection();
-            result = entities != null ? entities.getEntity(x, y) : null;
-        }
-        return result;
-    }
-
-    /**
-     * Returns the flag that controls whether the offscreen buffer
-     * needs to be refreshed.
-     *
-     * @return A boolean.
-     */
-    public boolean getRefreshBuffer() {
-        return this.refreshBuffer;
-    }
-
-    /**
-     * Sets the refresh buffer flag.  This flag is used to avoid unnecessary
-     * redrawing of the chart when the offscreen image buffer is used.
-     *
-     * @param flag  {@code true} indicates that the buffer should be
-     *              refreshed.
-     */
-    public void setRefreshBuffer(boolean flag) {
-        this.refreshBuffer = flag;
-    }
-
-    /**
-     * Paints the component by drawing the chart to fill the entire component,
-     * but allowing for the insets (which will be non-zero if a border has been
-     * set for this component).  To increase performance (at the expense of
-     * memory), an off-screen buffer image can be used.
-     *
-     * @param g  the graphics device for drawing on.
-     */
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (this.chart == null) {
-            return;
-        }
-        Graphics2D g2 = (Graphics2D) g.create();
-        // first determine the size of the chart rendering area...
-        Dimension size = getSize();
-        Insets insets = getInsets();
-        Rectangle2D available = new Rectangle2D.Double(insets.left, insets.top, size.getWidth() - insets.left - insets.right, size.getHeight() - insets.top - insets.bottom);
-        // work out if scaling is required...
-        boolean scale = false;
-        double drawWidth = available.getWidth();
-        double drawHeight = available.getHeight();
-        this.scaleX = 1.0;
-        this.scaleY = 1.0;
-        if (drawWidth < this.minimumDrawWidth) {
-            this.scaleX = drawWidth / this.minimumDrawWidth;
-            drawWidth = this.minimumDrawWidth;
-            scale = true;
-        } else if (drawWidth > this.maximumDrawWidth) {
-            this.scaleX = drawWidth / this.maximumDrawWidth;
-            drawWidth = this.maximumDrawWidth;
-            scale = true;
-        }
-        if (drawHeight < this.minimumDrawHeight) {
-            this.scaleY = drawHeight / this.minimumDrawHeight;
-            drawHeight = this.minimumDrawHeight;
-            scale = true;
-        } else if (drawHeight > this.maximumDrawHeight) {
-            this.scaleY = drawHeight / this.maximumDrawHeight;
-            drawHeight = this.maximumDrawHeight;
-            scale = true;
-        }
-        Rectangle2D chartArea = new Rectangle2D.Double(0.0, 0.0, drawWidth, drawHeight);
-        // are we using the chart buffer?
-        if (this.useBuffer) {
-            // for better rendering on the HiDPI monitors upscaling the buffer to the "native" resoution
-            // instead of using logical one provided by Swing
-            final AffineTransform globalTransform = ((Graphics2D) g).getTransform();
-            final double globalScaleX = globalTransform.getScaleX();
-            final double globalScaleY = globalTransform.getScaleY();
-            final int scaledWidth = (int) (available.getWidth() * globalScaleX);
-            final int scaledHeight = (int) (available.getHeight() * globalScaleY);
-            // do we need to resize the buffer?
-            if ((this.chartBuffer == null) || (this.chartBufferWidth != scaledWidth) || (this.chartBufferHeight != scaledHeight)) {
-                this.chartBufferWidth = scaledWidth;
-                this.chartBufferHeight = scaledHeight;
-                GraphicsConfiguration gc = g2.getDeviceConfiguration();
-                this.chartBuffer = gc.createCompatibleImage(this.chartBufferWidth, this.chartBufferHeight, Transparency.TRANSLUCENT);
-                this.refreshBuffer = true;
-            }
-            // do we need to redraw the buffer?
-            if (this.refreshBuffer) {
-                // clear the flag
-                this.refreshBuffer = false;
-                // scale graphics of the buffer to the same value as global
-                // Swing graphics - this allow to paint all elements as usual
-                // but applies all necessary smoothing
-                Graphics2D bufferG2 = (Graphics2D) this.chartBuffer.getGraphics();
-                bufferG2.scale(globalScaleX, globalScaleY);
-                Rectangle2D bufferArea = new Rectangle2D.Double(0, 0, available.getWidth(), available.getHeight());
-                // make the background of the buffer clear and transparent
-                Composite savedComposite = bufferG2.getComposite();
-                bufferG2.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-                Rectangle r = new Rectangle(0, 0, (int) available.getWidth(), (int) available.getHeight());
-                bufferG2.fill(r);
-                bufferG2.setComposite(savedComposite);
-                if (scale) {
-                    AffineTransform saved = bufferG2.getTransform();
-                    AffineTransform st = AffineTransform.getScaleInstance(this.scaleX, this.scaleY);
-                    bufferG2.transform(st);
-                    this.chart.draw(bufferG2, chartArea, this.anchor, this.info);
-                    bufferG2.setTransform(saved);
-                } else {
-                    this.chart.draw(bufferG2, bufferArea, this.anchor, this.info);
-                }
-                bufferG2.dispose();
-            }
-            // zap the buffer onto the panel...
-            g2.drawImage(this.chartBuffer, insets.left, insets.top, (int) available.getWidth(), (int) available.getHeight(), this);
-            // bug#187
-            g2.addRenderingHints(this.chart.getRenderingHints());
-        } else {
-            // redrawing the chart every time...
-            AffineTransform saved = g2.getTransform();
-            g2.translate(insets.left, insets.top);
-            if (scale) {
-                AffineTransform st = AffineTransform.getScaleInstance(this.scaleX, this.scaleY);
-                g2.transform(st);
-            }
-            this.chart.draw(g2, chartArea, this.anchor, this.info);
-            g2.setTransform(saved);
-        }
-        for (Overlay overlay : this.overlays) {
-            overlay.paintOverlay(g2, this);
-        }
-        // redraw the zoom rectangle (if present) - if useBuffer is false,
-        // we use XOR so we can XOR the rectangle away again without redrawing
-        // the chart
-        selectionZoomStrategy.drawZoomRectangle(g2, !this.useBuffer);
-        g2.dispose();
-        this.anchor = null;
-    }
-
-    /**
-     * Receives notification of changes to the chart, and redraws the chart.
-     *
-     * @param event  details of the chart change event.
-     */
-    @Override
-    public void chartChanged(ChartChangeEvent event) {
-        this.refreshBuffer = true;
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            this.orientation = z.getOrientation();
-        }
-        repaint();
-    }
-
-    /**
-     * Receives notification of a chart progress event.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void chartProgress(ChartProgressEvent event) {
-        // does nothing - override if necessary
-    }
-
-    /**
-     * Handles action events generated by the popup menu.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        String command = event.getActionCommand();
-        // many of the zoom methods need a screen location - all we have is
-        // the zoomPoint, but it might be null.  Here we grab the x and y
-        // coordinates, or use defaults...
-        double screenX = -1.0;
-        double screenY = -1.0;
-        Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-        if (zoomPoint != null) {
-            screenX = zoomPoint.getX();
-            screenY = zoomPoint.getY();
-        }
-        switch(command) {
-            case PROPERTIES_COMMAND:
-                doEditChartProperties();
-                break;
-            case COPY_COMMAND:
-                doCopy();
-                break;
-            case SAVE_AS_PNG_COMMAND:
-                try {
-                    doSaveAs();
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(this, "I/O error occurred.", localizationResources.getString("Save_as_PNG"), JOptionPane.WARNING_MESSAGE);
-                }
-                break;
-            case SAVE_AS_PNG_SIZE_COMMAND:
-                try {
-                    final Dimension ss = Toolkit.getDefaultToolkit().getScreenSize();
-                    doSaveAs(ss.width, ss.height);
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(ChartPanel.this, "I/O error occurred.", localizationResources.getString("Save_as_PNG"), JOptionPane.WARNING_MESSAGE);
-                }
-                break;
-            case SAVE_AS_SVG_COMMAND:
-                try {
-                    saveAsSVG(null);
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(this, "I/O error occurred.", localizationResources.getString("Save_as_SVG"), JOptionPane.WARNING_MESSAGE);
-                }
-                break;
-            case SAVE_AS_PDF_COMMAND:
-                saveAsPDF(null);
-                break;
-            case PRINT_COMMAND:
-                createChartPrintJob();
-                break;
-            case ZOOM_IN_BOTH_COMMAND:
-                zoomInBoth(screenX, screenY);
-                break;
-            case ZOOM_IN_DOMAIN_COMMAND:
-                zoomInDomain(screenX, screenY);
-                break;
-            case ZOOM_IN_RANGE_COMMAND:
-                zoomInRange(screenX, screenY);
-                break;
-            case ZOOM_OUT_BOTH_COMMAND:
-                zoomOutBoth(screenX, screenY);
-                break;
-            case ZOOM_OUT_DOMAIN_COMMAND:
-                zoomOutDomain(screenX, screenY);
-                break;
-            case ZOOM_OUT_RANGE_COMMAND:
-                zoomOutRange(screenX, screenY);
-                break;
-            case ZOOM_RESET_BOTH_COMMAND:
-                restoreAutoBounds();
-                break;
-            case ZOOM_RESET_DOMAIN_COMMAND:
-                restoreAutoDomainBounds();
-                break;
-            case ZOOM_RESET_RANGE_COMMAND:
-                restoreAutoRangeBounds();
-                break;
-        }
-    }
-
-    /**
-     * Handles a 'mouse entered' event. This method changes the tooltip delays
-     * of ToolTipManager.sharedInstance() to the possibly different values set
-     * for this chart panel.
-     *
-     * @param e  the mouse event.
-     */
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        if (!this.ownToolTipDelaysActive) {
-            ToolTipManager ttm = ToolTipManager.sharedInstance();
-            this.originalToolTipInitialDelay = ttm.getInitialDelay();
-            ttm.setInitialDelay(this.ownToolTipInitialDelay);
-            this.originalToolTipReshowDelay = ttm.getReshowDelay();
-            ttm.setReshowDelay(this.ownToolTipReshowDelay);
-            this.originalToolTipDismissDelay = ttm.getDismissDelay();
-            ttm.setDismissDelay(this.ownToolTipDismissDelay);
-            this.ownToolTipDelaysActive = true;
-        }
-    }
-
-    /**
-     * Handles a 'mouse exited' event. This method resets the tooltip delays of
-     * ToolTipManager.sharedInstance() to their
-     * original values in effect before mouseEntered()
-     *
-     * @param e  the mouse event.
-     */
-    @Override
-    public void mouseExited(MouseEvent e) {
-        if (this.ownToolTipDelaysActive) {
-            // restore original tooltip dealys
-            ToolTipManager ttm = ToolTipManager.sharedInstance();
-            ttm.setInitialDelay(this.originalToolTipInitialDelay);
-            ttm.setReshowDelay(this.originalToolTipReshowDelay);
-            ttm.setDismissDelay(this.originalToolTipDismissDelay);
-            this.ownToolTipDelaysActive = false;
-        }
-    }
-
-    /**
-     * Handles a 'mouse pressed' event.
-     * <P>
-     * This event is the popup trigger on Unix/Linux.  For Windows, the popup
-     * trigger is the 'mouse released' event.
-     *
-     * @param e  The mouse event.
-     */
-    @Override
-    public void mousePressed(MouseEvent e) {
-        if (this.chart == null) {
-            return;
-        }
-        Plot plot = this.chart.getPlot();
-        int button = e.getButton();
-        int mods = e.getModifiersEx();
-        if ((mods & MODIFIERS_EX_MASK) == panButtonMasks.getOrDefault(button, panMask)) {
-            // can we pan this plot?
-            if (plot instanceof Pannable) {
-                Pannable pannable = (Pannable) plot;
-                if (pannable.isDomainPannable() || pannable.isRangePannable()) {
-                    Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
-                    if (screenDataArea != null && screenDataArea.contains(e.getPoint())) {
-                        this.panW = screenDataArea.getWidth();
-                        this.panH = screenDataArea.getHeight();
-                        this.panLast = e.getPoint();
-                        setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
-                    }
-                }
-                // the actual panning occurs later in the mouseDragged()
-                // method
-            }
-        } else if (!this.selectionZoomStrategy.isActivated()) {
-            if ((mods & MODIFIERS_EX_MASK) == zoomButtonMasks.getOrDefault(button, zoomMask)) {
-                Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
-                if (screenDataArea != null) {
-                    Point2D zoomPoint = getPointInRectangle(e.getX(), e.getY(), screenDataArea);
-                    selectionZoomStrategy.setZoomPoint(zoomPoint);
-                } else {
-                    selectionZoomStrategy.setZoomPoint(null);
-                }
-            }
-            if (e.isPopupTrigger()) {
-                if (this.popup != null) {
-                    displayPopupMenu(e.getX(), e.getY());
-                }
-            }
-        }
-    }
-
-    /**
-     * Returns a point based on (x, y) but constrained to be within the bounds
-     * of the given rectangle.  This method could be moved to JCommon.
-     *
-     * @param x  the x-coordinate.
-     * @param y  the y-coordinate.
-     * @param area  the rectangle ({@code null} not permitted).
-     *
-     * @return A point within the rectangle.
-     */
-    protected Point2D getPointInRectangle(int x, int y, Rectangle2D area) {
-        double xx = Math.max(area.getMinX(), Math.min(x, area.getMaxX()));
-        double yy = Math.max(area.getMinY(), Math.min(y, area.getMaxY()));
-        return new Point2D.Double(xx, yy);
-    }
-
-    /**
-     * Handles a 'mouse dragged' event.
-     *
-     * @param e  the mouse event.
-     */
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        // if the popup menu has already been triggered, then ignore dragging...
-        if (this.popup != null && this.popup.isShowing()) {
-            return;
-        }
-        // handle panning if we have a start point
-        if (this.panLast != null) {
-            double dx = e.getX() - this.panLast.getX();
-            double dy = e.getY() - this.panLast.getY();
-            if (dx == 0.0 && dy == 0.0) {
-                return;
-            }
-            double wPercent = -dx / this.panW;
-            double hPercent = dy / this.panH;
-            boolean old = this.chart.getPlot().isNotify();
-            this.chart.getPlot().setNotify(false);
-            Pannable p = (Pannable) this.chart.getPlot();
-            if (p.getOrientation() == PlotOrientation.VERTICAL) {
-                p.panDomainAxes(wPercent, this.info.getPlotInfo(), this.panLast);
-                p.panRangeAxes(hPercent, this.info.getPlotInfo(), this.panLast);
+        if (itemContributesToYBounds) {
+            findBoundsByIteration();
+        } else if (itemContributesToXBounds) {
+            if (getAutoSort()) {
+                this.minX = getX(0).doubleValue();
+                this.maxX = getX(getItemCount() - 1).doubleValue();
             } else {
-                p.panDomainAxes(hPercent, this.info.getPlotInfo(), this.panLast);
-                p.panRangeAxes(wPercent, this.info.getPlotInfo(), this.panLast);
+                findBoundsByIteration();
             }
-            this.panLast = e.getPoint();
-            this.chart.getPlot().setNotify(old);
-            return;
         }
-        // if no initial zoom point was set, ignore dragging...
-        if (this.selectionZoomStrategy.getZoomPoint() == null) {
-            return;
-        }
-        Graphics2D g2 = (Graphics2D) getGraphics();
-        // erase the previous zoom rectangle (if any).  We only need to do
-        // this is we are using XOR mode, which we do when we're not using
-        // the buffer (if there is a buffer, then at the end of this method we
-        // just trigger a repaint)
-        if (!this.useBuffer) {
-            selectionZoomStrategy.drawZoomRectangle(g2, true);
-        }
-        boolean hZoom, vZoom;
-        if (this.orientation == PlotOrientation.HORIZONTAL) {
-            hZoom = this.rangeZoomable;
-            vZoom = this.domainZoomable;
-        } else {
-            hZoom = this.domainZoomable;
-            vZoom = this.rangeZoomable;
-        }
-        Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-        Rectangle2D scaledDataArea = getScreenDataArea((int) zoomPoint.getX(), (int) zoomPoint.getY());
-        selectionZoomStrategy.updateZoomRectangleSelection(e, hZoom, vZoom, scaledDataArea);
-        // Draw the new zoom rectangle...
-        if (this.useBuffer) {
-            repaint();
-        } else {
-            // with no buffer, we use XOR to draw the rectangle "over" the
-            // chart...
-            selectionZoomStrategy.drawZoomRectangle(g2, true);
-        }
-        g2.dispose();
     }
 
     /**
-     * Handles a 'mouse released' event.  On Windows, we need to check if this
-     * is a popup trigger, but only if we haven't already been tracking a zoom
-     * rectangle.
+     * Finds the bounds of the x and y values for the series, by iterating
+     * through all the data items.
      *
-     * @param e  information about the event.
+     * @since 1.0.13
+     */
+    private void findBoundsByIteration() {
+        this.minX = Double.NaN;
+        this.maxX = Double.NaN;
+        this.minY = Double.NaN;
+        this.maxY = Double.NaN;
+        for (XYDataItem item : this.data) {
+            updateBoundsForAddedItem(item);
+        }
+    }
+
+    /**
+     * Returns the flag that controls whether the items in the series are
+     * automatically sorted.  There is no setter for this flag, it must be
+     * defined in the series constructor.
+     *
+     * @return A boolean.
+     */
+    public boolean getAutoSort() {
+        return this.autoSort;
+    }
+
+    /**
+     * Returns a flag that controls whether duplicate x-values are allowed.
+     * This flag can only be set in the constructor.
+     *
+     * @return A boolean.
+     */
+    public boolean getAllowDuplicateXValues() {
+        return this.allowDuplicateXValues;
+    }
+
+    /**
+     * Returns the number of items in the series.
+     *
+     * @return The item count.
+     *
+     * @see #getItems()
      */
     @Override
-    public void mouseReleased(MouseEvent e) {
-        // if we've been panning, we need to reset now that the mouse is
-        // released...
-        if (this.panLast != null) {
-            this.panLast = null;
-            setCursor(Cursor.getDefaultCursor());
-        } else if (this.selectionZoomStrategy.isActivated()) {
-            boolean hZoom, vZoom;
-            if (this.orientation == PlotOrientation.HORIZONTAL) {
-                hZoom = this.rangeZoomable;
-                vZoom = this.domainZoomable;
+    public int getItemCount() {
+        return this.data.size();
+    }
+
+    /**
+     * Returns the list of data items for the series (the list contains
+     * {@link XYDataItem} objects and is unmodifiable).
+     *
+     * @return The list of data items.
+     */
+    public List<XYDataItem> getItems() {
+        return Collections.unmodifiableList(this.data);
+    }
+
+    /**
+     * Returns the maximum number of items that will be retained in the series.
+     * The default value is {@code Integer.MAX_VALUE}.
+     *
+     * @return The maximum item count.
+     *
+     * @see #setMaximumItemCount(int)
+     */
+    public int getMaximumItemCount() {
+        return this.maximumItemCount;
+    }
+
+    /**
+     * Sets the maximum number of items that will be retained in the series.
+     * If you add a new item to the series such that the number of items will
+     * exceed the maximum item count, then the first element in the series is
+     * automatically removed, ensuring that the maximum item count is not
+     * exceeded.
+     * <p>
+     * Typically this value is set before the series is populated with data,
+     * but if it is applied later, it may cause some items to be removed from
+     * the series (in which case a {@link SeriesChangeEvent} will be sent to
+     * all registered listeners).
+     *
+     * @param maximum  the maximum number of items for the series.
+     */
+    public void setMaximumItemCount(int maximum) {
+        this.maximumItemCount = maximum;
+        int remove = this.data.size() - maximum;
+        if (remove > 0) {
+            this.data.subList(0, remove).clear();
+            findBoundsByIteration();
+            fireSeriesChanged();
+        }
+    }
+
+    /**
+     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
+     * all registered listeners.
+     *
+     * @param item  the (x, y) item ({@code null} not permitted).
+     */
+    public void add(XYDataItem item) {
+        // argument checking delegated...
+        add(item, true);
+    }
+
+    /**
+     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
+     * all registered listeners.
+     *
+     * @param x  the x value.
+     * @param y  the y value.
+     */
+    public void add(double x, double y) {
+        add(Double.valueOf(x), Double.valueOf(y), true);
+    }
+
+    /**
+     * Adds a data item to the series and, if requested, sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param x  the x value.
+     * @param y  the y value.
+     * @param notify  a flag that controls whether a
+     *                {@link SeriesChangeEvent} is sent to all registered
+     *                listeners.
+     */
+    public void add(double x, double y, boolean notify) {
+        add(Double.valueOf(x), Double.valueOf(y), notify);
+    }
+
+    /**
+     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
+     * all registered listeners.  The unusual pairing of parameter types is to
+     * make it easier to add {@code null} y-values.
+     *
+     * @param x  the x value.
+     * @param y  the y value ({@code null} permitted).
+     */
+    public void add(double x, Number y) {
+        add(Double.valueOf(x), y);
+    }
+
+    /**
+     * Adds a data item to the series and, if requested, sends a
+     * {@link SeriesChangeEvent} to all registered listeners.  The unusual
+     * pairing of parameter types is to make it easier to add null y-values.
+     *
+     * @param x  the x value.
+     * @param y  the y value ({@code null} permitted).
+     * @param notify  a flag that controls whether a
+     *                {@link SeriesChangeEvent} is sent to all registered
+     *                listeners.
+     */
+    public void add(double x, Number y, boolean notify) {
+        add(Double.valueOf(x), y, notify);
+    }
+
+    /**
+     * Adds a new data item to the series (in the correct position if the
+     * {@code autoSort} flag is set for the series) and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     * <P>
+     * Throws an exception if the x-value is a duplicate AND the
+     * allowDuplicateXValues flag is false.
+     *
+     * @param x  the x-value ({@code null} not permitted).
+     * @param y  the y-value ({@code null} permitted).
+     *
+     * @throws SeriesException if the x-value is a duplicate and the
+     *     {@code allowDuplicateXValues} flag is not set for this series.
+     */
+    public void add(Number x, Number y) {
+        // argument checking delegated...
+        add(x, y, true);
+    }
+
+    /**
+     * Adds new data to the series and, if requested, sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     * <P>
+     * Throws an exception if the x-value is a duplicate AND the
+     * allowDuplicateXValues flag is false.
+     *
+     * @param x  the x-value ({@code null} not permitted).
+     * @param y  the y-value ({@code null} permitted).
+     * @param notify  a flag the controls whether a
+     *                {@link SeriesChangeEvent} is sent to all registered
+     *                listeners.
+     */
+    public void add(Number x, Number y, boolean notify) {
+        // delegate argument checking to XYDataItem...
+        XYDataItem item = new XYDataItem(x, y);
+        add(item, notify);
+    }
+
+    /**
+     * Adds a data item to the series and, if requested, sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param item  the (x, y) item ({@code null} not permitted).
+     * @param notify  a flag that controls whether a
+     *                {@link SeriesChangeEvent} is sent to all registered
+     *                listeners.
+     */
+    public void add(XYDataItem item, boolean notify) {
+        Args.nullNotPermitted(item, "item");
+        XYDataItem clone = (XYDataItem) item.clone();
+        if (this.autoSort) {
+            int index = Collections.binarySearch(this.data, item);
+            if (index < 0) {
+                this.data.add(-index - 1, clone);
             } else {
-                hZoom = this.domainZoomable;
-                vZoom = this.rangeZoomable;
-            }
-            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-            boolean zoomTrigger1 = hZoom && Math.abs(e.getX() - zoomPoint.getX()) >= this.selectionZoomStrategy.getZoomTriggerDistance();
-            boolean zoomTrigger2 = vZoom && Math.abs(e.getY() - zoomPoint.getY()) >= this.selectionZoomStrategy.getZoomTriggerDistance();
-            if (zoomTrigger1 || zoomTrigger2) {
-                if ((hZoom && (e.getX() < zoomPoint.getX())) || (vZoom && (e.getY() < zoomPoint.getY()))) {
-                    restoreAutoBounds();
+                if (this.allowDuplicateXValues) {
+                    // need to make sure we are adding *after* any duplicates
+                    int size = this.data.size();
+                    while (index < size && item.compareTo(this.data.get(index)) == 0) {
+                        index++;
+                    }
+                    if (index < this.data.size()) {
+                        this.data.add(index, clone);
+                    } else {
+                        this.data.add(clone);
+                    }
                 } else {
-                    Rectangle2D screenDataArea = getScreenDataArea((int) zoomPoint.getX(), (int) zoomPoint.getY());
-                    Rectangle2D zoomArea = selectionZoomStrategy.getZoomRectangle(hZoom, vZoom, screenDataArea);
-                    zoom(zoomArea);
+                    throw new SeriesException("X-value already exists.");
                 }
-                this.selectionZoomStrategy.reset();
-            } else {
-                // erase the zoom rectangle
-                Graphics2D g2 = (Graphics2D) getGraphics();
-                if (this.useBuffer) {
-                    repaint();
-                } else {
-                    selectionZoomStrategy.drawZoomRectangle(g2, true);
-                }
-                g2.dispose();
-                this.selectionZoomStrategy.reset();
             }
-        } else if (e.isPopupTrigger()) {
-            if (this.popup != null) {
-                displayPopupMenu(e.getX(), e.getY());
-            }
-        }
-    }
-
-    /**
-     * Receives notification of mouse clicks on the panel. These are
-     * translated and passed on to any registered {@link ChartMouseListener}s.
-     *
-     * @param event  Information about the mouse event.
-     */
-    @Override
-    public void mouseClicked(MouseEvent event) {
-        Insets insets = getInsets();
-        int x = (int) ((event.getX() - insets.left) / this.scaleX);
-        int y = (int) ((event.getY() - insets.top) / this.scaleY);
-        this.anchor = new Point2D.Double(x, y);
-        if (this.chart == null) {
-            return;
-        }
-        // force a redraw
-        this.chart.setNotify(true);
-        // new entity code...
-        Object[] listeners = this.chartMouseListeners.getListeners(ChartMouseListener.class);
-        if (listeners.length == 0) {
-            return;
-        }
-        ChartEntity entity = null;
-        if (this.info != null) {
-            EntityCollection entities = this.info.getEntityCollection();
-            if (entities != null) {
-                entity = entities.getEntity(x, y);
-            }
-        }
-        ChartMouseEvent chartEvent = new ChartMouseEvent(getChart(), event, entity);
-        for (int i = listeners.length - 1; i >= 0; i -= 1) {
-            ((ChartMouseListener) listeners[i]).chartMouseClicked(chartEvent);
-        }
-    }
-
-    /**
-     * Implementation of the MouseMotionListener's method.
-     *
-     * @param e  the event.
-     */
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        Graphics2D g2 = (Graphics2D) getGraphics();
-        g2.dispose();
-        Object[] listeners = this.chartMouseListeners.getListeners(ChartMouseListener.class);
-        if (listeners.length == 0) {
-            return;
-        }
-        Insets insets = getInsets();
-        int x = (int) ((e.getX() - insets.left) / this.scaleX);
-        int y = (int) ((e.getY() - insets.top) / this.scaleY);
-        ChartEntity entity = null;
-        if (this.info != null) {
-            EntityCollection entities = this.info.getEntityCollection();
-            if (entities != null) {
-                entity = entities.getEntity(x, y);
-            }
-        }
-        // we can only generate events if the panel's chart is not null
-        // (see bug report 1556951)
-        if (this.chart != null) {
-            ChartMouseEvent event = new ChartMouseEvent(getChart(), e, entity);
-            for (int i = listeners.length - 1; i >= 0; i -= 1) {
-                ((ChartMouseListener) listeners[i]).chartMouseMoved(event);
-            }
-        }
-    }
-
-    /**
-     * Zooms in on an anchor point (specified in screen coordinate space).
-     *
-     * @param x  the x value (in screen coordinates).
-     * @param y  the y value (in screen coordinates).
-     */
-    public void zoomInBoth(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot == null) {
-            return;
-        }
-        // here we tweak the notify flag on the plot so that only
-        // one notification happens even though we update multiple
-        // axes...
-        boolean savedNotify = plot.isNotify();
-        plot.setNotify(false);
-        zoomInDomain(x, y);
-        zoomInRange(x, y);
-        plot.setNotify(savedNotify);
-    }
-
-    /**
-     * Decreases the length of the domain axis, centered about the given
-     * coordinate on the screen.  The length of the domain axis is reduced
-     * by the value of {@link #getZoomInFactor()}.
-     *
-     * @param x  the x coordinate (in screen coordinates).
-     * @param y  the y-coordinate (in screen coordinates).
-     */
-    public void zoomInDomain(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomDomainAxes(this.zoomInFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
-        }
-    }
-
-    /**
-     * Decreases the length of the range axis, centered about the given
-     * coordinate on the screen.  The length of the range axis is reduced by
-     * the value of {@link #getZoomInFactor()}.
-     *
-     * @param x  the x-coordinate (in screen coordinates).
-     * @param y  the y coordinate (in screen coordinates).
-     */
-    public void zoomInRange(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomRangeAxes(this.zoomInFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
-        }
-    }
-
-    /**
-     * Zooms out on an anchor point (specified in screen coordinate space).
-     *
-     * @param x  the x value (in screen coordinates).
-     * @param y  the y value (in screen coordinates).
-     */
-    public void zoomOutBoth(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot == null) {
-            return;
-        }
-        // here we tweak the notify flag on the plot so that only
-        // one notification happens even though we update multiple
-        // axes...
-        boolean savedNotify = plot.isNotify();
-        plot.setNotify(false);
-        zoomOutDomain(x, y);
-        zoomOutRange(x, y);
-        plot.setNotify(savedNotify);
-    }
-
-    /**
-     * Increases the length of the domain axis, centered about the given
-     * coordinate on the screen.  The length of the domain axis is increased
-     * by the value of {@link #getZoomOutFactor()}.
-     *
-     * @param x  the x coordinate (in screen coordinates).
-     * @param y  the y-coordinate (in screen coordinates).
-     */
-    public void zoomOutDomain(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomDomainAxes(this.zoomOutFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
-        }
-    }
-
-    /**
-     * Increases the length the range axis, centered about the given
-     * coordinate on the screen.  The length of the range axis is increased
-     * by the value of {@link #getZoomOutFactor()}.
-     *
-     * @param x  the x coordinate (in screen coordinates).
-     * @param y  the y-coordinate (in screen coordinates).
-     */
-    public void zoomOutRange(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomRangeAxes(this.zoomOutFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
-        }
-    }
-
-    /**
-     * Zooms in on a selected region.
-     *
-     * @param selection  the selected region.
-     */
-    public void zoom(Rectangle2D selection) {
-        // get the origin of the zoom selection in the Java2D space used for
-        // drawing the chart (that is, before any scaling to fit the panel)
-        Point2D selectOrigin = translateScreenToJava2D(new Point((int) Math.ceil(selection.getX()), (int) Math.ceil(selection.getY())));
-        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
-        Rectangle2D scaledDataArea = getScreenDataArea((int) selection.getCenterX(), (int) selection.getCenterY());
-        if ((selection.getHeight() > 0) && (selection.getWidth() > 0)) {
-            double hLower = (selection.getMinX() - scaledDataArea.getMinX()) / scaledDataArea.getWidth();
-            double hUpper = (selection.getMaxX() - scaledDataArea.getMinX()) / scaledDataArea.getWidth();
-            double vLower = (scaledDataArea.getMaxY() - selection.getMaxY()) / scaledDataArea.getHeight();
-            double vUpper = (scaledDataArea.getMaxY() - selection.getMinY()) / scaledDataArea.getHeight();
-            Plot p = this.chart.getPlot();
-            if (p instanceof Zoomable) {
-                // here we tweak the notify flag on the plot so that only
-                // one notification happens even though we update multiple
-                // axes...
-                boolean savedNotify = p.isNotify();
-                p.setNotify(false);
-                Zoomable z = (Zoomable) p;
-                if (z.getOrientation() == PlotOrientation.HORIZONTAL) {
-                    z.zoomDomainAxes(vLower, vUpper, plotInfo, selectOrigin);
-                    z.zoomRangeAxes(hLower, hUpper, plotInfo, selectOrigin);
-                } else {
-                    z.zoomDomainAxes(hLower, hUpper, plotInfo, selectOrigin);
-                    z.zoomRangeAxes(vLower, vUpper, plotInfo, selectOrigin);
-                }
-                p.setNotify(savedNotify);
-            }
-        }
-    }
-
-    /**
-     * Restores the auto-range calculation on both axes.
-     */
-    public void restoreAutoBounds() {
-        Plot plot = this.chart.getPlot();
-        if (plot == null) {
-            return;
-        }
-        // here we tweak the notify flag on the plot so that only
-        // one notification happens even though we update multiple
-        // axes...
-        boolean savedNotify = plot.isNotify();
-        plot.setNotify(false);
-        restoreAutoDomainBounds();
-        restoreAutoRangeBounds();
-        plot.setNotify(savedNotify);
-    }
-
-    /**
-     * Restores the auto-range calculation on the domain axis.
-     */
-    public void restoreAutoDomainBounds() {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            // we need to guard against this.zoomPoint being null
-            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-            Point2D zp = zoomPoint != null ? zoomPoint : new Point();
-            z.zoomDomainAxes(0.0, this.info.getPlotInfo(), zp);
-            plot.setNotify(savedNotify);
-        }
-    }
-
-    /**
-     * Restores the auto-range calculation on the range axis.
-     */
-    public void restoreAutoRangeBounds() {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            // we need to guard against this.zoomPoint being null
-            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-            Point2D zp = zoomPoint != null ? zoomPoint : new Point();
-            z.zoomRangeAxes(0.0, this.info.getPlotInfo(), zp);
-            plot.setNotify(savedNotify);
-        }
-    }
-
-    /**
-     * Returns the data area for the chart (the area inside the axes) with the
-     * current scaling applied (that is, the area as it appears on screen).
-     *
-     * @return The scaled data area.
-     */
-    public Rectangle2D getScreenDataArea() {
-        Rectangle2D dataArea = this.info.getPlotInfo().getDataArea();
-        Insets insets = getInsets();
-        double x = dataArea.getX() * this.scaleX + insets.left;
-        double y = dataArea.getY() * this.scaleY + insets.top;
-        double w = dataArea.getWidth() * this.scaleX;
-        double h = dataArea.getHeight() * this.scaleY;
-        return new Rectangle2D.Double(x, y, w, h);
-    }
-
-    /**
-     * Returns the data area (the area inside the axes) for the plot or subplot,
-     * with the current scaling applied.
-     *
-     * @param x  the x-coordinate (for subplot selection).
-     * @param y  the y-coordinate (for subplot selection).
-     *
-     * @return The scaled data area.
-     */
-    public Rectangle2D getScreenDataArea(int x, int y) {
-        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
-        Rectangle2D result;
-        if (plotInfo.getSubplotCount() == 0) {
-            result = getScreenDataArea();
         } else {
-            // get the origin of the zoom selection in the Java2D space used for
-            // drawing the chart (that is, before any scaling to fit the panel)
-            Point2D selectOrigin = translateScreenToJava2D(new Point(x, y));
-            int subplotIndex = plotInfo.getSubplotIndex(selectOrigin);
-            if (subplotIndex == -1) {
-                return null;
-            }
-            result = scale(plotInfo.getSubplotInfo(subplotIndex).getDataArea());
-        }
-        return result;
-    }
-
-    /**
-     * Returns the initial tooltip delay value used inside this chart panel.
-     *
-     * @return An integer representing the initial delay value, in milliseconds.
-     *
-     * @see javax.swing.ToolTipManager#getInitialDelay()
-     */
-    public int getInitialDelay() {
-        return this.ownToolTipInitialDelay;
-    }
-
-    /**
-     * Returns the reshow tooltip delay value used inside this chart panel.
-     *
-     * @return An integer representing the reshow  delay value, in milliseconds.
-     *
-     * @see javax.swing.ToolTipManager#getReshowDelay()
-     */
-    public int getReshowDelay() {
-        return this.ownToolTipReshowDelay;
-    }
-
-    /**
-     * Returns the dismissal tooltip delay value used inside this chart panel.
-     *
-     * @return An integer representing the dismissal delay value, in
-     *         milliseconds.
-     *
-     * @see javax.swing.ToolTipManager#getDismissDelay()
-     */
-    public int getDismissDelay() {
-        return this.ownToolTipDismissDelay;
-    }
-
-    /**
-     * Specifies the initial delay value for this chart panel.
-     *
-     * @param delay  the number of milliseconds to delay (after the cursor has
-     *               paused) before displaying.
-     *
-     * @see javax.swing.ToolTipManager#setInitialDelay(int)
-     */
-    public void setInitialDelay(int delay) {
-        this.ownToolTipInitialDelay = delay;
-    }
-
-    /**
-     * Specifies the amount of time before the user has to wait initialDelay
-     * milliseconds before a tooltip will be shown.
-     *
-     * @param delay  time in milliseconds
-     *
-     * @see javax.swing.ToolTipManager#setReshowDelay(int)
-     */
-    public void setReshowDelay(int delay) {
-        this.ownToolTipReshowDelay = delay;
-    }
-
-    /**
-     * Specifies the dismissal delay value for this chart panel.
-     *
-     * @param delay the number of milliseconds to delay before taking away the
-     *              tooltip
-     *
-     * @see javax.swing.ToolTipManager#setDismissDelay(int)
-     */
-    public void setDismissDelay(int delay) {
-        this.ownToolTipDismissDelay = delay;
-    }
-
-    /**
-     * Returns the zoom in factor.
-     *
-     * @return The zoom in factor.
-     *
-     * @see #setZoomInFactor(double)
-     */
-    public double getZoomInFactor() {
-        return this.zoomInFactor;
-    }
-
-    /**
-     * Sets the zoom in factor.
-     *
-     * @param factor  the factor.
-     *
-     * @see #getZoomInFactor()
-     */
-    public void setZoomInFactor(double factor) {
-        this.zoomInFactor = factor;
-    }
-
-    /**
-     * Returns the zoom out factor.
-     *
-     * @return The zoom out factor.
-     *
-     * @see #setZoomOutFactor(double)
-     */
-    public double getZoomOutFactor() {
-        return this.zoomOutFactor;
-    }
-
-    /**
-     * Sets the zoom out factor.
-     *
-     * @param factor  the factor.
-     *
-     * @see #getZoomOutFactor()
-     */
-    public void setZoomOutFactor(double factor) {
-        this.zoomOutFactor = factor;
-    }
-
-    /**
-     * Displays a dialog that allows the user to edit the properties for the
-     * current chart.
-     */
-    public void doEditChartProperties() {
-        ChartEditor editor = ChartEditorManager.getChartEditor(this.chart);
-        int result = JOptionPane.showConfirmDialog(this, editor, localizationResources.getString("Chart_Properties"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            editor.updateChart(this.chart);
-        }
-    }
-
-    /**
-     * Copies the current chart to the system clipboard.
-     */
-    public void doCopy() {
-        Clipboard systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        Insets insets = getInsets();
-        int w = getWidth() - insets.left - insets.right;
-        int h = getHeight() - insets.top - insets.bottom;
-        ChartTransferable selection = new ChartTransferable(this.chart, w, h, getMinimumDrawWidth(), getMinimumDrawHeight(), getMaximumDrawWidth(), getMaximumDrawHeight(), true);
-        systemClipboard.setContents(selection, null);
-    }
-
-    /**
-     * Opens a file chooser and gives the user an opportunity to save the chart
-     * in PNG format.
-     *
-     * @throws IOException if there is an I/O error.
-     */
-    public void doSaveAs() throws IOException {
-        doSaveAs(-1, -1);
-    }
-
-    /**
-     * Opens a file chooser and gives the user an opportunity to save the chart
-     * in PNG format.
-     *
-     * @param w  the width for the saved image (if less than or equal to zero,
-     *      the panel width will be used);
-     * @param h  the height for the PNG image (if less than or equal to zero,
-     *      the panel height will be used);
-     *
-     * @throws IOException if there is an I/O error.
-     */
-    public void doSaveAs(int w, int h) throws IOException {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
-        FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("PNG_Image_Files"), "png");
-        fileChooser.addChoosableFileFilter(filter);
-        fileChooser.setFileFilter(filter);
-        int option = fileChooser.showSaveDialog(this);
-        if (option == JFileChooser.APPROVE_OPTION) {
-            String filename = fileChooser.getSelectedFile().getPath();
-            if (isEnforceFileExtensions()) {
-                if (!filename.endsWith(".png")) {
-                    filename = filename + ".png";
+            if (!this.allowDuplicateXValues) {
+                // can't allow duplicate values, so we need to check whether
+                // there is an item with the given x-value already
+                int index = indexOf(item.getX());
+                if (index >= 0) {
+                    throw new SeriesException("X-value already exists.");
                 }
             }
-            if (w <= 0) {
-                w = getWidth();
-            }
-            if (h <= 0) {
-                h = getHeight();
-            }
-            ChartUtils.saveChartAsPNG(new File(filename), this.chart, w, h);
+            this.data.add(item);
+        }
+        updateBoundsForAddedItem(item);
+        if (getItemCount() > this.maximumItemCount) {
+            XYDataItem removed = this.data.remove(0);
+            updateBoundsForRemovedItem(removed);
+        }
+        if (notify) {
+            fireSeriesChanged();
         }
     }
 
     /**
-     * Saves the chart in SVG format (a filechooser will be displayed so that
-     * the user can specify the filename).  Note that this method only works
-     * if the JFreeSVG library is on the classpath...if this library is not
-     * present, the method will fail.
+     * Deletes a range of items from the series and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
      *
-     * @param f  the file.
-     *
-     * @throws IOException if there is an exception.
+     * @param start  the start index (zero-based).
+     * @param end  the end index (zero-based).
      */
-    protected void saveAsSVG(File f) throws IOException {
-        File file = f;
-        if (file == null) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
-            FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("SVG_Files"), "svg");
-            fileChooser.addChoosableFileFilter(filter);
-            fileChooser.setFileFilter(filter);
-            int option = fileChooser.showSaveDialog(this);
-            if (option == JFileChooser.APPROVE_OPTION) {
-                String filename = fileChooser.getSelectedFile().getPath();
-                if (isEnforceFileExtensions()) {
-                    if (!filename.endsWith(".svg")) {
-                        filename = filename + ".svg";
-                    }
-                }
-                file = new File(filename);
-                if (file.exists()) {
-                    String fileExists = localizationResources.getString("FILE_EXISTS_CONFIRM_OVERWRITE");
-                    int response = JOptionPane.showConfirmDialog(this, fileExists, localizationResources.getString("Save_as_SVG"), JOptionPane.OK_CANCEL_OPTION);
-                    if (response == JOptionPane.CANCEL_OPTION) {
-                        file = null;
-                    }
-                }
-            }
-        }
-        if (file != null) {
-            // use reflection to get the SVG string
-            String svg = generateSVG(getWidth(), getHeight());
-            BufferedWriter writer = null;
-            Exception originalException = null;
-            try {
-                writer = new BufferedWriter(new FileWriter(file));
-                writer.write("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
-                writer.write(svg + "\n");
-                writer.flush();
-            } catch (Exception e) {
-                originalException = e;
-            }
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (IOException ex) {
-                RuntimeException th = new RuntimeException(ex);
-                if (originalException != null)
-                    th.addSuppressed(originalException);
-                throw th;
-            }
+    public void delete(int start, int end) {
+        this.data.subList(start, end + 1).clear();
+        findBoundsByIteration();
+        fireSeriesChanged();
+    }
+
+    /**
+     * Removes the item at the specified index and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param index  the index.
+     *
+     * @return The item removed.
+     */
+    public XYDataItem remove(int index) {
+        XYDataItem removed = this.data.remove(index);
+        updateBoundsForRemovedItem(removed);
+        fireSeriesChanged();
+        return removed;
+    }
+
+    /**
+     * Removes an item with the specified x-value and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.  Note that when
+     * a series permits multiple items with the same x-value, this method
+     * could remove any one of the items with that x-value.
+     *
+     * @param x  the x-value.
+     *
+     * @return The item removed.
+     */
+    public XYDataItem remove(Number x) {
+        return remove(indexOf(x));
+    }
+
+    /**
+     * Removes all data items from the series and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     */
+    public void clear() {
+        if (!this.data.isEmpty()) {
+            this.data.clear();
+            this.minX = Double.NaN;
+            this.maxX = Double.NaN;
+            this.minY = Double.NaN;
+            this.maxY = Double.NaN;
+            fireSeriesChanged();
         }
     }
 
     /**
-     * Generates a string containing a rendering of the chart in SVG format.
-     * This feature is only supported if the JFreeSVG library is included on
-     * the classpath.
+     * Returns a copy of the data item with the specified index.
      *
-     * @param width  the width.
-     * @param height  the height.
+     * @param index  the index.
      *
-     * @return A string containing an SVG element for the current chart, or
-     *     {@code null} if there is a problem with the method invocation
-     *     by reflection.
+     * @return The data item with the specified index.
      */
-    protected String generateSVG(int width, int height) {
-        Graphics2D g2 = createSVGGraphics2D(width, height);
-        if (g2 == null) {
-            throw new IllegalStateException("JFreeSVG library is not present.");
-        }
-        // we suppress shadow generation, because SVG is a vector format and
-        // the shadow effect is applied via bitmap effects...
-        g2.setRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION, true);
-        String svg = null;
-        Rectangle2D drawArea = new Rectangle2D.Double(0, 0, width, height);
-        this.chart.draw(g2, drawArea);
-        try {
-            Method m = g2.getClass().getMethod("getSVGElement");
-            svg = (String) m.invoke(g2);
-        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            // null will be returned
-        }
-        return svg;
+    public XYDataItem getDataItem(int index) {
+        XYDataItem item = this.data.get(index);
+        return (XYDataItem) item.clone();
     }
 
     /**
-     * Creates an {@code SVGGraphics2D} instance (from JFreeSVG) using reflection.
-     * If JFreeSVG is not on the classpath, this method returns {@code null}.
+     * Return the data item with the specified index.
      *
-     * @param w  the width.
-     * @param h  the height.
+     * @param index  the index.
      *
-     * @return An {@code SVGGraphics2D} instance or {@code null}.
+     * @return The data item with the specified index.
+     *
+     * @since 1.0.14
      */
-    protected Graphics2D createSVGGraphics2D(int w, int h) {
-        try {
-            Class<?> svgGraphics2d = Class.forName("org.jfree.graphics2d.svg.SVGGraphics2D");
-            Constructor<?> ctor = svgGraphics2d.getConstructor(int.class, int.class);
-            return (Graphics2D) ctor.newInstance(w, h);
-        } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
+    XYDataItem getRawDataItem(int index) {
+        return this.data.get(index);
+    }
+
+    /**
+     * Returns the x-value at the specified index.
+     *
+     * @param index  the index (zero-based).
+     *
+     * @return The x-value (never {@code null}).
+     */
+    public Number getX(int index) {
+        return getRawDataItem(index).getX();
+    }
+
+    /**
+     * Returns the y-value at the specified index.
+     *
+     * @param index  the index (zero-based).
+     *
+     * @return The y-value (possibly {@code null}).
+     */
+    public Number getY(int index) {
+        return getRawDataItem(index).getY();
+    }
+
+    /**
+     * A function to find the minimum of two values, but ignoring any
+     * Double.NaN values.
+     *
+     * @param a  the first value.
+     * @param b  the second value.
+     *
+     * @return The minimum of the two values.
+     */
+    private double minIgnoreNaN(double a, double b) {
+        if (Double.isNaN(a)) {
+            return b;
+        }
+        if (Double.isNaN(b)) {
+            return a;
+        }
+        return Math.min(a, b);
+    }
+
+    /**
+     * A function to find the maximum of two values, but ignoring any
+     * Double.NaN values.
+     *
+     * @param a  the first value.
+     * @param b  the second value.
+     *
+     * @return The maximum of the two values.
+     */
+    private double maxIgnoreNaN(double a, double b) {
+        if (Double.isNaN(a)) {
+            return b;
+        }
+        if (Double.isNaN(b)) {
+            return a;
+        }
+        return Math.max(a, b);
+    }
+
+    /**
+     * Updates the value of an item in the series and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param index  the item (zero based index).
+     * @param y  the new value ({@code null} permitted).
+     *
+     * @since 1.0.1
+     */
+    public void updateByIndex(int index, Number y) {
+        XYDataItem item = getRawDataItem(index);
+        // figure out if we need to iterate through all the y-values
+        boolean iterate = false;
+        double oldY = item.getYValue();
+        if (!Double.isNaN(oldY)) {
+            iterate = oldY <= this.minY || oldY >= this.maxY;
+        }
+        item.setY(y);
+        if (iterate) {
+            findBoundsByIteration();
+        } else if (y != null) {
+            double yy = y.doubleValue();
+            this.minY = minIgnoreNaN(this.minY, yy);
+            this.maxY = maxIgnoreNaN(this.maxY, yy);
+        }
+        fireSeriesChanged();
+    }
+
+    /**
+     * Updates an item in the series.
+     *
+     * @param x  the x-value ({@code null} not permitted).
+     * @param y  the y-value ({@code null} permitted).
+     *
+     * @throws SeriesException if there is no existing item with the specified
+     *         x-value.
+     */
+    public void update(Number x, Number y) {
+        int index = indexOf(x);
+        if (index < 0) {
+            throw new SeriesException("No observation for x = " + x);
+        }
+        updateByIndex(index, y);
+    }
+
+    /**
+     * Adds or updates an item in the series and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param x  the x-value.
+     * @param y  the y-value.
+     *
+     * @return The item that was overwritten, if any.
+     *
+     * @since 1.0.10
+     */
+    public XYDataItem addOrUpdate(double x, double y) {
+        return addOrUpdate(Double.valueOf(x), Double.valueOf(y));
+    }
+
+    /**
+     * Adds or updates an item in the series and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param x  the x-value ({@code null} not permitted).
+     * @param y  the y-value ({@code null} permitted).
+     *
+     * @return A copy of the overwritten data item, or {@code null} if no
+     *         item was overwritten.
+     */
+    public XYDataItem addOrUpdate(Number x, Number y) {
+        // defer argument checking
+        return addOrUpdate(new XYDataItem(x, y));
+    }
+
+    /**
+     * Adds or updates an item in the series and sends a
+     * {@link SeriesChangeEvent} to all registered listeners.
+     *
+     * @param item  the data item ({@code null} not permitted).
+     *
+     * @return A copy of the overwritten data item, or {@code null} if no
+     *         item was overwritten.
+     *
+     * @since 1.0.14
+     */
+    public XYDataItem addOrUpdate(XYDataItem item) {
+        Args.nullNotPermitted(item, "item");
+        if (this.allowDuplicateXValues) {
+            add(item);
             return null;
         }
-    }
-
-    /**
-     * Saves the chart in PDF format (a filechooser will be displayed so that
-     * the user can specify the filename).  Note that this method only works
-     * if the OrsonPDF library is on the classpath...if this library is not
-     * present, the method will fail.
-     *
-     * @param f  the file.
-     */
-    protected void saveAsPDF(File f) {
-        File file = f;
-        if (file == null) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
-            FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("PDF_Files"), "pdf");
-            fileChooser.addChoosableFileFilter(filter);
-            fileChooser.setFileFilter(filter);
-            int option = fileChooser.showSaveDialog(this);
-            if (option == JFileChooser.APPROVE_OPTION) {
-                String filename = fileChooser.getSelectedFile().getPath();
-                if (isEnforceFileExtensions()) {
-                    if (!filename.endsWith(".pdf")) {
-                        filename = filename + ".pdf";
-                    }
-                }
-                file = new File(filename);
-                if (file.exists()) {
-                    String fileExists = localizationResources.getString("FILE_EXISTS_CONFIRM_OVERWRITE");
-                    int response = JOptionPane.showConfirmDialog(this, fileExists, localizationResources.getString("Save_as_PDF"), JOptionPane.OK_CANCEL_OPTION);
-                    if (response == JOptionPane.CANCEL_OPTION) {
-                        file = null;
-                    }
-                }
+        // if we get to here, we know that duplicate X values are not permitted
+        XYDataItem overwritten = null;
+        int index = indexOf(item.getX());
+        if (index >= 0) {
+            XYDataItem existing = this.data.get(index);
+            overwritten = (XYDataItem) existing.clone();
+            // figure out if we need to iterate through all the y-values
+            boolean iterate = false;
+            double oldY = existing.getYValue();
+            if (!Double.isNaN(oldY)) {
+                iterate = oldY <= this.minY || oldY >= this.maxY;
             }
-        }
-        if (file != null) {
-            writeAsPDF(file, getWidth(), getHeight());
-        }
-    }
-
-    /**
-     * Writes the current chart to the specified file in PDF format.  This
-     * will only work when the OrsonPDF library is found on the classpath.
-     * Reflection is used to ensure there is no compile-time dependency on
-     * OrsonPDF (which is non-free software).
-     *
-     * @param file  the output file ({@code null} not permitted).
-     * @param w  the chart width.
-     * @param h  the chart height.
-     */
-    private void writeAsPDF(File file, int w, int h) {
-        if (!ChartUtils.isOrsonPDFAvailable()) {
-            throw new IllegalStateException("OrsonPDF is not present on the classpath.");
-        }
-        Args.nullNotPermitted(file, "file");
-        try {
-            Class<?> pdfDocClass = Class.forName("com.orsonpdf.PDFDocument");
-            Object pdfDoc = pdfDocClass.getDeclaredConstructor().newInstance();
-            Method m = pdfDocClass.getMethod("createPage", Rectangle2D.class);
-            Rectangle2D rect = new Rectangle(w, h);
-            Object page = m.invoke(pdfDoc, rect);
-            Method m2 = page.getClass().getMethod("getGraphics2D");
-            Graphics2D g2 = (Graphics2D) m2.invoke(page);
-            // we suppress shadow generation, because PDF is a vector format and
-            // the shadow effect is applied via bitmap effects...
-            g2.setRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION, true);
-            Rectangle2D drawArea = new Rectangle2D.Double(0, 0, w, h);
-            this.chart.draw(g2, drawArea);
-            Method m3 = pdfDocClass.getMethod("writeToFile", File.class);
-            m3.invoke(pdfDoc, file);
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | SecurityException | IllegalArgumentException | InvocationTargetException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    /**
-     * Creates a print job for the chart.
-     */
-    public void createChartPrintJob() {
-        PrinterJob job = PrinterJob.getPrinterJob();
-        PageFormat pf = job.defaultPage();
-        PageFormat pf2 = job.pageDialog(pf);
-        if (pf2 != pf) {
-            job.setPrintable(this, pf2);
-            if (job.printDialog()) {
-                try {
-                    job.print();
-                } catch (PrinterException e) {
-                    JOptionPane.showMessageDialog(this, e);
-                }
+            existing.setY(item.getY());
+            if (iterate) {
+                findBoundsByIteration();
+            } else if (item.getY() != null) {
+                double yy = item.getY().doubleValue();
+                this.minY = minIgnoreNaN(this.minY, yy);
+                this.maxY = maxIgnoreNaN(this.maxY, yy);
             }
-        }
-    }
-
-    /**
-     * Prints the chart on a single page.
-     *
-     * @param g  the graphics context.
-     * @param pf  the page format to use.
-     * @param pageIndex  the index of the page. If not {@code 0}, nothing
-     *                   gets printed.
-     *
-     * @return The result of printing.
-     */
-    @Override
-    public int print(Graphics g, PageFormat pf, int pageIndex) {
-        if (pageIndex != 0) {
-            return NO_SUCH_PAGE;
-        }
-        Graphics2D g2 = (Graphics2D) g;
-        double x = pf.getImageableX();
-        double y = pf.getImageableY();
-        double w = pf.getImageableWidth();
-        double h = pf.getImageableHeight();
-        this.chart.draw(g2, new Rectangle2D.Double(x, y, w, h), this.anchor, null);
-        return PAGE_EXISTS;
-    }
-
-    /**
-     * Adds a listener to the list of objects listening for chart mouse events.
-     *
-     * @param listener  the listener ({@code null} not permitted).
-     */
-    public void addChartMouseListener(ChartMouseListener listener) {
-        Args.nullNotPermitted(listener, "listener");
-        this.chartMouseListeners.add(ChartMouseListener.class, listener);
-    }
-
-    /**
-     * Removes a listener from the list of objects listening for chart mouse
-     * events.
-     *
-     * @param listener  the listener.
-     */
-    public void removeChartMouseListener(ChartMouseListener listener) {
-        this.chartMouseListeners.remove(ChartMouseListener.class, listener);
-    }
-
-    /**
-     * Returns an array of the listeners of the given type registered with the
-     * panel.
-     *
-     * @param listenerType  the listener type.
-     *
-     * @return An array of listeners.
-     */
-    @Override
-    public <T extends EventListener> T[] getListeners(Class<T> listenerType) {
-        if (listenerType == ChartMouseListener.class) {
-            // fetch listeners from local storage
-            return this.chartMouseListeners.getListeners(listenerType);
         } else {
-            return super.getListeners(listenerType);
+            // if the series is sorted, the negative index is a result from
+            // Collections.binarySearch() and tells us where to insert the
+            // new item...otherwise it will be just -1 and we should just
+            // append the value to the list...
+            item = (XYDataItem) item.clone();
+            if (this.autoSort) {
+                this.data.add(-index - 1, item);
+            } else {
+                this.data.add(item);
+            }
+            updateBoundsForAddedItem(item);
+            // check if this addition will exceed the maximum item count...
+            if (getItemCount() > this.maximumItemCount) {
+                XYDataItem removed = this.data.remove(0);
+                updateBoundsForRemovedItem(removed);
+            }
+        }
+        fireSeriesChanged();
+        return overwritten;
+    }
+
+    /**
+     * Returns the index of the item with the specified x-value, or a negative
+     * index if the series does not contain an item with that x-value.  Be
+     * aware that for an unsorted series, the index is found by iterating
+     * through all items in the series.
+     *
+     * @param x  the x-value ({@code null} not permitted).
+     *
+     * @return The index.
+     */
+    public int indexOf(Number x) {
+        if (this.autoSort) {
+            return Collections.binarySearch(this.data, new XYDataItem(x, null));
+        } else {
+            for (int i = 0; i < this.data.size(); i++) {
+                XYDataItem item = this.data.get(i);
+                if (item.getX().equals(x)) {
+                    return i;
+                }
+            }
+            return -1;
         }
     }
 
     /**
-     * Creates a popup menu for the panel.  This method includes code that
-     * auto-detects JFreeSVG and OrsonPDF (via reflection) and, if they are
-     * present (and the {@code save} argument is {@code true}, adds a menu item
-     * for each.
+     * Returns a new array containing the x and y values from this series.
      *
-     * @param properties  include a menu item for the chart property editor.
-     * @param copy include a menu item for copying to the clipboard.
-     * @param save  include one or more menu items for saving the chart to
-     *     supported image formats.
-     * @param print  include a menu item for printing the chart.
-     * @param zoom  include menu items for zooming.
+     * @return A new array containing the x and y values from this series.
      *
-     * @return The popup menu.
+     * @since 1.0.4
      */
-    protected JPopupMenu createPopupMenu(boolean properties, boolean copy, boolean save, boolean print, boolean zoom) {
-        JPopupMenu result = new JPopupMenu(localizationResources.getString("Chart") + ":");
-        boolean separator = false;
-        if (properties) {
-            JMenuItem propertiesItem = new JMenuItem(localizationResources.getString("Properties..."));
-            propertiesItem.setActionCommand(PROPERTIES_COMMAND);
-            propertiesItem.addActionListener(this);
-            result.add(propertiesItem);
-            separator = true;
-        }
-        if (copy) {
-            if (separator) {
-                result.addSeparator();
+    public double[][] toArray() {
+        int itemCount = getItemCount();
+        double[][] result = new double[2][itemCount];
+        for (int i = 0; i < itemCount; i++) {
+            result[0][i] = this.getX(i).doubleValue();
+            Number y = getY(i);
+            if (y != null) {
+                result[1][i] = y.doubleValue();
+            } else {
+                result[1][i] = Double.NaN;
             }
-            JMenuItem copyItem = new JMenuItem(localizationResources.getString("Copy"));
-            copyItem.setActionCommand(COPY_COMMAND);
-            copyItem.addActionListener(this);
-            result.add(copyItem);
-            separator = !save;
-        }
-        if (save) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenu saveSubMenu = new JMenu(localizationResources.getString("Save_as"));
-            // PNG - current res
-            {
-                JMenuItem pngItem = new JMenuItem(localizationResources.getString("PNG..."));
-                pngItem.setActionCommand(SAVE_AS_PNG_COMMAND);
-                pngItem.addActionListener(this);
-                saveSubMenu.add(pngItem);
-            }
-            // PNG - screen res
-            {
-                final Dimension ss = Toolkit.getDefaultToolkit().getScreenSize();
-                final String pngName = "PNG (" + ss.width + "x" + ss.height + ") ...";
-                JMenuItem pngItem = new JMenuItem(pngName);
-                pngItem.setActionCommand(SAVE_AS_PNG_SIZE_COMMAND);
-                pngItem.addActionListener(this);
-                saveSubMenu.add(pngItem);
-            }
-            if (ChartUtils.isJFreeSVGAvailable()) {
-                JMenuItem svgItem = new JMenuItem(localizationResources.getString("SVG..."));
-                svgItem.setActionCommand(SAVE_AS_SVG_COMMAND);
-                svgItem.addActionListener(this);
-                saveSubMenu.add(svgItem);
-            }
-            if (ChartUtils.isOrsonPDFAvailable()) {
-                JMenuItem pdfItem = new JMenuItem(localizationResources.getString("PDF..."));
-                pdfItem.setActionCommand(SAVE_AS_PDF_COMMAND);
-                pdfItem.addActionListener(this);
-                saveSubMenu.add(pdfItem);
-            }
-            result.add(saveSubMenu);
-            separator = true;
-        }
-        if (print) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenuItem printItem = new JMenuItem(localizationResources.getString("Print..."));
-            printItem.setActionCommand(PRINT_COMMAND);
-            printItem.addActionListener(this);
-            result.add(printItem);
-            separator = true;
-        }
-        if (zoom) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenu zoomInMenu = new JMenu(localizationResources.getString("Zoom_In"));
-            this.zoomInBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
-            this.zoomInBothMenuItem.setActionCommand(ZOOM_IN_BOTH_COMMAND);
-            this.zoomInBothMenuItem.addActionListener(this);
-            zoomInMenu.add(this.zoomInBothMenuItem);
-            zoomInMenu.addSeparator();
-            this.zoomInDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
-            this.zoomInDomainMenuItem.setActionCommand(ZOOM_IN_DOMAIN_COMMAND);
-            this.zoomInDomainMenuItem.addActionListener(this);
-            zoomInMenu.add(this.zoomInDomainMenuItem);
-            this.zoomInRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
-            this.zoomInRangeMenuItem.setActionCommand(ZOOM_IN_RANGE_COMMAND);
-            this.zoomInRangeMenuItem.addActionListener(this);
-            zoomInMenu.add(this.zoomInRangeMenuItem);
-            result.add(zoomInMenu);
-            JMenu zoomOutMenu = new JMenu(localizationResources.getString("Zoom_Out"));
-            this.zoomOutBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
-            this.zoomOutBothMenuItem.setActionCommand(ZOOM_OUT_BOTH_COMMAND);
-            this.zoomOutBothMenuItem.addActionListener(this);
-            zoomOutMenu.add(this.zoomOutBothMenuItem);
-            zoomOutMenu.addSeparator();
-            this.zoomOutDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
-            this.zoomOutDomainMenuItem.setActionCommand(ZOOM_OUT_DOMAIN_COMMAND);
-            this.zoomOutDomainMenuItem.addActionListener(this);
-            zoomOutMenu.add(this.zoomOutDomainMenuItem);
-            this.zoomOutRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
-            this.zoomOutRangeMenuItem.setActionCommand(ZOOM_OUT_RANGE_COMMAND);
-            this.zoomOutRangeMenuItem.addActionListener(this);
-            zoomOutMenu.add(this.zoomOutRangeMenuItem);
-            result.add(zoomOutMenu);
-            JMenu autoRangeMenu = new JMenu(localizationResources.getString("Auto_Range"));
-            this.zoomResetBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
-            this.zoomResetBothMenuItem.setActionCommand(ZOOM_RESET_BOTH_COMMAND);
-            this.zoomResetBothMenuItem.addActionListener(this);
-            autoRangeMenu.add(this.zoomResetBothMenuItem);
-            autoRangeMenu.addSeparator();
-            this.zoomResetDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
-            this.zoomResetDomainMenuItem.setActionCommand(ZOOM_RESET_DOMAIN_COMMAND);
-            this.zoomResetDomainMenuItem.addActionListener(this);
-            autoRangeMenu.add(this.zoomResetDomainMenuItem);
-            this.zoomResetRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
-            this.zoomResetRangeMenuItem.setActionCommand(ZOOM_RESET_RANGE_COMMAND);
-            this.zoomResetRangeMenuItem.addActionListener(this);
-            autoRangeMenu.add(this.zoomResetRangeMenuItem);
-            result.addSeparator();
-            result.add(autoRangeMenu);
         }
         return result;
     }
 
     /**
-     * The idea is to modify the zooming options depending on the type of chart
-     * being displayed by the panel.
+     * Returns a clone of the series.
      *
-     * @param x  horizontal position of the popup.
-     * @param y  vertical position of the popup.
+     * @return A clone of the series.
+     *
+     * @throws CloneNotSupportedException if there is a cloning problem.
      */
-    protected void displayPopupMenu(int x, int y) {
-        if (this.popup == null) {
-            return;
-        }
-        // go through each zoom menu item and decide whether to
-        // enable it...
-        boolean isDomainZoomable = false;
-        boolean isRangeZoomable = false;
-        Plot plot = (this.chart != null ? this.chart.getPlot() : null);
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            isDomainZoomable = z.isDomainZoomable();
-            isRangeZoomable = z.isRangeZoomable();
-        }
-        if (this.zoomInDomainMenuItem != null) {
-            this.zoomInDomainMenuItem.setEnabled(isDomainZoomable);
-        }
-        if (this.zoomOutDomainMenuItem != null) {
-            this.zoomOutDomainMenuItem.setEnabled(isDomainZoomable);
-        }
-        if (this.zoomResetDomainMenuItem != null) {
-            this.zoomResetDomainMenuItem.setEnabled(isDomainZoomable);
-        }
-        if (this.zoomInRangeMenuItem != null) {
-            this.zoomInRangeMenuItem.setEnabled(isRangeZoomable);
-        }
-        if (this.zoomOutRangeMenuItem != null) {
-            this.zoomOutRangeMenuItem.setEnabled(isRangeZoomable);
-        }
-        if (this.zoomResetRangeMenuItem != null) {
-            this.zoomResetRangeMenuItem.setEnabled(isRangeZoomable);
-        }
-        if (this.zoomInBothMenuItem != null) {
-            this.zoomInBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
-        }
-        if (this.zoomOutBothMenuItem != null) {
-            this.zoomOutBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
-        }
-        if (this.zoomResetBothMenuItem != null) {
-            this.zoomResetBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
-        }
-        this.popup.show(this, x, y);
+    @Override
+    @SuppressWarnings("unchecked")
+    public Object clone() throws CloneNotSupportedException {
+        XYSeries<K> clone = (XYSeries) super.clone();
+        clone.data = CloneUtils.cloneList(this.data);
+        return clone;
     }
 
     /**
-     * Updates the UI for a LookAndFeel change.
+     * Creates a new series by copying a subset of the data in this time series.
+     *
+     * @param start  the index of the first item to copy.
+     * @param end  the index of the last item to copy.
+     *
+     * @return A series containing a copy of this series from start until end.
+     *
+     * @throws CloneNotSupportedException if there is a cloning problem.
+     */
+    @SuppressWarnings("unchecked")
+    public XYSeries<K> createCopy(int start, int end) throws CloneNotSupportedException {
+        XYSeries<K> copy = (XYSeries) super.clone();
+        copy.data = new ArrayList<>();
+        if (!this.data.isEmpty()) {
+            for (int index = start; index <= end; index++) {
+                XYDataItem item = this.data.get(index);
+                XYDataItem clone = CloneUtils.clone(item);
+                try {
+                    copy.add(clone);
+                } catch (SeriesException e) {
+                    throw new RuntimeException("Unable to add cloned data item.", e);
+                }
+            }
+        }
+        return copy;
+    }
+
+    /**
+     * Tests this series for equality with an arbitrary object.
+     *
+     * @param obj  the object to test against for equality
+     *             ({@code null} permitted).
+     *
+     * @return A boolean.
      */
     @Override
-    public void updateUI() {
-        // here we need to update the UI for the popup menu, if the panel
-        // has one...
-        if (this.popup != null) {
-            SwingUtilities.updateComponentTreeUI(this.popup);
+    @SuppressWarnings("unchecked")
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
         }
-        super.updateUI();
+        if (!(obj instanceof XYSeries)) {
+            return false;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        XYSeries<K> that = (XYSeries) obj;
+        if (this.maximumItemCount != that.maximumItemCount) {
+            return false;
+        }
+        if (this.autoSort != that.autoSort) {
+            return false;
+        }
+        if (this.allowDuplicateXValues != that.allowDuplicateXValues) {
+            return false;
+        }
+        if (!Objects.equals(this.data, that.data)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        // it is too slow to look at every data item, so let's just look at
+        // the first, middle and last items...
+        int count = getItemCount();
+        if (count > 0) {
+            XYDataItem item = getRawDataItem(0);
+            result = 29 * result + item.hashCode();
+        }
+        if (count > 1) {
+            XYDataItem item = getRawDataItem(count - 1);
+            result = 29 * result + item.hashCode();
+        }
+        if (count > 2) {
+            XYDataItem item = getRawDataItem(count / 2);
+            result = 29 * result + item.hashCode();
+        }
+        result = 29 * result + this.maximumItemCount;
+        result = 29 * result + (this.autoSort ? 1 : 0);
+        result = 29 * result + (this.allowDuplicateXValues ? 1 : 0);
+        return result;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ----------------------------
+ * XYBoxAndWhiskerRenderer.java
+ * ----------------------------
+ * (C) Copyright 2003-present, by David Browning and Contributors.
+ *
+ * Original Author:  David Browning (for Australian Institute of Marine
+ *                   Science);
+ * Contributor(s):   David Gilbert;
+ *
+ */
+/**
+ * A renderer that draws box-and-whisker items on an {@link XYPlot}.  This
+ * renderer requires a {@link BoxAndWhiskerXYDataset}).  The example shown here
+ * is generated by the{@code BoxAndWhiskerChartDemo2.java} program
+ * included in the JFreeChart demo collection:
+ * <br><br>
+ * <img src="doc-files/XYBoxAndWhiskerRendererSample.png"
+ * alt="XYBoxAndWhiskerRendererSample.png">
+ * <P>
+ * This renderer does not include any code to calculate the crosshair point.
+ */
+public class XYBoxAndWhiskerRenderer extends AbstractXYItemRenderer implements XYItemRenderer, Cloneable, PublicCloneable, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = -8020170108532232324L;
+
+    /**
+     * The box width.
+     */
+    private double boxWidth;
+
+    /**
+     * The paint used to fill the box.
+     */
+    private transient Paint boxPaint;
+
+    /**
+     * A flag that controls whether the box is filled.
+     */
+    private boolean fillBox;
+
+    /**
+     * The paint used to draw various artifacts such as outliers, farout
+     * symbol, average ellipse and median line.
+     */
+    private transient Paint artifactPaint = Color.BLACK;
+
+    /**
+     * Creates a new renderer for box and whisker charts.
+     */
+    public XYBoxAndWhiskerRenderer() {
+        this(-1.0);
+    }
+
+    /**
+     * Creates a new renderer for box and whisker charts.
+     * <P>
+     * Use -1 for the box width if you prefer the width to be calculated
+     * automatically.
+     *
+     * @param boxWidth  the box width.
+     */
+    public XYBoxAndWhiskerRenderer(double boxWidth) {
+        super();
+        this.boxWidth = boxWidth;
+        this.boxPaint = Color.GREEN;
+        this.fillBox = true;
+        setDefaultToolTipGenerator(new BoxAndWhiskerXYToolTipGenerator());
+    }
+
+    /**
+     * Returns the width of each box.
+     *
+     * @return The box width.
+     *
+     * @see #setBoxWidth(double)
+     */
+    public double getBoxWidth() {
+        return this.boxWidth;
+    }
+
+    /**
+     * Sets the box width and sends a {@link RendererChangeEvent} to all
+     * registered listeners.
+     * <P>
+     * If you set the width to a negative value, the renderer will calculate
+     * the box width automatically based on the space available on the chart.
+     *
+     * @param width  the width.
+     *
+     * @see #getBoxWidth()
+     */
+    public void setBoxWidth(double width) {
+        if (width != this.boxWidth) {
+            this.boxWidth = width;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the paint used to fill boxes.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setBoxPaint(Paint)
+     */
+    public Paint getBoxPaint() {
+        return this.boxPaint;
+    }
+
+    /**
+     * Sets the paint used to fill boxes and sends a {@link RendererChangeEvent}
+     * to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getBoxPaint()
+     */
+    public void setBoxPaint(Paint paint) {
+        this.boxPaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the flag that controls whether the box is filled.
+     *
+     * @return A boolean.
+     *
+     * @see #setFillBox(boolean)
+     */
+    public boolean getFillBox() {
+        return this.fillBox;
+    }
+
+    /**
+     * Sets the flag that controls whether the box is filled and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param flag  the flag.
+     *
+     * @see #setFillBox(boolean)
+     */
+    public void setFillBox(boolean flag) {
+        this.fillBox = flag;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint used to paint the various artifacts such as outliers,
+     * farout symbol, median line and the averages ellipse.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setArtifactPaint(Paint)
+     */
+    public Paint getArtifactPaint() {
+        return this.artifactPaint;
+    }
+
+    /**
+     * Sets the paint used to paint the various artifacts such as outliers,
+     * farout symbol, median line and the averages ellipse, and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getArtifactPaint()
+     */
+    public void setArtifactPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.artifactPaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the range of values the renderer requires to display all the
+     * items from the specified dataset.
+     *
+     * @param dataset  the dataset ({@code null} permitted).
+     *
+     * @return The range ({@code null} if the dataset is {@code null}
+     *         or empty).
+     *
+     * @see #findDomainBounds(XYDataset)
+     */
+    @Override
+    public Range findRangeBounds(XYDataset dataset) {
+        return findRangeBounds(dataset, true);
+    }
+
+    /**
+     * Returns the box paint or, if this is {@code null}, the item
+     * paint.
+     *
+     * @param series  the series index.
+     * @param item  the item index.
+     *
+     * @return The paint used to fill the box for the specified item (never
+     *         {@code null}).
+     */
+    protected Paint lookupBoxPaint(int series, int item) {
+        Paint p = getBoxPaint();
+        if (p != null) {
+            return p;
+        } else {
+            // TODO: could change this to itemFillPaint().  For backwards
+            // compatibility, it might require a useFillPaint flag.
+            return getItemPaint(series, item);
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param state  the renderer state.
+     * @param dataArea  the area within which the plot is being drawn.
+     * @param info  collects info about the drawing.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset (must be an instance of
+     *                 {@link BoxAndWhiskerXYDataset}).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    @Override
+    public void drawItem(Graphics2D g2, XYItemRendererState state, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            drawHorizontalItem(g2, dataArea, info, plot, domainAxis, rangeAxis, dataset, series, item, crosshairState, pass);
+        } else if (orientation == PlotOrientation.VERTICAL) {
+            drawVerticalItem(g2, dataArea, info, plot, domainAxis, rangeAxis, dataset, series, item, crosshairState, pass);
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area within which the plot is being drawn.
+     * @param info  collects info about the drawing.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset (must be an instance of
+     *                 {@link BoxAndWhiskerXYDataset}).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    public void drawHorizontalItem(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        // setup for collecting optional entity info...
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+        BoxAndWhiskerXYDataset boxAndWhiskerData = (BoxAndWhiskerXYDataset) dataset;
+        Number x = boxAndWhiskerData.getX(series, item);
+        Number yMax = boxAndWhiskerData.getMaxRegularValue(series, item);
+        Number yMin = boxAndWhiskerData.getMinRegularValue(series, item);
+        Number yMedian = boxAndWhiskerData.getMedianValue(series, item);
+        Number yAverage = boxAndWhiskerData.getMeanValue(series, item);
+        Number yQ1Median = boxAndWhiskerData.getQ1Value(series, item);
+        Number yQ3Median = boxAndWhiskerData.getQ3Value(series, item);
+        double xx = domainAxis.valueToJava2D(x.doubleValue(), dataArea, plot.getDomainAxisEdge());
+        RectangleEdge location = plot.getRangeAxisEdge();
+        double yyMax = rangeAxis.valueToJava2D(yMax.doubleValue(), dataArea, location);
+        double yyMin = rangeAxis.valueToJava2D(yMin.doubleValue(), dataArea, location);
+        double yyMedian = rangeAxis.valueToJava2D(yMedian.doubleValue(), dataArea, location);
+        double yyAverage = 0.0;
+        if (yAverage != null) {
+            yyAverage = rangeAxis.valueToJava2D(yAverage.doubleValue(), dataArea, location);
+        }
+        double yyQ1Median = rangeAxis.valueToJava2D(yQ1Median.doubleValue(), dataArea, location);
+        double yyQ3Median = rangeAxis.valueToJava2D(yQ3Median.doubleValue(), dataArea, location);
+        double exactBoxWidth = getBoxWidth();
+        double width = exactBoxWidth;
+        double dataAreaX = dataArea.getHeight();
+        double maxBoxPercent = 0.1;
+        double maxBoxWidth = dataAreaX * maxBoxPercent;
+        if (exactBoxWidth <= 0.0) {
+            int itemCount = boxAndWhiskerData.getItemCount(series);
+            exactBoxWidth = dataAreaX / itemCount * 4.5 / 7;
+            if (exactBoxWidth < 3) {
+                width = 3;
+            } else if (exactBoxWidth > maxBoxWidth) {
+                width = maxBoxWidth;
+            } else {
+                width = exactBoxWidth;
+            }
+        }
+        g2.setPaint(getItemPaint(series, item));
+        Stroke s = getItemStroke(series, item);
+        g2.setStroke(s);
+        // draw the upper shadow
+        g2.draw(new Line2D.Double(yyMax, xx, yyQ3Median, xx));
+        g2.draw(new Line2D.Double(yyMax, xx - width / 2, yyMax, xx + width / 2));
+        // draw the lower shadow
+        g2.draw(new Line2D.Double(yyMin, xx, yyQ1Median, xx));
+        g2.draw(new Line2D.Double(yyMin, xx - width / 2, yyMin, xx + width / 2));
+        // draw the body
+        Shape box;
+        if (yyQ1Median < yyQ3Median) {
+            box = new Rectangle2D.Double(yyQ1Median, xx - width / 2, yyQ3Median - yyQ1Median, width);
+        } else {
+            box = new Rectangle2D.Double(yyQ3Median, xx - width / 2, yyQ1Median - yyQ3Median, width);
+        }
+        if (this.fillBox) {
+            g2.setPaint(lookupBoxPaint(series, item));
+            g2.fill(box);
+        }
+        g2.setStroke(getItemOutlineStroke(series, item));
+        g2.setPaint(getItemOutlinePaint(series, item));
+        g2.draw(box);
+        // draw median
+        g2.setPaint(getArtifactPaint());
+        g2.draw(new Line2D.Double(yyMedian, xx - width / 2, yyMedian, xx + width / 2));
+        // draw average - SPECIAL AIMS REQUIREMENT
+        if (yAverage != null) {
+            double aRadius = width / 4;
+            // here we check that the average marker will in fact be visible
+            // before drawing it...
+            if ((yyAverage > (dataArea.getMinX() - aRadius)) && (yyAverage < (dataArea.getMaxX() + aRadius))) {
+                Ellipse2D.Double avgEllipse = new Ellipse2D.Double(yyAverage - aRadius, xx - aRadius, aRadius * 2, aRadius * 2);
+                g2.fill(avgEllipse);
+                g2.draw(avgEllipse);
+            }
+        }
+        // FIXME: draw outliers
+        // add an entity for the item...
+        if (entities != null && box.intersects(dataArea)) {
+            addEntity(entities, box, dataset, series, item, yyAverage, xx);
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area within which the plot is being drawn.
+     * @param info  collects info about the drawing.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset (must be an instance of
+     *                 {@link BoxAndWhiskerXYDataset}).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    public void drawVerticalItem(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        // setup for collecting optional entity info...
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+        BoxAndWhiskerXYDataset boxAndWhiskerData = (BoxAndWhiskerXYDataset) dataset;
+        Number x = boxAndWhiskerData.getX(series, item);
+        Number yMax = boxAndWhiskerData.getMaxRegularValue(series, item);
+        Number yMin = boxAndWhiskerData.getMinRegularValue(series, item);
+        Number yMedian = boxAndWhiskerData.getMedianValue(series, item);
+        Number yAverage = boxAndWhiskerData.getMeanValue(series, item);
+        Number yQ1Median = boxAndWhiskerData.getQ1Value(series, item);
+        Number yQ3Median = boxAndWhiskerData.getQ3Value(series, item);
+        List yOutliers = boxAndWhiskerData.getOutliers(series, item);
+        // yOutliers can be null, but we'd prefer it to be an empty list in
+        // that case...
+        if (yOutliers == null) {
+            yOutliers = Collections.EMPTY_LIST;
+        }
+        double xx = domainAxis.valueToJava2D(x.doubleValue(), dataArea, plot.getDomainAxisEdge());
+        RectangleEdge location = plot.getRangeAxisEdge();
+        double yyMax = rangeAxis.valueToJava2D(yMax.doubleValue(), dataArea, location);
+        double yyMin = rangeAxis.valueToJava2D(yMin.doubleValue(), dataArea, location);
+        double yyMedian = rangeAxis.valueToJava2D(yMedian.doubleValue(), dataArea, location);
+        double yyAverage = 0.0;
+        if (yAverage != null) {
+            yyAverage = rangeAxis.valueToJava2D(yAverage.doubleValue(), dataArea, location);
+        }
+        double yyQ1Median = rangeAxis.valueToJava2D(yQ1Median.doubleValue(), dataArea, location);
+        double yyQ3Median = rangeAxis.valueToJava2D(yQ3Median.doubleValue(), dataArea, location);
+        double yyOutlier;
+        double exactBoxWidth = getBoxWidth();
+        double width = exactBoxWidth;
+        double dataAreaX = dataArea.getMaxX() - dataArea.getMinX();
+        double maxBoxPercent = 0.1;
+        double maxBoxWidth = dataAreaX * maxBoxPercent;
+        if (exactBoxWidth <= 0.0) {
+            int itemCount = boxAndWhiskerData.getItemCount(series);
+            exactBoxWidth = dataAreaX / itemCount * 4.5 / 7;
+            if (exactBoxWidth < 3) {
+                width = 3;
+            } else if (exactBoxWidth > maxBoxWidth) {
+                width = maxBoxWidth;
+            } else {
+                width = exactBoxWidth;
+            }
+        }
+        g2.setPaint(getItemPaint(series, item));
+        Stroke s = getItemStroke(series, item);
+        g2.setStroke(s);
+        // draw the upper shadow
+        g2.draw(new Line2D.Double(xx, yyMax, xx, yyQ3Median));
+        g2.draw(new Line2D.Double(xx - width / 2, yyMax, xx + width / 2, yyMax));
+        // draw the lower shadow
+        g2.draw(new Line2D.Double(xx, yyMin, xx, yyQ1Median));
+        g2.draw(new Line2D.Double(xx - width / 2, yyMin, xx + width / 2, yyMin));
+        // draw the body
+        Shape box;
+        if (yyQ1Median > yyQ3Median) {
+            box = new Rectangle2D.Double(xx - width / 2, yyQ3Median, width, yyQ1Median - yyQ3Median);
+        } else {
+            box = new Rectangle2D.Double(xx - width / 2, yyQ1Median, width, yyQ3Median - yyQ1Median);
+        }
+        if (this.fillBox) {
+            g2.setPaint(lookupBoxPaint(series, item));
+            g2.fill(box);
+        }
+        g2.setStroke(getItemOutlineStroke(series, item));
+        g2.setPaint(getItemOutlinePaint(series, item));
+        g2.draw(box);
+        // draw median
+        g2.setPaint(getArtifactPaint());
+        g2.draw(new Line2D.Double(xx - width / 2, yyMedian, xx + width / 2, yyMedian));
+        // average radius
+        double aRadius = 0;
+        // outlier radius
+        double oRadius = width / 3;
+        // draw average - SPECIAL AIMS REQUIREMENT
+        if (yAverage != null) {
+            aRadius = width / 4;
+            // here we check that the average marker will in fact be visible
+            // before drawing it...
+            if ((yyAverage > (dataArea.getMinY() - aRadius)) && (yyAverage < (dataArea.getMaxY() + aRadius))) {
+                Ellipse2D.Double avgEllipse = new Ellipse2D.Double(xx - aRadius, yyAverage - aRadius, aRadius * 2, aRadius * 2);
+                g2.fill(avgEllipse);
+                g2.draw(avgEllipse);
+            }
+        }
+        List outliers = new ArrayList();
+        OutlierListCollection outlierListCollection = new OutlierListCollection();
+        /* From outlier array sort out which are outliers and put these into
+         * an arraylist. If there are any farouts, set the flag on the
+         * OutlierListCollection
+         */
+        for (int i = 0; i < yOutliers.size(); i++) {
+            double outlier = ((Number) yOutliers.get(i)).doubleValue();
+            if (outlier > boxAndWhiskerData.getMaxOutlier(series, item).doubleValue()) {
+                outlierListCollection.setHighFarOut(true);
+            } else if (outlier < boxAndWhiskerData.getMinOutlier(series, item).doubleValue()) {
+                outlierListCollection.setLowFarOut(true);
+            } else if (outlier > boxAndWhiskerData.getMaxRegularValue(series, item).doubleValue()) {
+                yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea, location);
+                outliers.add(new Outlier(xx, yyOutlier, oRadius));
+            } else if (outlier < boxAndWhiskerData.getMinRegularValue(series, item).doubleValue()) {
+                yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea, location);
+                outliers.add(new Outlier(xx, yyOutlier, oRadius));
+            }
+            Collections.sort(outliers);
+        }
+        // Process outliers. Each outlier is either added to the appropriate
+        // outlier list or a new outlier list is made
+        for (Iterator iterator = outliers.iterator(); iterator.hasNext(); ) {
+            Outlier outlier = (Outlier) iterator.next();
+            outlierListCollection.add(outlier);
+        }
+        // draw yOutliers
+        double maxAxisValue = rangeAxis.valueToJava2D(rangeAxis.getUpperBound(), dataArea, location) + aRadius;
+        double minAxisValue = rangeAxis.valueToJava2D(rangeAxis.getLowerBound(), dataArea, location) - aRadius;
+        // draw outliers
+        for (Iterator iterator = outlierListCollection.iterator(); iterator.hasNext(); ) {
+            OutlierList list = (OutlierList) iterator.next();
+            Outlier outlier = list.getAveragedOutlier();
+            Point2D point = outlier.getPoint();
+            if (list.isMultiple()) {
+                drawMultipleEllipse(point, width, oRadius, g2);
+            } else {
+                drawEllipse(point, oRadius, g2);
+            }
+        }
+        // draw farout
+        if (outlierListCollection.isHighFarOut()) {
+            drawHighFarOut(aRadius, g2, xx, maxAxisValue);
+        }
+        if (outlierListCollection.isLowFarOut()) {
+            drawLowFarOut(aRadius, g2, xx, minAxisValue);
+        }
+        // add an entity for the item...
+        if (entities != null && box.intersects(dataArea)) {
+            addEntity(entities, box, dataset, series, item, xx, yyAverage);
+        }
+    }
+
+    /**
+     * Draws an ellipse to represent an outlier.
+     *
+     * @param point  the location.
+     * @param oRadius  the radius.
+     * @param g2  the graphics device.
+     */
+    protected void drawEllipse(Point2D point, double oRadius, Graphics2D g2) {
+        Ellipse2D.Double dot = new Ellipse2D.Double(point.getX() + oRadius / 2, point.getY(), oRadius, oRadius);
+        g2.draw(dot);
+    }
+
+    /**
+     * Draws two ellipses to represent overlapping outliers.
+     *
+     * @param point  the location.
+     * @param boxWidth  the box width.
+     * @param oRadius  the radius.
+     * @param g2  the graphics device.
+     */
+    protected void drawMultipleEllipse(Point2D point, double boxWidth, double oRadius, Graphics2D g2) {
+        Ellipse2D.Double dot1 = new Ellipse2D.Double(point.getX() - (boxWidth / 2) + oRadius, point.getY(), oRadius, oRadius);
+        Ellipse2D.Double dot2 = new Ellipse2D.Double(point.getX() + (boxWidth / 2), point.getY(), oRadius, oRadius);
+        g2.draw(dot1);
+        g2.draw(dot2);
+    }
+
+    /**
+     * Draws a triangle to indicate the presence of far out values.
+     *
+     * @param aRadius  the radius.
+     * @param g2  the graphics device.
+     * @param xx  the x value.
+     * @param m  the max y value.
+     */
+    protected void drawHighFarOut(double aRadius, Graphics2D g2, double xx, double m) {
+        double side = aRadius * 2;
+        g2.draw(new Line2D.Double(xx - side, m + side, xx + side, m + side));
+        g2.draw(new Line2D.Double(xx - side, m + side, xx, m));
+        g2.draw(new Line2D.Double(xx + side, m + side, xx, m));
+    }
+
+    /**
+     * Draws a triangle to indicate the presence of far out values.
+     *
+     * @param aRadius  the radius.
+     * @param g2  the graphics device.
+     * @param xx  the x value.
+     * @param m  the min y value.
+     */
+    protected void drawLowFarOut(double aRadius, Graphics2D g2, double xx, double m) {
+        double side = aRadius * 2;
+        g2.draw(new Line2D.Double(xx - side, m - side, xx + side, m - side));
+        g2.draw(new Line2D.Double(xx - side, m - side, xx, m));
+        g2.draw(new Line2D.Double(xx + side, m - side, xx, m));
+    }
+
+    /**
+     * Tests this renderer for equality with another object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return {@code true} or {@code false}.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof XYBoxAndWhiskerRenderer)) {
+            return false;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        XYBoxAndWhiskerRenderer that = (XYBoxAndWhiskerRenderer) obj;
+        if (this.boxWidth != that.getBoxWidth()) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.boxPaint, that.boxPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.artifactPaint, that.artifactPaint)) {
+            return false;
+        }
+        if (this.fillBox != that.fillBox) {
+            return false;
+        }
+        return true;
     }
 
     /**
@@ -7945,8 +6674,10 @@ class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressLis
      *
      * @throws IOException  if there is an I/O error.
      */
-    protected void writeObject(ObjectOutputStream stream) throws IOException {
+    private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
+        SerialUtils.writePaint(this.boxPaint, stream);
+        SerialUtils.writePaint(this.artifactPaint, stream);
     }
 
     /**
@@ -7957,13 +6688,1900 @@ class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressLis
      * @throws IOException  if there is an I/O error.
      * @throws ClassNotFoundException  if there is a classpath problem.
      */
-    protected void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
-        // we create a new but empty chartMouseListeners list
-        this.chartMouseListeners = new EventListenerList();
-        // register as a listener with sub-components...
-        if (this.chart != null) {
-            this.chart.addChangeListener(this);
+        this.boxPaint = SerialUtils.readPaint(stream);
+        this.artifactPaint = SerialUtils.readPaint(stream);
+    }
+
+    /**
+     * Returns a clone of the renderer.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException  if the renderer cannot be cloned.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * --------------------------------
+ * SlidingGanttCategoryDataset.java
+ * --------------------------------
+ * (C) Copyright 2008-present, by David Gilbert.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   -;
+ *
+ * Changes
+ * -------
+ * 09-May-2008 : Version 1 (DG);
+ *
+ */
+/**
+ * A {@link GanttCategoryDataset} implementation that presents a subset of the
+ * categories in an underlying dataset.  The index of the first "visible"
+ * category can be modified, which provides a means of "sliding" through
+ * the categories in the underlying dataset.
+ *
+ * @param <R> the row key type.
+ * @param <C> the column key type.
+ * @since 1.0.10
+ */
+public class SlidingGanttCategoryDataset<R extends Comparable<R>, C extends Comparable<C>> extends AbstractDataset implements GanttCategoryDataset<R, C> {
+
+    /**
+     * The underlying dataset.
+     */
+    private GanttCategoryDataset<R, C> underlying;
+
+    /**
+     * The index of the first category to present.
+     */
+    private int firstCategoryIndex;
+
+    /**
+     * The maximum number of categories to present.
+     */
+    private int maximumCategoryCount;
+
+    /**
+     * Creates a new instance.
+     *
+     * @param underlying  the underlying dataset ({@code null} not
+     *     permitted).
+     * @param firstColumn  the index of the first visible column from the
+     *     underlying dataset.
+     * @param maxColumns  the maximumColumnCount.
+     */
+    public SlidingGanttCategoryDataset(GanttCategoryDataset<R, C> underlying, int firstColumn, int maxColumns) {
+        super();
+        this.underlying = underlying;
+        this.firstCategoryIndex = firstColumn;
+        this.maximumCategoryCount = maxColumns;
+    }
+
+    /**
+     * Returns the underlying dataset that was supplied to the constructor.
+     *
+     * @return The underlying dataset (never {@code null}).
+     */
+    public GanttCategoryDataset<R, C> getUnderlyingDataset() {
+        return this.underlying;
+    }
+
+    /**
+     * Returns the index of the first visible category.
+     *
+     * @return The index.
+     *
+     * @see #setFirstCategoryIndex(int)
+     */
+    public int getFirstCategoryIndex() {
+        return this.firstCategoryIndex;
+    }
+
+    /**
+     * Sets the index of the first category that should be used from the
+     * underlying dataset, and sends a {@link DatasetChangeEvent} to all
+     * registered listeners.
+     *
+     * @param first  the index.
+     *
+     * @see #getFirstCategoryIndex()
+     */
+    public void setFirstCategoryIndex(int first) {
+        if (first < 0 || first >= this.underlying.getColumnCount()) {
+            throw new IllegalArgumentException("Invalid index.");
+        }
+        this.firstCategoryIndex = first;
+        fireDatasetChanged();
+    }
+
+    /**
+     * Returns the maximum category count.
+     *
+     * @return The maximum category count.
+     *
+     * @see #setMaximumCategoryCount(int)
+     */
+    public int getMaximumCategoryCount() {
+        return this.maximumCategoryCount;
+    }
+
+    /**
+     * Sets the maximum category count and sends a {@link DatasetChangeEvent}
+     * to all registered listeners.
+     *
+     * @param max  the maximum.
+     *
+     * @see #getMaximumCategoryCount()
+     */
+    public void setMaximumCategoryCount(int max) {
+        if (max < 0) {
+            throw new IllegalArgumentException("Requires 'max' >= 0.");
+        }
+        this.maximumCategoryCount = max;
+        fireDatasetChanged();
+    }
+
+    /**
+     * Returns the index of the last column for this dataset, or -1.
+     *
+     * @return The index.
+     */
+    private int lastCategoryIndex() {
+        if (this.maximumCategoryCount == 0) {
+            return -1;
+        }
+        return Math.min(this.firstCategoryIndex + this.maximumCategoryCount, this.underlying.getColumnCount()) - 1;
+    }
+
+    /**
+     * Returns the index for the specified column key.
+     *
+     * @param key  the key.
+     *
+     * @return The column index, or -1 if the key is not recognised.
+     */
+    @Override
+    public int getColumnIndex(C key) {
+        int index = this.underlying.getColumnIndex(key);
+        if (index >= this.firstCategoryIndex && index <= lastCategoryIndex()) {
+            return index - this.firstCategoryIndex;
+        }
+        // we didn't find the key
+        return -1;
+    }
+
+    /**
+     * Returns the column key for a given index.
+     *
+     * @param column  the column index (zero-based).
+     *
+     * @return The column key.
+     *
+     * @throws IndexOutOfBoundsException if {@code row} is out of bounds.
+     */
+    @Override
+    public C getColumnKey(int column) {
+        return this.underlying.getColumnKey(column + this.firstCategoryIndex);
+    }
+
+    /**
+     * Returns the column keys.
+     *
+     * @return The keys.
+     *
+     * @see #getColumnKey(int)
+     */
+    @Override
+    public List<C> getColumnKeys() {
+        List<C> result = new ArrayList<>();
+        int last = lastCategoryIndex();
+        for (int i = this.firstCategoryIndex; i < last; i++) {
+            result.add(this.underlying.getColumnKey(i));
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    /**
+     * Returns the row index for a given key.
+     *
+     * @param key  the row key.
+     *
+     * @return The row index, or {@code -1} if the key is unrecognised.
+     */
+    @Override
+    public int getRowIndex(R key) {
+        return this.underlying.getRowIndex(key);
+    }
+
+    /**
+     * Returns the row key for a given index.
+     *
+     * @param row  the row index (zero-based).
+     *
+     * @return The row key.
+     *
+     * @throws IndexOutOfBoundsException if {@code row} is out of bounds.
+     */
+    @Override
+    public R getRowKey(int row) {
+        return this.underlying.getRowKey(row);
+    }
+
+    /**
+     * Returns the row keys.
+     *
+     * @return The keys.
+     */
+    @Override
+    public List<R> getRowKeys() {
+        return this.underlying.getRowKeys();
+    }
+
+    /**
+     * Returns the value for a pair of keys.
+     *
+     * @param rowKey  the row key ({@code null} not permitted).
+     * @param columnKey  the column key ({@code null} not permitted).
+     *
+     * @return The value (possibly {@code null}).
+     *
+     * @throws UnknownKeyException if either key is not defined in the dataset.
+     */
+    @Override
+    public Number getValue(R rowKey, C columnKey) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getValue(r, c + this.firstCategoryIndex);
+        }
+    }
+
+    /**
+     * Returns the number of columns in the table.
+     *
+     * @return The column count.
+     */
+    @Override
+    public int getColumnCount() {
+        int last = lastCategoryIndex();
+        if (last == -1) {
+            return 0;
+        } else {
+            return Math.max(last - this.firstCategoryIndex + 1, 0);
+        }
+    }
+
+    /**
+     * Returns the number of rows in the table.
+     *
+     * @return The row count.
+     */
+    @Override
+    public int getRowCount() {
+        return this.underlying.getRowCount();
+    }
+
+    /**
+     * Returns a value from the table.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The value (possibly {@code null}).
+     */
+    @Override
+    public Number getValue(int row, int column) {
+        return this.underlying.getValue(row, column + this.firstCategoryIndex);
+    }
+
+    /**
+     * Returns the percent complete for a given item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The percent complete.
+     */
+    @Override
+    public Number getPercentComplete(R rowKey, C columnKey) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getPercentComplete(r, c + this.firstCategoryIndex);
+        }
+    }
+
+    /**
+     * Returns the percentage complete value of a sub-interval for a given item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     * @param subinterval  the sub-interval.
+     *
+     * @return The percent complete value (possibly {@code null}).
+     *
+     * @see #getPercentComplete(int, int, int)
+     */
+    @Override
+    public Number getPercentComplete(R rowKey, C columnKey, int subinterval) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getPercentComplete(r, c + this.firstCategoryIndex, subinterval);
+        }
+    }
+
+    /**
+     * Returns the end value of a sub-interval for a given item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     * @param subinterval  the sub-interval.
+     *
+     * @return The end value (possibly {@code null}).
+     *
+     * @see #getStartValue(Comparable, Comparable, int)
+     */
+    @Override
+    public Number getEndValue(R rowKey, C columnKey, int subinterval) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getEndValue(r, c + this.firstCategoryIndex, subinterval);
+        }
+    }
+
+    /**
+     * Returns the end value of a sub-interval for a given item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     * @param subinterval  the sub-interval.
+     *
+     * @return The end value (possibly {@code null}).
+     *
+     * @see #getStartValue(int, int, int)
+     */
+    @Override
+    public Number getEndValue(int row, int column, int subinterval) {
+        return this.underlying.getEndValue(row, column + this.firstCategoryIndex, subinterval);
+    }
+
+    /**
+     * Returns the percent complete for a given item.
+     *
+     * @param series  the row index (zero-based).
+     * @param category  the column index (zero-based).
+     *
+     * @return The percent complete.
+     */
+    @Override
+    public Number getPercentComplete(int series, int category) {
+        return this.underlying.getPercentComplete(series, category + this.firstCategoryIndex);
+    }
+
+    /**
+     * Returns the percentage complete value of a sub-interval for a given item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     * @param subinterval  the sub-interval.
+     *
+     * @return The percent complete value (possibly {@code null}).
+     *
+     * @see #getPercentComplete(Comparable, Comparable, int)
+     */
+    @Override
+    public Number getPercentComplete(int row, int column, int subinterval) {
+        return this.underlying.getPercentComplete(row, column + this.firstCategoryIndex, subinterval);
+    }
+
+    /**
+     * Returns the start value of a sub-interval for a given item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     * @param subinterval  the sub-interval.
+     *
+     * @return The start value (possibly {@code null}).
+     *
+     * @see #getEndValue(Comparable, Comparable, int)
+     */
+    @Override
+    public Number getStartValue(R rowKey, C columnKey, int subinterval) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getStartValue(r, c + this.firstCategoryIndex, subinterval);
+        }
+    }
+
+    /**
+     * Returns the start value of a sub-interval for a given item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     * @param subinterval  the sub-interval index (zero-based).
+     *
+     * @return The start value (possibly {@code null}).
+     *
+     * @see #getEndValue(int, int, int)
+     */
+    @Override
+    public Number getStartValue(int row, int column, int subinterval) {
+        return this.underlying.getStartValue(row, column + this.firstCategoryIndex, subinterval);
+    }
+
+    /**
+     * Returns the number of sub-intervals for a given item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The sub-interval count.
+     *
+     * @see #getSubIntervalCount(int, int)
+     */
+    @Override
+    public int getSubIntervalCount(R rowKey, C columnKey) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getSubIntervalCount(r, c + this.firstCategoryIndex);
+        }
+    }
+
+    /**
+     * Returns the number of sub-intervals for a given item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The sub-interval count.
+     *
+     * @see #getSubIntervalCount(Comparable, Comparable)
+     */
+    @Override
+    public int getSubIntervalCount(int row, int column) {
+        return this.underlying.getSubIntervalCount(row, column + this.firstCategoryIndex);
+    }
+
+    /**
+     * Returns the start value for the interval for a given series and category.
+     *
+     * @param rowKey  the series key.
+     * @param columnKey  the category key.
+     *
+     * @return The start value (possibly {@code null}).
+     *
+     * @see #getEndValue(Comparable, Comparable)
+     */
+    @Override
+    public Number getStartValue(R rowKey, C columnKey) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getStartValue(r, c + this.firstCategoryIndex);
+        }
+    }
+
+    /**
+     * Returns the start value for the interval for a given series and category.
+     *
+     * @param row  the series (zero-based index).
+     * @param column  the category (zero-based index).
+     *
+     * @return The start value (possibly {@code null}).
+     *
+     * @see #getEndValue(int, int)
+     */
+    @Override
+    public Number getStartValue(int row, int column) {
+        return this.underlying.getStartValue(row, column + this.firstCategoryIndex);
+    }
+
+    /**
+     * Returns the end value for the interval for a given series and category.
+     *
+     * @param rowKey  the series key.
+     * @param columnKey  the category key.
+     *
+     * @return The end value (possibly {@code null}).
+     *
+     * @see #getStartValue(Comparable, Comparable)
+     */
+    @Override
+    public Number getEndValue(R rowKey, C columnKey) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
+        } else {
+            return this.underlying.getEndValue(r, c + this.firstCategoryIndex);
+        }
+    }
+
+    /**
+     * Returns the end value for the interval for a given series and category.
+     *
+     * @param series  the series (zero-based index).
+     * @param category  the category (zero-based index).
+     *
+     * @return The end value (possibly {@code null}).
+     */
+    @Override
+    public Number getEndValue(int series, int category) {
+        return this.underlying.getEndValue(series, category + this.firstCategoryIndex);
+    }
+
+    /**
+     * Tests this {@code SlidingGanttCategoryDataset} instance for equality
+     * with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof SlidingGanttCategoryDataset)) {
+            return false;
+        }
+        SlidingGanttCategoryDataset<R, C> that = (SlidingGanttCategoryDataset<R, C>) obj;
+        if (this.firstCategoryIndex != that.firstCategoryIndex) {
+            return false;
+        }
+        if (this.maximumCategoryCount != that.maximumCategoryCount) {
+            return false;
+        }
+        if (!this.underlying.equals(that.underlying)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns an independent copy of the dataset.  Note that:
+     * <ul>
+     * <li>the underlying dataset is only cloned if it implements the
+     * {@link PublicCloneable} interface;</li>
+     * <li>the listeners registered with this dataset are not carried over to
+     * the cloned dataset.</li>
+     * </ul>
+     *
+     * @return An independent copy of the dataset.
+     *
+     * @throws CloneNotSupportedException if the dataset cannot be cloned for
+     *         any reason.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        SlidingGanttCategoryDataset<R, C> clone = (SlidingGanttCategoryDataset<R, C>) super.clone();
+        if (this.underlying instanceof PublicCloneable) {
+            PublicCloneable pc = (PublicCloneable) this.underlying;
+            clone.underlying = (GanttCategoryDataset<R, C>) pc.clone();
+        }
+        return clone;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * -----------------
+ * CategoryAxis.java
+ * -----------------
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Pady Srinivasan (patch 1217634);
+ *                   Peter Kolb (patches 2497611 and 2603321);
+ *
+ */
+/**
+ * An axis that displays categories.
+ */
+public class CategoryAxis extends Axis implements Cloneable, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = 5886554608114265863L;
+
+    /**
+     * The default margin for the axis (used for both lower and upper margins).
+     */
+    public static final double DEFAULT_AXIS_MARGIN = 0.05;
+
+    /**
+     * The default margin between categories (a percentage of the overall axis
+     * length).
+     */
+    public static final double DEFAULT_CATEGORY_MARGIN = 0.20;
+
+    /**
+     * The amount of space reserved at the start of the axis.
+     */
+    private double lowerMargin;
+
+    /**
+     * The amount of space reserved at the end of the axis.
+     */
+    private double upperMargin;
+
+    /**
+     * The amount of space reserved between categories.
+     */
+    private double categoryMargin;
+
+    /**
+     * The maximum number of lines for category labels.
+     */
+    private int maximumCategoryLabelLines;
+
+    /**
+     * A ratio that is multiplied by the width of one category to determine the
+     * maximum label width.
+     */
+    private float maximumCategoryLabelWidthRatio;
+
+    /**
+     * The category label offset.
+     */
+    private int categoryLabelPositionOffset;
+
+    /**
+     * A structure defining the category label positions for each axis
+     * location.
+     */
+    private CategoryLabelPositions categoryLabelPositions;
+
+    /**
+     * Storage for tick label font overrides (if any).
+     */
+    private Map<Comparable, Font> tickLabelFontMap;
+
+    /**
+     * Storage for tick label paint overrides (if any).
+     */
+    private transient Map<Comparable, Paint> tickLabelPaintMap;
+
+    /**
+     * Storage for the category label tooltips (if any).
+     */
+    private Map<Comparable, String> categoryLabelToolTips;
+
+    /**
+     * Storage for the category label URLs (if any).
+     */
+    private Map<Comparable, String> categoryLabelURLs;
+
+    /**
+     * Creates a new category axis with no label.
+     */
+    public CategoryAxis() {
+        this(null);
+    }
+
+    /**
+     * Constructs a category axis, using default values where necessary.
+     *
+     * @param label  the axis label ({@code null} permitted).
+     */
+    public CategoryAxis(String label) {
+        super(label);
+        this.lowerMargin = DEFAULT_AXIS_MARGIN;
+        this.upperMargin = DEFAULT_AXIS_MARGIN;
+        this.categoryMargin = DEFAULT_CATEGORY_MARGIN;
+        this.maximumCategoryLabelLines = 1;
+        this.maximumCategoryLabelWidthRatio = 0.0f;
+        this.categoryLabelPositionOffset = 4;
+        this.categoryLabelPositions = CategoryLabelPositions.STANDARD;
+        this.tickLabelFontMap = new HashMap<>();
+        this.tickLabelPaintMap = new HashMap<>();
+        this.categoryLabelToolTips = new HashMap<>();
+        this.categoryLabelURLs = new HashMap<>();
+    }
+
+    /**
+     * Returns the lower margin for the axis.
+     *
+     * @return The margin.
+     *
+     * @see #getUpperMargin()
+     * @see #setLowerMargin(double)
+     */
+    public double getLowerMargin() {
+        return this.lowerMargin;
+    }
+
+    /**
+     * Sets the lower margin for the axis and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
+     *
+     * @param margin  the margin as a percentage of the axis length (for
+     *                example, 0.05 is five percent).
+     *
+     * @see #getLowerMargin()
+     */
+    public void setLowerMargin(double margin) {
+        this.lowerMargin = margin;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the upper margin for the axis.
+     *
+     * @return The margin.
+     *
+     * @see #getLowerMargin()
+     * @see #setUpperMargin(double)
+     */
+    public double getUpperMargin() {
+        return this.upperMargin;
+    }
+
+    /**
+     * Sets the upper margin for the axis and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
+     *
+     * @param margin  the margin as a percentage of the axis length (for
+     *                example, 0.05 is five percent).
+     *
+     * @see #getUpperMargin()
+     */
+    public void setUpperMargin(double margin) {
+        this.upperMargin = margin;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the category margin.
+     *
+     * @return The margin.
+     *
+     * @see #setCategoryMargin(double)
+     */
+    public double getCategoryMargin() {
+        return this.categoryMargin;
+    }
+
+    /**
+     * Sets the category margin and sends an {@link AxisChangeEvent} to all
+     * registered listeners.  The overall category margin is distributed over
+     * N-1 gaps, where N is the number of categories on the axis.
+     *
+     * @param margin  the margin as a percentage of the axis length (for
+     *                example, 0.05 is five percent).
+     *
+     * @see #getCategoryMargin()
+     */
+    public void setCategoryMargin(double margin) {
+        this.categoryMargin = margin;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the maximum number of lines to use for each category label.
+     *
+     * @return The maximum number of lines.
+     *
+     * @see #setMaximumCategoryLabelLines(int)
+     */
+    public int getMaximumCategoryLabelLines() {
+        return this.maximumCategoryLabelLines;
+    }
+
+    /**
+     * Sets the maximum number of lines to use for each category label and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param lines  the maximum number of lines.
+     *
+     * @see #getMaximumCategoryLabelLines()
+     */
+    public void setMaximumCategoryLabelLines(int lines) {
+        this.maximumCategoryLabelLines = lines;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the category label width ratio.
+     *
+     * @return The ratio.
+     *
+     * @see #setMaximumCategoryLabelWidthRatio(float)
+     */
+    public float getMaximumCategoryLabelWidthRatio() {
+        return this.maximumCategoryLabelWidthRatio;
+    }
+
+    /**
+     * Sets the maximum category label width ratio and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param ratio  the ratio.
+     *
+     * @see #getMaximumCategoryLabelWidthRatio()
+     */
+    public void setMaximumCategoryLabelWidthRatio(float ratio) {
+        this.maximumCategoryLabelWidthRatio = ratio;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the offset between the axis and the category labels (before
+     * label positioning is taken into account).
+     *
+     * @return The offset (in Java2D units).
+     *
+     * @see #setCategoryLabelPositionOffset(int)
+     */
+    public int getCategoryLabelPositionOffset() {
+        return this.categoryLabelPositionOffset;
+    }
+
+    /**
+     * Sets the offset between the axis and the category labels (before label
+     * positioning is taken into account) and sends a change event to all
+     * registered listeners.
+     *
+     * @param offset  the offset (in Java2D units).
+     *
+     * @see #getCategoryLabelPositionOffset()
+     */
+    public void setCategoryLabelPositionOffset(int offset) {
+        this.categoryLabelPositionOffset = offset;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the category label position specification (this contains label
+     * positioning info for all four possible axis locations).
+     *
+     * @return The positions (never {@code null}).
+     *
+     * @see #setCategoryLabelPositions(CategoryLabelPositions)
+     */
+    public CategoryLabelPositions getCategoryLabelPositions() {
+        return this.categoryLabelPositions;
+    }
+
+    /**
+     * Sets the category label position specification for the axis and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param positions  the positions ({@code null} not permitted).
+     *
+     * @see #getCategoryLabelPositions()
+     */
+    public void setCategoryLabelPositions(CategoryLabelPositions positions) {
+        Args.nullNotPermitted(positions, "positions");
+        this.categoryLabelPositions = positions;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the font for the tick label for the given category.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @return The font (never {@code null}).
+     *
+     * @see #setTickLabelFont(Comparable, Font)
+     */
+    public Font getTickLabelFont(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        Font result = this.tickLabelFontMap.get(category);
+        // if there is no specific font, use the general one...
+        if (result == null) {
+            result = getTickLabelFont();
+        }
+        return result;
+    }
+
+    /**
+     * Sets the font for the tick label for the specified category and sends
+     * an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param font  the font ({@code null} permitted).
+     *
+     * @see #getTickLabelFont(Comparable)
+     */
+    public void setTickLabelFont(Comparable category, Font font) {
+        Args.nullNotPermitted(category, "category");
+        if (font == null) {
+            this.tickLabelFontMap.remove(category);
+        } else {
+            this.tickLabelFontMap.put(category, font);
+        }
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the tick label for the given category.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setTickLabelPaint(Paint)
+     */
+    public Paint getTickLabelPaint(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        Paint result = this.tickLabelPaintMap.get(category);
+        // if there is no specific paint, use the general one...
+        if (result == null) {
+            result = getTickLabelPaint();
+        }
+        return result;
+    }
+
+    /**
+     * Sets the paint for the tick label for the specified category and sends
+     * an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getTickLabelPaint(Comparable)
+     */
+    public void setTickLabelPaint(Comparable category, Paint paint) {
+        Args.nullNotPermitted(category, "category");
+        if (paint == null) {
+            this.tickLabelPaintMap.remove(category);
+        } else {
+            this.tickLabelPaintMap.put(category, paint);
+        }
+        fireChangeEvent();
+    }
+
+    /**
+     * Adds a tooltip to the specified category and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param tooltip  the tooltip text ({@code null} permitted).
+     *
+     * @see #removeCategoryLabelToolTip(Comparable)
+     */
+    public void addCategoryLabelToolTip(Comparable category, String tooltip) {
+        Args.nullNotPermitted(category, "category");
+        this.categoryLabelToolTips.put(category, tooltip);
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the tool tip text for the label belonging to the specified
+     * category.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @return The tool tip text (possibly {@code null}).
+     *
+     * @see #addCategoryLabelToolTip(Comparable, String)
+     * @see #removeCategoryLabelToolTip(Comparable)
+     */
+    public String getCategoryLabelToolTip(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        return this.categoryLabelToolTips.get(category);
+    }
+
+    /**
+     * Removes the tooltip for the specified category and, if there was a value
+     * associated with that category, sends an {@link AxisChangeEvent} to all
+     * registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @see #addCategoryLabelToolTip(Comparable, String)
+     * @see #clearCategoryLabelToolTips()
+     */
+    public void removeCategoryLabelToolTip(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        if (this.categoryLabelToolTips.remove(category) != null) {
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Clears the category label tooltips and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
+     *
+     * @see #addCategoryLabelToolTip(Comparable, String)
+     * @see #removeCategoryLabelToolTip(Comparable)
+     */
+    public void clearCategoryLabelToolTips() {
+        this.categoryLabelToolTips.clear();
+        fireChangeEvent();
+    }
+
+    /**
+     * Adds a URL (to be used in image maps) to the specified category and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param url  the URL text ({@code null} permitted).
+     *
+     * @see #removeCategoryLabelURL(Comparable)
+     */
+    public void addCategoryLabelURL(Comparable category, String url) {
+        Args.nullNotPermitted(category, "category");
+        this.categoryLabelURLs.put(category, url);
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the URL for the label belonging to the specified category.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @return The URL text (possibly {@code null}).
+     *
+     * @see #addCategoryLabelURL(Comparable, String)
+     * @see #removeCategoryLabelURL(Comparable)
+     */
+    public String getCategoryLabelURL(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        return this.categoryLabelURLs.get(category);
+    }
+
+    /**
+     * Removes the URL for the specified category and, if there was a URL
+     * associated with that category, sends an {@link AxisChangeEvent} to all
+     * registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @see #addCategoryLabelURL(Comparable, String)
+     * @see #clearCategoryLabelURLs()
+     */
+    public void removeCategoryLabelURL(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        if (this.categoryLabelURLs.remove(category) != null) {
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Clears the category label URLs and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
+     *
+     * @see #addCategoryLabelURL(Comparable, String)
+     * @see #removeCategoryLabelURL(Comparable)
+     */
+    public void clearCategoryLabelURLs() {
+        this.categoryLabelURLs.clear();
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the Java 2D coordinate for a category.
+     *
+     * @param anchor  the anchor point ({@code null} not permitted).
+     * @param category  the category index.
+     * @param categoryCount  the category count.
+     * @param area  the data area.
+     * @param edge  the location of the axis.
+     *
+     * @return The coordinate.
+     */
+    public double getCategoryJava2DCoordinate(CategoryAnchor anchor, int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        Args.nullNotPermitted(anchor, "anchor");
+        double result = 0.0;
+        switch(anchor) {
+            case START:
+                result = getCategoryStart(category, categoryCount, area, edge);
+                break;
+            case MIDDLE:
+                result = getCategoryMiddle(category, categoryCount, area, edge);
+                break;
+            case END:
+                result = getCategoryEnd(category, categoryCount, area, edge);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected anchor value.");
+        }
+        return result;
+    }
+
+    /**
+     * Returns the starting coordinate for the specified category.
+     *
+     * @param category  the category.
+     * @param categoryCount  the number of categories.
+     * @param area  the data area.
+     * @param edge  the axis location.
+     *
+     * @return The coordinate.
+     *
+     * @see #getCategoryMiddle(int, int, Rectangle2D, RectangleEdge)
+     * @see #getCategoryEnd(int, int, Rectangle2D, RectangleEdge)
+     */
+    public double getCategoryStart(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        double result = 0.0;
+        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
+            result = area.getX() + area.getWidth() * getLowerMargin();
+        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
+            result = area.getMinY() + area.getHeight() * getLowerMargin();
+        }
+        double categorySize = calculateCategorySize(categoryCount, area, edge);
+        double categoryGapWidth = calculateCategoryGapSize(categoryCount, area, edge);
+        result = result + category * (categorySize + categoryGapWidth);
+        return result;
+    }
+
+    /**
+     * Returns the middle coordinate for the specified category.
+     *
+     * @param category  the category.
+     * @param categoryCount  the number of categories.
+     * @param area  the data area.
+     * @param edge  the axis location.
+     *
+     * @return The coordinate.
+     *
+     * @see #getCategoryStart(int, int, Rectangle2D, RectangleEdge)
+     * @see #getCategoryEnd(int, int, Rectangle2D, RectangleEdge)
+     */
+    public double getCategoryMiddle(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        if (category < 0 || category >= categoryCount) {
+            throw new IllegalArgumentException("Invalid category index: " + category);
+        }
+        return getCategoryStart(category, categoryCount, area, edge) + calculateCategorySize(categoryCount, area, edge) / 2;
+    }
+
+    /**
+     * Returns the end coordinate for the specified category.
+     *
+     * @param category  the category.
+     * @param categoryCount  the number of categories.
+     * @param area  the data area.
+     * @param edge  the axis location.
+     *
+     * @return The coordinate.
+     *
+     * @see #getCategoryStart(int, int, Rectangle2D, RectangleEdge)
+     * @see #getCategoryMiddle(int, int, Rectangle2D, RectangleEdge)
+     */
+    public double getCategoryEnd(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        return getCategoryStart(category, categoryCount, area, edge) + calculateCategorySize(categoryCount, area, edge);
+    }
+
+    /**
+     * A convenience method that returns the axis coordinate for the centre of
+     * a category.
+     *
+     * @param category  the category key ({@code null} not permitted).
+     * @param categories  the categories ({@code null} not permitted).
+     * @param area  the data area ({@code null} not permitted).
+     * @param edge  the edge along which the axis lies ({@code null} not
+     *     permitted).
+     *
+     * @return The centre coordinate.
+     *
+     * @see #getCategorySeriesMiddle(Comparable, Comparable, CategoryDataset,
+     *     double, Rectangle2D, RectangleEdge)
+     */
+    public double getCategoryMiddle(Comparable category, List categories, Rectangle2D area, RectangleEdge edge) {
+        Args.nullNotPermitted(categories, "categories");
+        int categoryIndex = categories.indexOf(category);
+        int categoryCount = categories.size();
+        return getCategoryMiddle(categoryIndex, categoryCount, area, edge);
+    }
+
+    /**
+     * Returns the middle coordinate (in Java2D space) for a series within a
+     * category.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param seriesKey  the series key ({@code null} not permitted).
+     * @param dataset  the dataset ({@code null} not permitted).
+     * @param itemMargin  the item margin (0.0 &lt;= itemMargin &lt; 1.0);
+     * @param area  the area ({@code null} not permitted).
+     * @param edge  the edge ({@code null} not permitted).
+     *
+     * @return The coordinate in Java2D space.
+     */
+    public double getCategorySeriesMiddle(Comparable category, Comparable seriesKey, CategoryDataset dataset, double itemMargin, Rectangle2D area, RectangleEdge edge) {
+        int categoryIndex = dataset.getColumnIndex(category);
+        int categoryCount = dataset.getColumnCount();
+        int seriesIndex = dataset.getRowIndex(seriesKey);
+        int seriesCount = dataset.getRowCount();
+        double start = getCategoryStart(categoryIndex, categoryCount, area, edge);
+        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
+        double width = end - start;
+        if (seriesCount == 1) {
+            return start + width / 2.0;
+        } else {
+            double gap = (width * itemMargin) / (seriesCount - 1);
+            double ww = (width * (1 - itemMargin)) / seriesCount;
+            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
+        }
+    }
+
+    /**
+     * Returns the middle coordinate (in Java2D space) for a series within a
+     * category.
+     *
+     * @param categoryIndex  the category index.
+     * @param categoryCount  the category count.
+     * @param seriesIndex the series index.
+     * @param seriesCount the series count.
+     * @param itemMargin  the item margin (0.0 &lt;= itemMargin &lt; 1.0);
+     * @param area  the area ({@code null} not permitted).
+     * @param edge  the edge ({@code null} not permitted).
+     *
+     * @return The coordinate in Java2D space.
+     */
+    public double getCategorySeriesMiddle(int categoryIndex, int categoryCount, int seriesIndex, int seriesCount, double itemMargin, Rectangle2D area, RectangleEdge edge) {
+        double start = getCategoryStart(categoryIndex, categoryCount, area, edge);
+        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
+        double width = end - start;
+        if (seriesCount == 1) {
+            return start + width / 2.0;
+        } else {
+            double gap = (width * itemMargin) / (seriesCount - 1);
+            double ww = (width * (1 - itemMargin)) / seriesCount;
+            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
+        }
+    }
+
+    /**
+     * Calculates the size (width or height, depending on the location of the
+     * axis) of a category.
+     *
+     * @param categoryCount  the number of categories.
+     * @param area  the area within which the categories will be drawn.
+     * @param edge  the axis location.
+     *
+     * @return The category size.
+     */
+    protected double calculateCategorySize(int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        double result;
+        double available = 0.0;
+        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
+            available = area.getWidth();
+        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
+            available = area.getHeight();
+        }
+        if (categoryCount > 1) {
+            result = available * (1 - getLowerMargin() - getUpperMargin() - getCategoryMargin());
+            result = result / categoryCount;
+        } else {
+            result = available * (1 - getLowerMargin() - getUpperMargin());
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the size (width or height, depending on the location of the
+     * axis) of a category gap.
+     *
+     * @param categoryCount  the number of categories.
+     * @param area  the area within which the categories will be drawn.
+     * @param edge  the axis location.
+     *
+     * @return The category gap width.
+     */
+    protected double calculateCategoryGapSize(int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        double result = 0.0;
+        double available = 0.0;
+        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
+            available = area.getWidth();
+        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
+            available = area.getHeight();
+        }
+        if (categoryCount > 1) {
+            result = available * getCategoryMargin() / (categoryCount - 1);
+        }
+        return result;
+    }
+
+    /**
+     * Estimates the space required for the axis, given a specific drawing area.
+     *
+     * @param g2  the graphics device (used to obtain font information).
+     * @param plot  the plot that the axis belongs to.
+     * @param plotArea  the area within which the axis should be drawn.
+     * @param edge  the axis location ({@code null} not permitted).
+     * @param space  the space already reserved.
+     *
+     * @return The space required to draw the axis.
+     */
+    @Override
+    public AxisSpace reserveSpace(Graphics2D g2, Plot plot, Rectangle2D plotArea, RectangleEdge edge, AxisSpace space) {
+        // create a new space object if one wasn't supplied...
+        if (space == null) {
+            space = new AxisSpace();
+        }
+        // if the axis is not visible, no additional space is required...
+        if (!isVisible()) {
+            return space;
+        }
+        // calculate the max size of the tick labels (if visible)...
+        double tickLabelHeight = 0.0;
+        double tickLabelWidth = 0.0;
+        if (isTickLabelsVisible()) {
+            g2.setFont(getTickLabelFont());
+            AxisState state = new AxisState();
+            // we call refresh ticks just to get the maximum width or height
+            refreshTicks(g2, state, plotArea, edge);
+            switch(edge) {
+                case TOP:
+                    tickLabelHeight = state.getMax();
+                    break;
+                case BOTTOM:
+                    tickLabelHeight = state.getMax();
+                    break;
+                case LEFT:
+                    tickLabelWidth = state.getMax();
+                    break;
+                case RIGHT:
+                    tickLabelWidth = state.getMax();
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected RectangleEdge value.");
+            }
+        }
+        // get the axis label size and update the space object...
+        Rectangle2D labelEnclosure = getLabelEnclosure(g2, edge);
+        double labelHeight, labelWidth;
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            labelHeight = labelEnclosure.getHeight();
+            space.add(labelHeight + tickLabelHeight + this.categoryLabelPositionOffset, edge);
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            labelWidth = labelEnclosure.getWidth();
+            space.add(labelWidth + tickLabelWidth + this.categoryLabelPositionOffset, edge);
+        }
+        return space;
+    }
+
+    /**
+     * Configures the axis against the current plot.
+     */
+    @Override
+    public void configure() {
+        // nothing required
+    }
+
+    /**
+     * Draws the axis on a Java 2D graphics device (such as the screen or a
+     * printer).
+     *
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param cursor  the cursor location.
+     * @param plotArea  the area within which the axis should be drawn
+     *                  ({@code null} not permitted).
+     * @param dataArea  the area within which the plot is being drawn
+     *                  ({@code null} not permitted).
+     * @param edge  the location of the axis ({@code null} not permitted).
+     * @param plotState  collects information about the plot
+     *                   ({@code null} permitted).
+     *
+     * @return The axis state (never {@code null}).
+     */
+    @Override
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, PlotRenderingInfo plotState) {
+        // if the axis is not visible, don't draw it...
+        if (!isVisible()) {
+            return new AxisState(cursor);
+        }
+        if (isAxisLineVisible()) {
+            drawAxisLine(g2, cursor, dataArea, edge);
+        }
+        AxisState state = new AxisState(cursor);
+        if (isTickMarksVisible()) {
+            drawTickMarks(g2, cursor, dataArea, edge, state);
+        }
+        createAndAddEntity(cursor, state, dataArea, edge, plotState);
+        // draw the category labels and axis label
+        state = drawCategoryLabels(g2, plotArea, dataArea, edge, state, plotState);
+        if (getAttributedLabel() != null) {
+            state = drawAttributedLabel(getAttributedLabel(), g2, plotArea, dataArea, edge, state);
+        } else {
+            state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
+        }
+        return state;
+    }
+
+    /**
+     * Draws the category labels and returns the updated axis state.
+     *
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param plotArea  the plot area ({@code null} not permitted).
+     * @param dataArea  the area inside the axes ({@code null} not
+     *                  permitted).
+     * @param edge  the axis location ({@code null} not permitted).
+     * @param state  the axis state ({@code null} not permitted).
+     * @param plotState  collects information about the plot ({@code null}
+     *                   permitted).
+     *
+     * @return The updated axis state (never {@code null}).
+     */
+    protected AxisState drawCategoryLabels(Graphics2D g2, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, AxisState state, PlotRenderingInfo plotState) {
+        Args.nullNotPermitted(state, "state");
+        if (!isTickLabelsVisible()) {
+            return state;
+        }
+        List ticks = refreshTicks(g2, state, plotArea, edge);
+        state.setTicks(ticks);
+        int categoryIndex = 0;
+        for (Object o : ticks) {
+            CategoryTick tick = (CategoryTick) o;
+            g2.setFont(getTickLabelFont(tick.getCategory()));
+            g2.setPaint(getTickLabelPaint(tick.getCategory()));
+            CategoryLabelPosition position = this.categoryLabelPositions.getLabelPosition(edge);
+            double x0 = 0.0;
+            double x1 = 0.0;
+            double y0 = 0.0;
+            double y1 = 0.0;
+            if (edge == RectangleEdge.TOP) {
+                x0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                x1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                y1 = state.getCursor() - this.categoryLabelPositionOffset;
+                y0 = y1 - state.getMax();
+            } else if (edge == RectangleEdge.BOTTOM) {
+                x0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                x1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                y0 = state.getCursor() + this.categoryLabelPositionOffset;
+                y1 = y0 + state.getMax();
+            } else if (edge == RectangleEdge.LEFT) {
+                y0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                y1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                x1 = state.getCursor() - this.categoryLabelPositionOffset;
+                x0 = x1 - state.getMax();
+            } else if (edge == RectangleEdge.RIGHT) {
+                y0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                y1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                x0 = state.getCursor() + this.categoryLabelPositionOffset;
+                x1 = x0 - state.getMax();
+            }
+            Rectangle2D area = new Rectangle2D.Double(x0, y0, (x1 - x0), (y1 - y0));
+            Point2D anchorPoint = position.getCategoryAnchor().getAnchorPoint(area);
+            TextBlock block = tick.getLabel();
+            block.draw(g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getLabelAnchor(), (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getAngle());
+            Shape bounds = block.calculateBounds(g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getLabelAnchor(), (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getAngle());
+            if (plotState != null && plotState.getOwner() != null) {
+                EntityCollection entities = plotState.getOwner().getEntityCollection();
+                if (entities != null) {
+                    String tooltip = getCategoryLabelToolTip(tick.getCategory());
+                    String url = getCategoryLabelURL(tick.getCategory());
+                    entities.add(new CategoryLabelEntity(tick.getCategory(), bounds, tooltip, url));
+                }
+            }
+            categoryIndex++;
+        }
+        if (edge.equals(RectangleEdge.TOP)) {
+            double h = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorUp(h);
+        } else if (edge.equals(RectangleEdge.BOTTOM)) {
+            double h = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorDown(h);
+        } else if (edge == RectangleEdge.LEFT) {
+            double w = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorLeft(w);
+        } else if (edge == RectangleEdge.RIGHT) {
+            double w = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorRight(w);
+        }
+        return state;
+    }
+
+    /**
+     * Creates a temporary list of ticks that can be used when drawing the axis.
+     *
+     * @param g2  the graphics device (used to get font measurements).
+     * @param state  the axis state.
+     * @param dataArea  the area inside the axes.
+     * @param edge  the location of the axis.
+     *
+     * @return A list of ticks.
+     */
+    @Override
+    public List refreshTicks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        // FIXME generics
+        List ticks = new java.util.ArrayList();
+        // sanity check for data area...
+        if (dataArea.getHeight() <= 0.0 || dataArea.getWidth() < 0.0) {
+            return ticks;
+        }
+        CategoryPlot plot = (CategoryPlot) getPlot();
+        List categories = plot.getCategoriesForAxis(this);
+        double max = 0.0;
+        if (categories != null) {
+            CategoryLabelPosition position = this.categoryLabelPositions.getLabelPosition(edge);
+            float r = this.maximumCategoryLabelWidthRatio;
+            if (r <= 0.0) {
+                r = position.getWidthRatio();
+            }
+            float l;
+            if (position.getWidthType() == CategoryLabelWidthType.CATEGORY) {
+                l = (float) calculateCategorySize(categories.size(), dataArea, edge);
+            } else {
+                if (RectangleEdge.isLeftOrRight(edge)) {
+                    l = (float) dataArea.getWidth();
+                } else {
+                    l = (float) dataArea.getHeight();
+                }
+            }
+            int categoryIndex = 0;
+            for (Object o : categories) {
+                Comparable category = (Comparable) o;
+                g2.setFont(getTickLabelFont(category));
+                TextBlock label = createLabel(category, l * r, edge, g2);
+                if (edge == RectangleEdge.TOP || edge == RectangleEdge.BOTTOM) {
+                    max = Math.max(max, calculateCategoryLabelHeight(label, position, getTickLabelInsets(), g2));
+                } else if (edge == RectangleEdge.LEFT || edge == RectangleEdge.RIGHT) {
+                    max = Math.max(max, calculateCategoryLabelWidth(label, position, getTickLabelInsets(), g2));
+                }
+                Tick tick = new CategoryTick(category, label, position.getLabelAnchor(), position.getRotationAnchor(), position.getAngle());
+                ticks.add(tick);
+                categoryIndex = categoryIndex + 1;
+            }
+        }
+        state.setMax(max);
+        return ticks;
+    }
+
+    /**
+     * Draws the tick marks.
+     *
+     * @param g2  the graphics target.
+     * @param cursor  the cursor position (an offset when drawing multiple axes)
+     * @param dataArea  the area for plotting the data.
+     * @param edge  the location of the axis.
+     * @param state  the axis state.
+     */
+    public void drawTickMarks(Graphics2D g2, double cursor, Rectangle2D dataArea, RectangleEdge edge, AxisState state) {
+        Plot p = getPlot();
+        if (p == null) {
+            return;
+        }
+        CategoryPlot plot = (CategoryPlot) p;
+        double il = getTickMarkInsideLength();
+        double ol = getTickMarkOutsideLength();
+        Line2D line = new Line2D.Double();
+        List<Comparable> categories = plot.getCategoriesForAxis(this);
+        g2.setPaint(getTickMarkPaint());
+        g2.setStroke(getTickMarkStroke());
+        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        if (edge.equals(RectangleEdge.TOP)) {
+            for (Comparable category : categories) {
+                double x = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(x, cursor, x, cursor + il);
+                g2.draw(line);
+                line.setLine(x, cursor, x, cursor - ol);
+                g2.draw(line);
+            }
+            state.cursorUp(ol);
+        } else if (edge.equals(RectangleEdge.BOTTOM)) {
+            for (Comparable category : categories) {
+                double x = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(x, cursor, x, cursor - il);
+                g2.draw(line);
+                line.setLine(x, cursor, x, cursor + ol);
+                g2.draw(line);
+            }
+            state.cursorDown(ol);
+        } else if (edge.equals(RectangleEdge.LEFT)) {
+            for (Comparable category : categories) {
+                double y = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(cursor, y, cursor + il, y);
+                g2.draw(line);
+                line.setLine(cursor, y, cursor - ol, y);
+                g2.draw(line);
+            }
+            state.cursorLeft(ol);
+        } else if (edge.equals(RectangleEdge.RIGHT)) {
+            for (Comparable category : categories) {
+                double y = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(cursor, y, cursor - il, y);
+                g2.draw(line);
+                line.setLine(cursor, y, cursor + ol, y);
+                g2.draw(line);
+            }
+            state.cursorRight(ol);
+        }
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+    }
+
+    /**
+     * Creates a label.
+     *
+     * @param category  the category.
+     * @param width  the available width.
+     * @param edge  the edge on which the axis appears.
+     * @param g2  the graphics device.
+     *
+     * @return A label.
+     */
+    protected TextBlock createLabel(Comparable category, float width, RectangleEdge edge, Graphics2D g2) {
+        TextBlock label = TextUtils.createTextBlock(category.toString(), getTickLabelFont(category), getTickLabelPaint(category), width, this.maximumCategoryLabelLines, new G2TextMeasurer(g2));
+        return label;
+    }
+
+    /**
+     * Calculates the width of a category label when rendered.
+     *
+     * @param label  the text block ({@code null} not permitted).
+     * @param position  the position.
+     * @param insets  the label insets.
+     * @param g2  the graphics device.
+     *
+     * @return The width.
+     */
+    protected double calculateCategoryLabelWidth(TextBlock label, CategoryLabelPosition position, RectangleInsets insets, Graphics2D g2) {
+        Size2D size = label.calculateDimensions(g2);
+        Rectangle2D box = new Rectangle2D.Double(0.0, 0.0, size.getWidth(), size.getHeight());
+        Shape rotatedBox = ShapeUtils.rotateShape(box, position.getAngle(), 0.0f, 0.0f);
+        double w = rotatedBox.getBounds2D().getWidth() + insets.getLeft() + insets.getRight();
+        return w;
+    }
+
+    /**
+     * Calculates the height of a category label when rendered.
+     *
+     * @param block  the text block ({@code null} not permitted).
+     * @param position  the label position ({@code null} not permitted).
+     * @param insets  the label insets ({@code null} not permitted).
+     * @param g2  the graphics device ({@code null} not permitted).
+     *
+     * @return The height.
+     */
+    protected double calculateCategoryLabelHeight(TextBlock block, CategoryLabelPosition position, RectangleInsets insets, Graphics2D g2) {
+        Size2D size = block.calculateDimensions(g2);
+        Rectangle2D box = new Rectangle2D.Double(0.0, 0.0, size.getWidth(), size.getHeight());
+        Shape rotatedBox = ShapeUtils.rotateShape(box, position.getAngle(), 0.0f, 0.0f);
+        double h = rotatedBox.getBounds2D().getHeight() + insets.getTop() + insets.getBottom();
+        return h;
+    }
+
+    /**
+     * Creates a clone of the axis.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if some component of the axis does
+     *         not support cloning.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        CategoryAxis clone = (CategoryAxis) super.clone();
+        clone.tickLabelFontMap = new HashMap<>(this.tickLabelFontMap);
+        clone.tickLabelPaintMap = new HashMap<>(this.tickLabelPaintMap);
+        clone.categoryLabelToolTips = new HashMap<>(this.categoryLabelToolTips);
+        clone.categoryLabelURLs = new HashMap<>(this.categoryLabelToolTips);
+        return clone;
+    }
+
+    /**
+     * Tests this axis for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof CategoryAxis)) {
+            return false;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        CategoryAxis that = (CategoryAxis) obj;
+        if (that.lowerMargin != this.lowerMargin) {
+            return false;
+        }
+        if (that.upperMargin != this.upperMargin) {
+            return false;
+        }
+        if (that.categoryMargin != this.categoryMargin) {
+            return false;
+        }
+        if (that.maximumCategoryLabelWidthRatio != this.maximumCategoryLabelWidthRatio) {
+            return false;
+        }
+        if (that.categoryLabelPositionOffset != this.categoryLabelPositionOffset) {
+            return false;
+        }
+        if (!Objects.equals(that.categoryLabelPositions, this.categoryLabelPositions)) {
+            return false;
+        }
+        if (!Objects.equals(that.categoryLabelToolTips, this.categoryLabelToolTips)) {
+            return false;
+        }
+        if (!Objects.equals(this.categoryLabelURLs, that.categoryLabelURLs)) {
+            return false;
+        }
+        if (!Objects.equals(this.tickLabelFontMap, that.tickLabelFontMap)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.tickLabelPaintMap, that.tickLabelPaintMap)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this object.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        writePaintMap(this.tickLabelPaintMap, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.tickLabelPaintMap = readPaintMap(stream);
+    }
+
+    /**
+     * Reads a {@code Map} of ({@code Comparable}, {@code Paint})
+     * elements from a stream.
+     *
+     * @param in  the input stream.
+     *
+     * @return The map.
+     *
+     * @throws IOException
+     * @throws ClassNotFoundException
+     *
+     * @see #writePaintMap(Map, ObjectOutputStream)
+     */
+    private Map readPaintMap(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        boolean isNull = in.readBoolean();
+        if (isNull) {
+            return null;
+        }
+        Map result = new HashMap();
+        int count = in.readInt();
+        for (int i = 0; i < count; i++) {
+            Comparable category = (Comparable) in.readObject();
+            Paint paint = SerialUtils.readPaint(in);
+            result.put(category, paint);
+        }
+        return result;
+    }
+
+    /**
+     * Writes a map of ({@code Comparable}, {@code Paint})
+     * elements to a stream.
+     *
+     * @param map  the map ({@code null} permitted).
+     *
+     * @param out
+     * @throws IOException
+     *
+     * @see #readPaintMap(ObjectInputStream)
+     */
+    private void writePaintMap(Map map, ObjectOutputStream out) throws IOException {
+        if (map == null) {
+            out.writeBoolean(true);
+        } else {
+            out.writeBoolean(false);
+            Set keys = map.keySet();
+            int count = keys.size();
+            out.writeInt(count);
+            for (Object o : keys) {
+                Comparable key = (Comparable) o;
+                out.writeObject(key);
+                SerialUtils.writePaint((Paint) map.get(key), out);
+            }
         }
     }
 }
@@ -7993,946 +8611,489 @@ class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressLis
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * NumberAxis.java
- * ---------------
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ * --------------------------
+ * StackedXYAreaRenderer.java
+ * --------------------------
+ * (C) Copyright 2003-2021, by Richard Atkinson and Contributors.
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   Laurence Vanhelsuwe;
- *                   Peter Kolb (patches 1934255 and 2603321);
- * 
+ * Original Author:  Richard Atkinson;
+ * Contributor(s):   Christian W. Zuckschwerdt;
+ *                   David Gilbert;
+ *                   Ulrich Voigt (patch #312);
+ *
  */
 /**
- * An axis for displaying numerical data.
- * <P>
- * If the axis is set up to automatically determine its range to fit the data,
- * you can ensure that the range includes zero (statisticians usually prefer
- * this) by setting the {@code autoRangeIncludesZero} flag to
- * {@code true}.
- * <P>
- * The {@code NumberAxis} class has a mechanism for automatically
- * selecting a tick unit that is appropriate for the current axis range.
+ * A stacked area renderer for the {@link XYPlot} class.
+ * <br><br>
+ * The example shown here is generated by the
+ * {@code StackedXYAreaRendererDemo1.java} program included in the
+ * JFreeChart demo collection:
+ * <br><br>
+ * <img src="doc-files/StackedXYAreaRendererSample.png"
+ * alt="StackedXYAreaRendererSample.png">
+ * <br><br>
+ * SPECIAL NOTE:  This renderer does not currently handle negative data values
+ * correctly.  This should get fixed at some point, but the current workaround
+ * is to use the {@link StackedXYAreaRenderer2} class instead.
  */
-class NumberAxis extends ValueAxis implements Cloneable, Serializable {
+public class StackedXYAreaRenderer extends XYAreaRenderer implements Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 2805933088476185789L;
+    private static final long serialVersionUID = 5217394318178570889L;
 
     /**
-     * The default value for the autoRangeIncludesZero flag.
+     * A state object for use by this renderer.
      */
-    public static final boolean DEFAULT_AUTO_RANGE_INCLUDES_ZERO = true;
+    static class StackedXYAreaRendererState extends XYItemRendererState {
 
-    /**
-     * The default value for the autoRangeStickyZero flag.
-     */
-    public static final boolean DEFAULT_AUTO_RANGE_STICKY_ZERO = true;
+        /**
+         * The area for the current series.
+         */
+        private Polygon seriesArea;
 
-    /**
-     * The default tick unit.
-     */
-    public static final NumberTickUnit DEFAULT_TICK_UNIT = new NumberTickUnit(1.0, new DecimalFormat("0"));
+        /**
+         * The line.
+         */
+        private Line2D line;
 
-    /**
-     * The default setting for the vertical tick labels flag.
-     */
-    public static final boolean DEFAULT_VERTICAL_TICK_LABELS = false;
+        /**
+         * The points from the last series.
+         */
+        private Stack lastSeriesPoints;
 
-    /**
-     * The range type (can be used to force the axis to display only positive
-     * values or only negative values).
-     */
-    private RangeType rangeType;
+        /**
+         * The points for the current series.
+         */
+        private Stack currentSeriesPoints;
 
-    /**
-     * A flag that affects the axis range when the range is determined
-     * automatically.  If the auto range does NOT include zero and this flag
-     * is TRUE, then the range is changed to include zero.
-     */
-    private boolean autoRangeIncludesZero;
+        /**
+         * Creates a new state for the renderer.
+         *
+         * @param info  the plot rendering info.
+         */
+        public StackedXYAreaRendererState(PlotRenderingInfo info) {
+            super(info);
+            this.seriesArea = null;
+            this.line = new Line2D.Double();
+            this.lastSeriesPoints = new Stack();
+            this.currentSeriesPoints = new Stack();
+        }
 
-    /**
-     * A flag that affects the size of the margins added to the axis range when
-     * the range is determined automatically.  If the value 0 falls within the
-     * margin and this flag is TRUE, then the margin is truncated at zero.
-     */
-    private boolean autoRangeStickyZero;
+        /**
+         * Returns the series area.
+         *
+         * @return The series area.
+         */
+        public Polygon getSeriesArea() {
+            return this.seriesArea;
+        }
 
-    /**
-     * The tick unit for the axis.
-     */
-    private NumberTickUnit tickUnit;
+        /**
+         * Sets the series area.
+         *
+         * @param area  the area.
+         */
+        public void setSeriesArea(Polygon area) {
+            this.seriesArea = area;
+        }
 
-    /**
-     * The override number format.
-     */
-    private NumberFormat numberFormatOverride;
+        /**
+         * Returns the working line.
+         *
+         * @return The working line.
+         */
+        public Line2D getLine() {
+            return this.line;
+        }
 
-    /**
-     * An optional band for marking regions on the axis.
-     */
-    private MarkerAxisBand markerBand;
+        /**
+         * Returns the current series points.
+         *
+         * @return The current series points.
+         */
+        public Stack getCurrentSeriesPoints() {
+            return this.currentSeriesPoints;
+        }
 
-    /**
-     * Default constructor.
-     */
-    public NumberAxis() {
-        this(null);
-    }
+        /**
+         * Sets the current series points.
+         *
+         * @param points  the points.
+         */
+        public void setCurrentSeriesPoints(Stack points) {
+            this.currentSeriesPoints = points;
+        }
 
-    /**
-     * Constructs a number axis, using default values where necessary.
-     *
-     * @param label  the axis label ({@code null} permitted).
-     */
-    public NumberAxis(String label) {
-        super(label, NumberAxis.createStandardTickUnits());
-        this.rangeType = RangeType.FULL;
-        this.autoRangeIncludesZero = DEFAULT_AUTO_RANGE_INCLUDES_ZERO;
-        this.autoRangeStickyZero = DEFAULT_AUTO_RANGE_STICKY_ZERO;
-        this.tickUnit = DEFAULT_TICK_UNIT;
-        this.numberFormatOverride = null;
-        this.markerBand = null;
-    }
+        /**
+         * Returns the last series points.
+         *
+         * @return The last series points.
+         */
+        public Stack getLastSeriesPoints() {
+            return this.lastSeriesPoints;
+        }
 
-    /**
-     * Returns the axis range type.
-     *
-     * @return The axis range type (never {@code null}).
-     *
-     * @see #setRangeType(RangeType)
-     */
-    public RangeType getRangeType() {
-        return this.rangeType;
-    }
-
-    /**
-     * Sets the axis range type.
-     *
-     * @param rangeType  the range type ({@code null} not permitted).
-     *
-     * @see #getRangeType()
-     */
-    public void setRangeType(RangeType rangeType) {
-        Args.nullNotPermitted(rangeType, "rangeType");
-        this.rangeType = rangeType;
-        notifyListeners(new AxisChangeEvent(this));
-    }
-
-    /**
-     * Returns the flag that indicates whether the automatic axis range
-     * (if indeed it is determined automatically) is forced to include zero.
-     *
-     * @return The flag.
-     */
-    public boolean getAutoRangeIncludesZero() {
-        return this.autoRangeIncludesZero;
-    }
-
-    /**
-     * Sets the flag that indicates whether the axis range, if
-     * automatically calculated, is forced to include zero.
-     * <p>
-     * If the flag is changed to {@code true}, the axis range is
-     * recalculated.
-     * <p>
-     * Any change to the flag will trigger an {@link AxisChangeEvent}.
-     *
-     * @param flag  the new value of the flag.
-     *
-     * @see #getAutoRangeIncludesZero()
-     */
-    public void setAutoRangeIncludesZero(boolean flag) {
-        if (this.autoRangeIncludesZero != flag) {
-            this.autoRangeIncludesZero = flag;
-            if (isAutoRange()) {
-                autoAdjustRange();
-            }
-            notifyListeners(new AxisChangeEvent(this));
+        /**
+         * Sets the last series points.
+         *
+         * @param points  the points.
+         */
+        public void setLastSeriesPoints(Stack points) {
+            this.lastSeriesPoints = points;
         }
     }
 
     /**
-     * Returns a flag that affects the auto-range when zero falls outside the
-     * data range but inside the margins defined for the axis.
-     *
-     * @return The flag.
-     *
-     * @see #setAutoRangeStickyZero(boolean)
+     * Custom Paint for drawing all shapes, if null defaults to series shapes
      */
-    public boolean getAutoRangeStickyZero() {
-        return this.autoRangeStickyZero;
+    private transient Paint shapePaint = null;
+
+    /**
+     * Custom Stroke for drawing all shapes, if null defaults to series
+     * strokes.
+     */
+    private transient Stroke shapeStroke = null;
+
+    /**
+     * Creates a new renderer.
+     */
+    public StackedXYAreaRenderer() {
+        this(AREA);
     }
 
     /**
-     * Sets a flag that affects the auto-range when zero falls outside the data
-     * range but inside the margins defined for the axis.
+     * Constructs a new renderer.
      *
-     * @param flag  the new flag.
-     *
-     * @see #getAutoRangeStickyZero()
+     * @param type  the type of the renderer.
      */
-    public void setAutoRangeStickyZero(boolean flag) {
-        if (this.autoRangeStickyZero != flag) {
-            this.autoRangeStickyZero = flag;
-            if (isAutoRange()) {
-                autoAdjustRange();
-            }
-            notifyListeners(new AxisChangeEvent(this));
-        }
+    public StackedXYAreaRenderer(int type) {
+        this(type, null, null);
     }
 
     /**
-     * Returns the tick unit for the axis.
-     * <p>
-     * Note: if the {@code autoTickUnitSelection} flag is
-     * {@code true} the tick unit may be changed while the axis is being
-     * drawn, so in that case the return value from this method may be
-     * irrelevant if the method is called before the axis has been drawn.
+     * Constructs a new renderer.  To specify the type of renderer, use one of
+     * the constants: {@code SHAPES}, {@code LINES}, {@code SHAPES_AND_LINES},
+     * {@code AREA} or {@code AREA_AND_SHAPES}.
      *
-     * @return The tick unit for the axis.
-     *
-     * @see #setTickUnit(NumberTickUnit)
-     * @see ValueAxis#isAutoTickUnitSelection()
+     * @param type  the type of renderer.
+     * @param labelGenerator  the tool tip generator ({@code null} permitted).
+     * @param urlGenerator  the URL generator ({@code null} permitted).
      */
-    public NumberTickUnit getTickUnit() {
-        return this.tickUnit;
+    public StackedXYAreaRenderer(int type, XYToolTipGenerator labelGenerator, XYURLGenerator urlGenerator) {
+        super(type, labelGenerator, urlGenerator);
     }
 
     /**
-     * Sets the tick unit for the axis and sends an {@link AxisChangeEvent} to
-     * all registered listeners.  A side effect of calling this method is that
-     * the "auto-select" feature for tick units is switched off (you can
-     * restore it using the {@link ValueAxis#setAutoTickUnitSelection(boolean)}
-     * method).
+     * Returns the paint used for rendering shapes, or {@code null} if
+     * using series paints.
      *
-     * @param unit  the new tick unit ({@code null} not permitted).
+     * @return The paint (possibly {@code null}).
      *
-     * @see #getTickUnit()
-     * @see #setTickUnit(NumberTickUnit, boolean, boolean)
+     * @see #setShapePaint(Paint)
      */
-    public void setTickUnit(NumberTickUnit unit) {
-        // defer argument checking...
-        setTickUnit(unit, true, true);
+    public Paint getShapePaint() {
+        return this.shapePaint;
     }
 
     /**
-     * Sets the tick unit for the axis and, if requested, sends an
-     * {@link AxisChangeEvent} to all registered listeners.  In addition, an
-     * option is provided to turn off the "auto-select" feature for tick units
-     * (you can restore it using the
-     * {@link ValueAxis#setAutoTickUnitSelection(boolean)} method).
+     * Sets the paint for rendering shapes and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
      *
-     * @param unit  the new tick unit ({@code null} not permitted).
-     * @param notify  notify listeners?
-     * @param turnOffAutoSelect  turn off the auto-tick selection?
+     * @param shapePaint  the paint ({@code null} permitted).
+     *
+     * @see #getShapePaint()
      */
-    public void setTickUnit(NumberTickUnit unit, boolean notify, boolean turnOffAutoSelect) {
-        Args.nullNotPermitted(unit, "unit");
-        this.tickUnit = unit;
-        if (turnOffAutoSelect) {
-            setAutoTickUnitSelection(false, false);
-        }
-        if (notify) {
-            notifyListeners(new AxisChangeEvent(this));
-        }
+    public void setShapePaint(Paint shapePaint) {
+        this.shapePaint = shapePaint;
+        fireChangeEvent();
     }
 
     /**
-     * Returns the number format override.  If this is non-null, then it will
-     * be used to format the numbers on the axis.
+     * Returns the stroke used for rendering shapes, or {@code null} if
+     * using series strokes.
      *
-     * @return The number formatter (possibly {@code null}).
+     * @return The stroke (possibly {@code null}).
      *
-     * @see #setNumberFormatOverride(NumberFormat)
+     * @see #setShapeStroke(Stroke)
      */
-    public NumberFormat getNumberFormatOverride() {
-        return this.numberFormatOverride;
+    public Stroke getShapeStroke() {
+        return this.shapeStroke;
     }
 
     /**
-     * Sets the number format override.  If this is non-null, then it will be
-     * used to format the numbers on the axis.
+     * Sets the stroke for rendering shapes and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
      *
-     * @param formatter  the number formatter ({@code null} permitted).
+     * @param shapeStroke  the stroke ({@code null} permitted).
      *
-     * @see #getNumberFormatOverride()
+     * @see #getShapeStroke()
      */
-    public void setNumberFormatOverride(NumberFormat formatter) {
-        this.numberFormatOverride = formatter;
-        notifyListeners(new AxisChangeEvent(this));
+    public void setShapeStroke(Stroke shapeStroke) {
+        this.shapeStroke = shapeStroke;
+        fireChangeEvent();
     }
 
     /**
-     * Returns the (optional) marker band for the axis.
+     * Initialises the renderer. This method will be called before the first
+     * item is rendered, giving the renderer an opportunity to initialise any
+     * state information it wants to maintain.
      *
-     * @return The marker band (possibly {@code null}).
+     * @param g2  the graphics device.
+     * @param dataArea  the area inside the axes.
+     * @param plot  the plot.
+     * @param data  the data.
+     * @param info  an optional info collection object to return data back to
+     *              the caller.
      *
-     * @see #setMarkerBand(MarkerAxisBand)
-     */
-    public MarkerAxisBand getMarkerBand() {
-        return this.markerBand;
-    }
-
-    /**
-     * Sets the marker band for the axis.
-     * <P>
-     * The marker band is optional, leave it set to {@code null} if you
-     * don't require it.
-     *
-     * @param band the new band ({@code null} permitted).
-     *
-     * @see #getMarkerBand()
-     */
-    public void setMarkerBand(MarkerAxisBand band) {
-        this.markerBand = band;
-        notifyListeners(new AxisChangeEvent(this));
-    }
-
-    /**
-     * Configures the axis to work with the specified plot.  If the axis has
-     * auto-scaling, then sets the maximum and minimum values.
+     * @return A state object that should be passed to subsequent calls to the
+     *         drawItem() method.
      */
     @Override
-    public void configure() {
-        if (isAutoRange()) {
-            autoAdjustRange();
-        }
-    }
-
-    /**
-     * Rescales the axis to ensure that all data is visible.
-     */
-    @Override
-    protected void autoAdjustRange() {
-        Plot plot = getPlot();
-        if (plot == null) {
-            // no plot, no data
-            return;
-        }
-        if (plot instanceof ValueAxisPlot) {
-            ValueAxisPlot vap = (ValueAxisPlot) plot;
-            Range r = vap.getDataRange(this);
-            if (r == null) {
-                r = getDefaultAutoRange();
-            }
-            double upper = r.getUpperBound();
-            double lower = r.getLowerBound();
-            if (this.rangeType == RangeType.POSITIVE) {
-                lower = Math.max(0.0, lower);
-                upper = Math.max(0.0, upper);
-            } else if (this.rangeType == RangeType.NEGATIVE) {
-                lower = Math.min(0.0, lower);
-                upper = Math.min(0.0, upper);
-            }
-            if (getAutoRangeIncludesZero()) {
-                lower = Math.min(lower, 0.0);
-                upper = Math.max(upper, 0.0);
-            }
-            double range = upper - lower;
-            // if fixed auto range, then derive lower bound...
-            double fixedAutoRange = getFixedAutoRange();
-            if (fixedAutoRange > 0.0) {
-                lower = upper - fixedAutoRange;
-            } else {
-                // ensure the autorange is at least <minRange> in size...
-                double minRange = getAutoRangeMinimumSize();
-                if (range < minRange) {
-                    double expand = (minRange - range) / 2;
-                    upper = upper + expand;
-                    lower = lower - expand;
-                    if (lower == upper) {
-                        // see bug report 1549218
-                        double adjust = Math.abs(lower) / 10.0;
-                        lower = lower - adjust;
-                        upper = upper + adjust;
-                    }
-                    if (this.rangeType == RangeType.POSITIVE) {
-                        if (lower < 0.0) {
-                            upper = upper - lower;
-                            lower = 0.0;
-                        }
-                    } else if (this.rangeType == RangeType.NEGATIVE) {
-                        if (upper > 0.0) {
-                            lower = lower - upper;
-                            upper = 0.0;
-                        }
-                    }
-                }
-                if (getAutoRangeStickyZero()) {
-                    if (upper <= 0.0) {
-                        upper = Math.min(0.0, upper + getUpperMargin() * range);
-                    } else {
-                        upper = upper + getUpperMargin() * range;
-                    }
-                    if (lower >= 0.0) {
-                        lower = Math.max(0.0, lower - getLowerMargin() * range);
-                    } else {
-                        lower = lower - getLowerMargin() * range;
-                    }
-                } else {
-                    upper = upper + getUpperMargin() * range;
-                    lower = lower - getLowerMargin() * range;
-                }
-            }
-            setRange(new Range(lower, upper), false, false);
-        }
-    }
-
-    /**
-     * Converts a data value to a coordinate in Java2D space, assuming that the
-     * axis runs along one edge of the specified dataArea.
-     * <p>
-     * Note that it is possible for the coordinate to fall outside the plotArea.
-     *
-     * @param value  the data value.
-     * @param area  the area for plotting the data.
-     * @param edge  the axis location.
-     *
-     * @return The Java2D coordinate.
-     *
-     * @see #java2DToValue(double, Rectangle2D, RectangleEdge)
-     */
-    @Override
-    public double valueToJava2D(double value, Rectangle2D area, RectangleEdge edge) {
-        Range range = getRange();
-        double axisMin = range.getLowerBound();
-        double axisMax = range.getUpperBound();
-        double min = 0.0;
-        double max = 0.0;
-        if (RectangleEdge.isTopOrBottom(edge)) {
-            min = area.getX();
-            max = area.getMaxX();
-        } else if (RectangleEdge.isLeftOrRight(edge)) {
-            max = area.getMinY();
-            min = area.getMaxY();
-        }
-        if (isInverted()) {
-            return max - ((value - axisMin) / (axisMax - axisMin)) * (max - min);
-        } else {
-            return min + ((value - axisMin) / (axisMax - axisMin)) * (max - min);
-        }
-    }
-
-    /**
-     * Converts a coordinate in Java2D space to the corresponding data value,
-     * assuming that the axis runs along one edge of the specified dataArea.
-     *
-     * @param java2DValue  the coordinate in Java2D space.
-     * @param area  the area in which the data is plotted.
-     * @param edge  the location.
-     *
-     * @return The data value.
-     *
-     * @see #valueToJava2D(double, Rectangle2D, RectangleEdge)
-     */
-    @Override
-    public double java2DToValue(double java2DValue, Rectangle2D area, RectangleEdge edge) {
-        Range range = getRange();
-        double axisMin = range.getLowerBound();
-        double axisMax = range.getUpperBound();
-        double min = 0.0;
-        double max = 0.0;
-        if (RectangleEdge.isTopOrBottom(edge)) {
-            min = area.getX();
-            max = area.getMaxX();
-        } else if (RectangleEdge.isLeftOrRight(edge)) {
-            min = area.getMaxY();
-            max = area.getY();
-        }
-        if (isInverted()) {
-            return axisMax - (java2DValue - min) / (max - min) * (axisMax - axisMin);
-        } else {
-            return axisMin + (java2DValue - min) / (max - min) * (axisMax - axisMin);
-        }
-    }
-
-    /**
-     * Calculates the value of the lowest visible tick on the axis.
-     *
-     * @return The value of the lowest visible tick on the axis.
-     *
-     * @see #calculateHighestVisibleTickValue()
-     */
-    protected double calculateLowestVisibleTickValue() {
-        double unit = getTickUnit().getSize();
-        double index = Math.ceil(getRange().getLowerBound() / unit);
-        return index * unit;
-    }
-
-    /**
-     * Calculates the value of the highest visible tick on the axis.
-     *
-     * @return The value of the highest visible tick on the axis.
-     *
-     * @see #calculateLowestVisibleTickValue()
-     */
-    protected double calculateHighestVisibleTickValue() {
-        double unit = getTickUnit().getSize();
-        double index = Math.floor(getRange().getUpperBound() / unit);
-        return index * unit;
-    }
-
-    /**
-     * Calculates the number of visible ticks.
-     *
-     * @return The number of visible ticks on the axis.
-     */
-    protected int calculateVisibleTickCount() {
-        double unit = getTickUnit().getSize();
-        Range range = getRange();
-        return (int) (Math.floor(range.getUpperBound() / unit) - Math.ceil(range.getLowerBound() / unit) + 1);
-    }
-
-    /**
-     * Draws the axis on a Java 2D graphics device (such as the screen or a
-     * printer).
-     *
-     * @param g2  the graphics device ({@code null} not permitted).
-     * @param cursor  the cursor location.
-     * @param plotArea  the area within which the axes and data should be drawn
-     *                  ({@code null} not permitted).
-     * @param dataArea  the area within which the data should be drawn
-     *                  ({@code null} not permitted).
-     * @param edge  the location of the axis ({@code null} not permitted).
-     * @param plotState  collects information about the plot
-     *                   ({@code null} permitted).
-     *
-     * @return The axis state (never {@code null}).
-     */
-    @Override
-    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, PlotRenderingInfo plotState) {
-        AxisState state;
-        // if the axis is not visible, don't draw it...
-        if (!isVisible()) {
-            state = new AxisState(cursor);
-            // even though the axis is not visible, we need ticks for the
-            // gridlines...
-            List ticks = refreshTicks(g2, state, dataArea, edge);
-            state.setTicks(ticks);
-            return state;
-        }
-        // draw the tick marks and labels...
-        state = drawTickMarksAndLabels(g2, cursor, plotArea, dataArea, edge);
-        if (getAttributedLabel() != null) {
-            state = drawAttributedLabel(getAttributedLabel(), g2, plotArea, dataArea, edge, state);
-        } else {
-            state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
-        }
-        createAndAddEntity(cursor, state, dataArea, edge, plotState);
+    public XYItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, XYPlot plot, XYDataset data, PlotRenderingInfo info) {
+        XYItemRendererState state = new StackedXYAreaRendererState(info);
+        // in the rendering process, there is special handling for item
+        // zero, so we can't support processing of visible data items only
+        state.setProcessVisibleItemsOnly(false);
         return state;
     }
 
     /**
-     * Creates the standard tick units.
-     * <P>
-     * If you don't like these defaults, create your own instance of TickUnits
-     * and then pass it to the setStandardTickUnits() method in the
-     * NumberAxis class.
+     * Returns the number of passes required by the renderer.
      *
-     * @return The standard tick units.
-     *
-     * @see #setStandardTickUnits(TickUnitSource)
-     * @see #createIntegerTickUnits()
+     * @return 2.
      */
-    public static TickUnitSource createStandardTickUnits() {
-        return new NumberTickUnitSource();
+    @Override
+    public int getPassCount() {
+        return 2;
     }
 
     /**
-     * Returns a collection of tick units for integer values.
+     * Returns the range of values the renderer requires to display all the
+     * items from the specified dataset.
      *
-     * @return A collection of tick units for integer values.
+     * @param dataset  the dataset ({@code null} permitted).
      *
-     * @see #setStandardTickUnits(TickUnitSource)
-     * @see #createStandardTickUnits()
+     * @return The range ([0.0, 0.0] if the dataset contains no values, and
+     *         {@code null} if the dataset is {@code null}).
+     *
+     * @throws ClassCastException if {@code dataset} is not an instance
+     *         of {@link TableXYDataset}.
      */
-    public static TickUnitSource createIntegerTickUnits() {
-        return new NumberTickUnitSource(true);
-    }
-
-    /**
-     * Creates a collection of standard tick units.  The supplied locale is
-     * used to create the number formatter (a localised instance of
-     * {@code NumberFormat}).
-     * <P>
-     * If you don't like these defaults, create your own instance of
-     * {@link TickUnits} and then pass it to the
-     * {@code setStandardTickUnits()} method.
-     *
-     * @param locale  the locale.
-     *
-     * @return A tick unit collection.
-     *
-     * @see #setStandardTickUnits(TickUnitSource)
-     */
-    public static TickUnitSource createStandardTickUnits(Locale locale) {
-        NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
-        return new NumberTickUnitSource(false, numberFormat);
-    }
-
-    /**
-     * Returns a collection of tick units for integer values.
-     * Uses a given Locale to create the DecimalFormats.
-     *
-     * @param locale the locale to use to represent Numbers.
-     *
-     * @return A collection of tick units for integer values.
-     *
-     * @see #setStandardTickUnits(TickUnitSource)
-     */
-    public static TickUnitSource createIntegerTickUnits(Locale locale) {
-        NumberFormat numberFormat = NumberFormat.getNumberInstance(locale);
-        return new NumberTickUnitSource(true, numberFormat);
-    }
-
-    /**
-     * Estimates the maximum tick label height.
-     *
-     * @param g2  the graphics device.
-     *
-     * @return The maximum height.
-     */
-    protected double estimateMaximumTickLabelHeight(Graphics2D g2) {
-        RectangleInsets tickLabelInsets = getTickLabelInsets();
-        double result = tickLabelInsets.getTop() + tickLabelInsets.getBottom();
-        Font tickLabelFont = getTickLabelFont();
-        FontRenderContext frc = g2.getFontRenderContext();
-        result += tickLabelFont.getLineMetrics("123", frc).getHeight();
-        return result;
-    }
-
-    /**
-     * Estimates the maximum width of the tick labels, assuming the specified
-     * tick unit is used.
-     * <P>
-     * Rather than computing the string bounds of every tick on the axis, we
-     * just look at two values: the lower bound and the upper bound for the
-     * axis.  These two values will usually be representative.
-     *
-     * @param g2  the graphics device.
-     * @param unit  the tick unit to use for calculation.
-     *
-     * @return The estimated maximum width of the tick labels.
-     */
-    protected double estimateMaximumTickLabelWidth(Graphics2D g2, TickUnit unit) {
-        RectangleInsets tickLabelInsets = getTickLabelInsets();
-        double result = tickLabelInsets.getLeft() + tickLabelInsets.getRight();
-        if (isVerticalTickLabels()) {
-            // all tick labels have the same width (equal to the height of the
-            // font)...
-            FontRenderContext frc = g2.getFontRenderContext();
-            LineMetrics lm = getTickLabelFont().getLineMetrics("0", frc);
-            result += lm.getHeight();
+    @Override
+    public Range findRangeBounds(XYDataset dataset) {
+        if (dataset != null) {
+            return DatasetUtils.findStackedRangeBounds((TableXYDataset) dataset);
         } else {
-            // look at lower and upper bounds...
-            FontMetrics fm = g2.getFontMetrics(getTickLabelFont());
-            Range range = getRange();
-            double lower = range.getLowerBound();
-            double upper = range.getUpperBound();
-            String lowerStr, upperStr;
-            NumberFormat formatter = getNumberFormatOverride();
-            if (formatter != null) {
-                lowerStr = formatter.format(lower);
-                upperStr = formatter.format(upper);
+            return null;
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param state  the renderer state.
+     * @param dataArea  the area within which the data is being drawn.
+     * @param info  collects information about the drawing.
+     * @param plot  the plot (can be used to obtain standard color information
+     *              etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset.
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  information about crosshairs on a plot.
+     * @param pass  the pass index.
+     *
+     * @throws ClassCastException if {@code state} is not an instance of
+     *         {@code StackedXYAreaRendererState} or {@code dataset}
+     *         is not an instance of {@link TableXYDataset}.
+     */
+    @Override
+    public void drawItem(Graphics2D g2, XYItemRendererState state, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        PlotOrientation orientation = plot.getOrientation();
+        StackedXYAreaRendererState areaState = (StackedXYAreaRendererState) state;
+        // Get the item count for the series, so that we can know which is the
+        // end of the series.
+        TableXYDataset tdataset = (TableXYDataset) dataset;
+        int itemCount = tdataset.getItemCount();
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        boolean nullPoint = false;
+        if (Double.isNaN(y1)) {
+            y1 = 0.0;
+            nullPoint = true;
+        }
+        //  Get height adjustment based on stack and translate to Java2D values
+        double ph1 = getPreviousHeight(tdataset, series, item);
+        double transX1 = domainAxis.valueToJava2D(x1, dataArea, plot.getDomainAxisEdge());
+        double transY1 = rangeAxis.valueToJava2D(y1 + ph1, dataArea, plot.getRangeAxisEdge());
+        //  Get series Paint and Stroke
+        Paint seriesPaint = getItemPaint(series, item);
+        Paint seriesFillPaint = seriesPaint;
+        if (getUseFillPaint()) {
+            seriesFillPaint = getItemFillPaint(series, item);
+        }
+        Stroke seriesStroke = getItemStroke(series, item);
+        if (pass == 0) {
+            //  On first pass render the areas, line and outlines
+            if (item == 0) {
+                // Create a new Area for the series
+                areaState.setSeriesArea(new Polygon());
+                areaState.setLastSeriesPoints(areaState.getCurrentSeriesPoints());
+                areaState.setCurrentSeriesPoints(new Stack());
+                // start from previous height (ph1)
+                double transY2 = rangeAxis.valueToJava2D(ph1, dataArea, plot.getRangeAxisEdge());
+                // The first point is (x, 0)
+                if (orientation == PlotOrientation.VERTICAL) {
+                    areaState.getSeriesArea().addPoint((int) transX1, (int) transY2);
+                } else if (orientation == PlotOrientation.HORIZONTAL) {
+                    areaState.getSeriesArea().addPoint((int) transY2, (int) transX1);
+                }
+            }
+            // Add each point to Area (x, y)
+            if (orientation == PlotOrientation.VERTICAL) {
+                Point point = new Point((int) transX1, (int) transY1);
+                areaState.getSeriesArea().addPoint((int) point.getX(), (int) point.getY());
+                areaState.getCurrentSeriesPoints().push(point);
+            } else if (orientation == PlotOrientation.HORIZONTAL) {
+                areaState.getSeriesArea().addPoint((int) transY1, (int) transX1);
+            }
+            if (getPlotLines()) {
+                if (item > 0) {
+                    // get the previous data point...
+                    double x0 = dataset.getXValue(series, item - 1);
+                    double y0 = dataset.getYValue(series, item - 1);
+                    double ph0 = getPreviousHeight(tdataset, series, item - 1);
+                    double transX0 = domainAxis.valueToJava2D(x0, dataArea, plot.getDomainAxisEdge());
+                    double transY0 = rangeAxis.valueToJava2D(y0 + ph0, dataArea, plot.getRangeAxisEdge());
+                    if (orientation == PlotOrientation.VERTICAL) {
+                        areaState.getLine().setLine(transX0, transY0, transX1, transY1);
+                    } else if (orientation == PlotOrientation.HORIZONTAL) {
+                        areaState.getLine().setLine(transY0, transX0, transY1, transX1);
+                    }
+                    g2.setPaint(seriesPaint);
+                    g2.setStroke(seriesStroke);
+                    g2.draw(areaState.getLine());
+                }
+            }
+            // Check if the item is the last item for the series and number of
+            // items > 0.  We can't draw an area for a single point.
+            if (getPlotArea() && item > 0 && item == (itemCount - 1)) {
+                double transY2 = rangeAxis.valueToJava2D(ph1, dataArea, plot.getRangeAxisEdge());
+                if (orientation == PlotOrientation.VERTICAL) {
+                    // Add the last point (x,0)
+                    areaState.getSeriesArea().addPoint((int) transX1, (int) transY2);
+                } else if (orientation == PlotOrientation.HORIZONTAL) {
+                    // Add the last point (x,0)
+                    areaState.getSeriesArea().addPoint((int) transY2, (int) transX1);
+                }
+                // Add points from last series to complete the base of the
+                // polygon
+                if (series != 0) {
+                    Stack points = areaState.getLastSeriesPoints();
+                    while (!points.empty()) {
+                        Point point = (Point) points.pop();
+                        areaState.getSeriesArea().addPoint((int) point.getX(), (int) point.getY());
+                    }
+                }
+                //  Fill the polygon
+                g2.setPaint(seriesFillPaint);
+                g2.setStroke(seriesStroke);
+                g2.fill(areaState.getSeriesArea());
+                //  Draw an outline around the Area.
+                if (isOutline()) {
+                    g2.setStroke(lookupSeriesOutlineStroke(series));
+                    g2.setPaint(lookupSeriesOutlinePaint(series));
+                    g2.draw(areaState.getSeriesArea());
+                }
+            }
+            int datasetIndex = plot.indexOf(dataset);
+            updateCrosshairValues(crosshairState, x1, ph1 + y1, datasetIndex, transX1, transY1, orientation);
+        } else if (pass == 1) {
+            // On second pass render shapes and collect entity and tooltip
+            // information
+            Shape shape = null;
+            if (getPlotShapes()) {
+                shape = getItemShape(series, item);
+                if (plot.getOrientation() == PlotOrientation.VERTICAL) {
+                    shape = ShapeUtils.createTranslatedShape(shape, transX1, transY1);
+                } else if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+                    shape = ShapeUtils.createTranslatedShape(shape, transY1, transX1);
+                }
+                if (!nullPoint) {
+                    if (getShapePaint() != null) {
+                        g2.setPaint(getShapePaint());
+                    } else {
+                        g2.setPaint(seriesPaint);
+                    }
+                    if (getShapeStroke() != null) {
+                        g2.setStroke(getShapeStroke());
+                    } else {
+                        g2.setStroke(seriesStroke);
+                    }
+                    g2.draw(shape);
+                }
             } else {
-                lowerStr = unit.valueToString(lower);
-                upperStr = unit.valueToString(upper);
-            }
-            double w1 = fm.stringWidth(lowerStr);
-            double w2 = fm.stringWidth(upperStr);
-            result += Math.max(w1, w2);
-        }
-        return result;
-    }
-
-    /**
-     * Selects an appropriate tick value for the axis.  The strategy is to
-     * display as many ticks as possible (selected from an array of 'standard'
-     * tick units) without the labels overlapping.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area defined by the axes.
-     * @param edge  the axis location.
-     */
-    protected void selectAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
-        if (RectangleEdge.isTopOrBottom(edge)) {
-            selectHorizontalAutoTickUnit(g2, dataArea, edge);
-        } else if (RectangleEdge.isLeftOrRight(edge)) {
-            selectVerticalAutoTickUnit(g2, dataArea, edge);
-        }
-    }
-
-    /**
-     * Selects an appropriate tick value for the axis.  The strategy is to
-     * display as many ticks as possible (selected from an array of 'standard'
-     * tick units) without the labels overlapping.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area defined by the axes.
-     * @param edge  the axis location.
-     */
-    protected void selectHorizontalAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
-        TickUnit unit = getTickUnit();
-        TickUnitSource tickUnitSource = getStandardTickUnits();
-        // we should start with the current tick unit if it gives a count in
-        // the range 3 to 40 otherwise estimate one that will give a count <= 10
-        double length = getRange().getLength();
-        int count = (int) (length / unit.getSize());
-        if (count < 3 || count > 40) {
-            unit = tickUnitSource.getCeilingTickUnit(length / 10);
-        }
-        // now consider the label size relative to the width of the tick unit
-        // and make a guess at the ideal size
-        TickUnit unit1 = tickUnitSource.getCeilingTickUnit(unit);
-        double tickLabelWidth = estimateMaximumTickLabelWidth(g2, unit1);
-        double unit1Width = lengthToJava2D(unit1.getSize(), dataArea, edge);
-        NumberTickUnit unit2 = (NumberTickUnit) unit1;
-        double guess = (tickLabelWidth / unit1Width) * unit1.getSize();
-        // due to limitations of double precision, when you zoom very far into
-        // a chart, eventually the visible axis range will get reported as
-        // having length 0, and then 'guess' above will be infinite ... in that
-        // case we'll just stick with the tick unit we have, it's better than
-        // throwing an exception
-        // https://github.com/jfree/jfreechart/issues/64
-        if (Double.isFinite(guess)) {
-            unit2 = (NumberTickUnit) tickUnitSource.getCeilingTickUnit(guess);
-            double unit2Width = lengthToJava2D(unit2.getSize(), dataArea, edge);
-            tickLabelWidth = estimateMaximumTickLabelWidth(g2, unit2);
-            if (tickLabelWidth > unit2Width) {
-                unit2 = (NumberTickUnit) tickUnitSource.getLargerTickUnit(unit2);
-            }
-        }
-        setTickUnit(unit2, false, false);
-    }
-
-    /**
-     * Selects an appropriate tick value for the axis.  The strategy is to
-     * display as many ticks as possible (selected from an array of 'standard'
-     * tick units) without the labels overlapping.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area in which the plot should be drawn.
-     * @param edge  the axis location.
-     */
-    protected void selectVerticalAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
-        double tickLabelHeight = estimateMaximumTickLabelHeight(g2);
-        // start with the current tick unit...
-        TickUnitSource tickUnits = getStandardTickUnits();
-        TickUnit unit1 = tickUnits.getCeilingTickUnit(getTickUnit());
-        double unitHeight = lengthToJava2D(unit1.getSize(), dataArea, edge);
-        double guess;
-        if (unitHeight > 0) {
-            // then extrapolate...
-            guess = (tickLabelHeight / unitHeight) * unit1.getSize();
-        } else {
-            guess = getRange().getLength() / 20.0;
-        }
-        NumberTickUnit unit2 = (NumberTickUnit) tickUnits.getCeilingTickUnit(guess);
-        double unit2Height = lengthToJava2D(unit2.getSize(), dataArea, edge);
-        tickLabelHeight = estimateMaximumTickLabelHeight(g2);
-        if (tickLabelHeight > unit2Height) {
-            unit2 = (NumberTickUnit) tickUnits.getLargerTickUnit(unit2);
-        }
-        setTickUnit(unit2, false, false);
-    }
-
-    /**
-     * Calculates the positions of the tick labels for the axis, storing the
-     * results in the tick label list (ready for drawing).
-     *
-     * @param g2  the graphics device.
-     * @param state  the axis state.
-     * @param dataArea  the area in which the plot should be drawn.
-     * @param edge  the location of the axis.
-     *
-     * @return A list of ticks.
-     */
-    @Override
-    public List refreshTicks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
-        List result = new java.util.ArrayList();
-        if (RectangleEdge.isTopOrBottom(edge)) {
-            result = refreshTicksHorizontal(g2, dataArea, edge);
-        } else if (RectangleEdge.isLeftOrRight(edge)) {
-            result = refreshTicksVertical(g2, dataArea, edge);
-        }
-        return result;
-    }
-
-    /**
-     * Calculates the positions of the tick labels for the axis, storing the
-     * results in the tick label list (ready for drawing).
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area in which the data should be drawn.
-     * @param edge  the location of the axis.
-     *
-     * @return A list of ticks.
-     */
-    protected List refreshTicksHorizontal(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
-        List result = new java.util.ArrayList();
-        Font tickLabelFont = getTickLabelFont();
-        g2.setFont(tickLabelFont);
-        if (isAutoTickUnitSelection()) {
-            selectAutoTickUnit(g2, dataArea, edge);
-        }
-        TickUnit tu = getTickUnit();
-        double size = tu.getSize();
-        int count = calculateVisibleTickCount();
-        double lowestTickValue = calculateLowestVisibleTickValue();
-        if (count <= ValueAxis.MAXIMUM_TICK_COUNT) {
-            int minorTickSpaces = getMinorTickCount();
-            if (minorTickSpaces <= 0) {
-                minorTickSpaces = tu.getMinorTickCount();
-            }
-            for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
-                double minorTickValue = lowestTickValue - size * minorTick / minorTickSpaces;
-                if (getRange().contains(minorTickValue)) {
-                    result.add(new NumberTick(TickType.MINOR, minorTickValue, "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
+                if (plot.getOrientation() == PlotOrientation.VERTICAL) {
+                    shape = new Rectangle2D.Double(transX1 - 3, transY1 - 3, 6.0, 6.0);
+                } else if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+                    shape = new Rectangle2D.Double(transY1 - 3, transX1 - 3, 6.0, 6.0);
                 }
             }
-            for (int i = 0; i < count; i++) {
-                double currentTickValue = lowestTickValue + (i * size);
-                String tickLabel;
-                NumberFormat formatter = getNumberFormatOverride();
-                if (formatter != null) {
-                    tickLabel = formatter.format(currentTickValue);
-                } else {
-                    tickLabel = getTickUnit().valueToString(currentTickValue);
-                }
-                TextAnchor anchor, rotationAnchor;
-                double angle = 0.0;
-                if (isVerticalTickLabels()) {
-                    anchor = TextAnchor.CENTER_RIGHT;
-                    rotationAnchor = TextAnchor.CENTER_RIGHT;
-                    if (edge == RectangleEdge.TOP) {
-                        angle = Math.PI / 2.0;
-                    } else {
-                        angle = -Math.PI / 2.0;
-                    }
-                } else {
-                    if (edge == RectangleEdge.TOP) {
-                        anchor = TextAnchor.BOTTOM_CENTER;
-                        rotationAnchor = TextAnchor.BOTTOM_CENTER;
-                    } else {
-                        anchor = TextAnchor.TOP_CENTER;
-                        rotationAnchor = TextAnchor.TOP_CENTER;
+            // collect entity and tool tip information...
+            if (state.getInfo() != null) {
+                EntityCollection entities = state.getEntityCollection();
+                if (entities != null && shape != null && !nullPoint) {
+                    // limit the entity hotspot area to the data area
+                    Area dataAreaHotspot = new Area(shape);
+                    dataAreaHotspot.intersect(new Area(dataArea));
+                    if (!dataAreaHotspot.isEmpty()) {
+                        String tip = null;
+                        XYToolTipGenerator generator = getToolTipGenerator(series, item);
+                        if (generator != null) {
+                            tip = generator.generateToolTip(dataset, series, item);
+                        }
+                        String url = null;
+                        if (getURLGenerator() != null) {
+                            url = getURLGenerator().generateURL(dataset, series, item);
+                        }
+                        XYItemEntity entity = new XYItemEntity(dataAreaHotspot, dataset, series, item, tip, url);
+                        entities.add(entity);
                     }
                 }
-                Tick tick = new NumberTick(currentTickValue, tickLabel, anchor, rotationAnchor, angle);
-                result.add(tick);
-                double nextTickValue = lowestTickValue + ((i + 1) * size);
-                for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
-                    double minorTickValue = currentTickValue + (nextTickValue - currentTickValue) * minorTick / minorTickSpaces;
-                    if (getRange().contains(minorTickValue)) {
-                        result.add(new NumberTick(TickType.MINOR, minorTickValue, "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
-                    }
-                }
+            }
+        }
+    }
+
+    /**
+     * Calculates the stacked value of the all series up to, but not including
+     * {@code series} for the specified item. It returns 0.0 if
+     * {@code series} is the first series, i.e. 0.
+     *
+     * @param dataset  the dataset.
+     * @param series  the series.
+     * @param index  the index.
+     *
+     * @return The cumulative value for all series' values up to but excluding
+     *         {@code series} for {@code index}.
+     */
+    protected double getPreviousHeight(TableXYDataset dataset, int series, int index) {
+        double result = 0.0;
+        for (int i = 0; i < series; i++) {
+            double value = dataset.getYValue(i, index);
+            if (!Double.isNaN(value)) {
+                result += value;
             }
         }
         return result;
     }
 
     /**
-     * Calculates the positions of the tick labels for the axis, storing the
-     * results in the tick label list (ready for drawing).
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area in which the plot should be drawn.
-     * @param edge  the location of the axis.
-     *
-     * @return A list of ticks.
-     */
-    protected List refreshTicksVertical(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
-        List result = new java.util.ArrayList();
-        result.clear();
-        Font tickLabelFont = getTickLabelFont();
-        g2.setFont(tickLabelFont);
-        if (isAutoTickUnitSelection()) {
-            selectAutoTickUnit(g2, dataArea, edge);
-        }
-        TickUnit tu = getTickUnit();
-        double size = tu.getSize();
-        int count = calculateVisibleTickCount();
-        double lowestTickValue = calculateLowestVisibleTickValue();
-        if (count <= ValueAxis.MAXIMUM_TICK_COUNT) {
-            int minorTickSpaces = getMinorTickCount();
-            if (minorTickSpaces <= 0) {
-                minorTickSpaces = tu.getMinorTickCount();
-            }
-            for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
-                double minorTickValue = lowestTickValue - size * minorTick / minorTickSpaces;
-                if (getRange().contains(minorTickValue)) {
-                    result.add(new NumberTick(TickType.MINOR, minorTickValue, "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
-                }
-            }
-            for (int i = 0; i < count; i++) {
-                double currentTickValue = lowestTickValue + (i * size);
-                String tickLabel;
-                NumberFormat formatter = getNumberFormatOverride();
-                if (formatter != null) {
-                    tickLabel = formatter.format(currentTickValue);
-                } else {
-                    tickLabel = getTickUnit().valueToString(currentTickValue);
-                }
-                TextAnchor anchor;
-                TextAnchor rotationAnchor;
-                double angle = 0.0;
-                if (isVerticalTickLabels()) {
-                    if (edge == RectangleEdge.LEFT) {
-                        anchor = TextAnchor.BOTTOM_CENTER;
-                        rotationAnchor = TextAnchor.BOTTOM_CENTER;
-                        angle = -Math.PI / 2.0;
-                    } else {
-                        anchor = TextAnchor.BOTTOM_CENTER;
-                        rotationAnchor = TextAnchor.BOTTOM_CENTER;
-                        angle = Math.PI / 2.0;
-                    }
-                } else {
-                    if (edge == RectangleEdge.LEFT) {
-                        anchor = TextAnchor.CENTER_RIGHT;
-                        rotationAnchor = TextAnchor.CENTER_RIGHT;
-                    } else {
-                        anchor = TextAnchor.CENTER_LEFT;
-                        rotationAnchor = TextAnchor.CENTER_LEFT;
-                    }
-                }
-                Tick tick = new NumberTick(currentTickValue, tickLabel, anchor, rotationAnchor, angle);
-                result.add(tick);
-                double nextTickValue = lowestTickValue + ((i + 1) * size);
-                for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
-                    double minorTickValue = currentTickValue + (nextTickValue - currentTickValue) * minorTick / minorTickSpaces;
-                    if (getRange().contains(minorTickValue)) {
-                        result.add(new NumberTick(TickType.MINOR, minorTickValue, "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
-                    }
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a clone of the axis.
-     *
-     * @return A clone
-     *
-     * @throws CloneNotSupportedException if some component of the axis does
-     *         not support cloning.
-     */
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        NumberAxis clone = (NumberAxis) super.clone();
-        if (this.numberFormatOverride != null) {
-            clone.numberFormatOverride = (NumberFormat) this.numberFormatOverride.clone();
-        }
-        return clone;
-    }
-
-    /**
-     * Tests the axis for equality with an arbitrary object.
+     * Tests the renderer for equality with an arbitrary object.
      *
      * @param obj  the object ({@code null} permitted).
      *
@@ -8943,35 +9104,55 @@ class NumberAxis extends ValueAxis implements Cloneable, Serializable {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof NumberAxis)) {
+        if (!(obj instanceof StackedXYAreaRenderer) || !super.equals(obj)) {
             return false;
         }
-        NumberAxis that = (NumberAxis) obj;
-        if (this.autoRangeIncludesZero != that.autoRangeIncludesZero) {
+        StackedXYAreaRenderer that = (StackedXYAreaRenderer) obj;
+        if (!PaintUtils.equal(this.shapePaint, that.shapePaint)) {
             return false;
         }
-        if (this.autoRangeStickyZero != that.autoRangeStickyZero) {
+        if (!Objects.equals(this.shapeStroke, that.shapeStroke)) {
             return false;
         }
-        if (!Objects.equals(this.tickUnit, that.tickUnit)) {
-            return false;
-        }
-        if (!Objects.equals(this.numberFormatOverride, that.numberFormatOverride)) {
-            return false;
-        }
-        if (!this.rangeType.equals(that.rangeType)) {
-            return false;
-        }
-        return super.equals(obj);
+        return true;
     }
 
     /**
-     * Returns a hash code for this object.
+     * Returns a clone of the renderer.
      *
-     * @return A hash code.
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if the renderer cannot be cloned.
      */
     @Override
-    public int hashCode() {
-        return super.hashCode();
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.shapePaint = SerialUtils.readPaint(stream);
+        this.shapeStroke = SerialUtils.readStroke(stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.shapePaint, stream);
+        SerialUtils.writeStroke(this.shapeStroke, stream);
     }
 }

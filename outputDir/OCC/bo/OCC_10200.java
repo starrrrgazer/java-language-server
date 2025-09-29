@@ -61,7 +61,7 @@ package OCC.bo;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5134,1414 +5134,1512 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------------------
- * AbstractXYItemRenderer.java
- * ---------------------------
- * (C) Copyright 2002-present, by David Gilbert and Contributors.
+ * ---------------
+ * JFreeChart.java
+ * ---------------
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Richard Atkinson;
- *                   Focus Computer Services Limited;
- *                   Tim Bardzil;
- *                   Sergei Ivanov;
- *                   Peter Kolb (patch 2809117);
- *                   Martin Krauskopf;
+ * Contributor(s):   Andrzej Porebski;
+ *                   David Li;
+ *                   Wolfgang Irler;
+ *                   Christian W. Zuckschwerdt;
+ *                   Klaus Rheinwald;
+ *                   Nicolas Brodu;
+ *                   Peter Kolb (patch 2603321);
+ *
+ * NOTE: The above list of contributors lists only the people that have
+ * contributed to this source file (JFreeChart.java) - for a list of ALL
+ * contributors to the project, please see the README.txt file.
+ *
  */
 /**
- * A base class that can be used to create new {@link XYItemRenderer}
- * implementations.
- * <p>
- * <b>Subclassing</b>
- * If you create your own subclass of this renderer, please refer to the
- * Javadocs for {@link AbstractRenderer} for important information about
- * cloning.
+ * A chart class implemented using the Java 2D APIs.  The current version
+ * supports bar charts, line charts, pie charts and xy plots (including time
+ * series data).
+ * <P>
+ * JFreeChart coordinates several objects to achieve its aim of being able to
+ * draw a chart on a Java 2D graphics device: a list of {@link Title} objects
+ * (which often includes the chart's legend), a {@link Plot} and a
+ * {@link org.jfree.data.general.Dataset} (the plot in turn manages a
+ * domain axis and a range axis).
+ * <P>
+ * You should use a {@link ChartPanel} to display a chart in a GUI.
+ * <P>
+ * The {@link ChartFactory} class contains static methods for creating
+ * 'ready-made' charts.
+ *
+ * @see ChartPanel
+ * @see ChartFactory
+ * @see Title
+ * @see Plot
  */
-public abstract class AbstractXYItemRenderer extends AbstractRenderer implements XYItemRenderer, AnnotationChangeListener, Cloneable, Serializable {
+public class JFreeChart implements Drawable, TitleChangeListener, PlotChangeListener, ChartElement, Serializable, Cloneable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 8019124836026607990L;
+    private static final long serialVersionUID = -3470703747817429120L;
 
     /**
-     * The plot.
+     * The default font for titles.
      */
-    private XYPlot plot;
+    public static final Font DEFAULT_TITLE_FONT = new Font("SansSerif", Font.BOLD, 18);
 
     /**
-     * A list of item label generators (one per series).
+     * The default background color.
      */
-    private Map<Integer, XYItemLabelGenerator> itemLabelGeneratorMap;
+    public static final Paint DEFAULT_BACKGROUND_PAINT = UIManager.getColor("Panel.background");
 
     /**
-     * The default item label generator.
+     * The default background image.
      */
-    private XYItemLabelGenerator defaultItemLabelGenerator;
+    public static final Image DEFAULT_BACKGROUND_IMAGE = null;
 
     /**
-     * A list of tool tip generators (one per series).
+     * The default background image alignment.
      */
-    private Map<Integer, XYToolTipGenerator> toolTipGeneratorMap;
+    public static final RectangleAlignment DEFAULT_BACKGROUND_IMAGE_ALIGNMENT = RectangleAlignment.FILL;
 
     /**
-     * The default tool tip generator.
+     * The default background image alpha.
      */
-    private XYToolTipGenerator defaultToolTipGenerator;
+    public static final float DEFAULT_BACKGROUND_IMAGE_ALPHA = 0.5f;
 
     /**
-     * The URL text generator.
+     * The key for a rendering hint that can suppress the generation of a
+     * shadow effect when drawing the chart.  The hint value must be a
+     * Boolean.
      */
-    private XYURLGenerator urlGenerator;
+    public static final RenderingHints.Key KEY_SUPPRESS_SHADOW_GENERATION = new RenderingHints.Key(0) {
+
+        @Override
+        public boolean isCompatibleValue(Object val) {
+            return val instanceof Boolean;
+        }
+    };
 
     /**
-     * Annotations to be drawn in the background layer ('underneath' the data
-     * items).
+     * Rendering hints that will be used for chart drawing.  This should never
+     * be {@code null}.
      */
-    private List<XYAnnotation> backgroundAnnotations;
+    private transient RenderingHints renderingHints;
 
     /**
-     * Annotations to be drawn in the foreground layer ('on top' of the data
-     * items).
+     * The chart id (optional, will be used by JFreeSVG export).
      */
-    private List<XYAnnotation> foregroundAnnotations;
+    private String id;
 
     /**
-     * The legend item label generator.
+     * A flag that controls whether the chart border is drawn.
      */
-    private XYSeriesLabelGenerator legendItemLabelGenerator;
+    private boolean borderVisible;
 
     /**
-     * The legend item tool tip generator.
+     * The stroke used to draw the chart border (if visible).
      */
-    private XYSeriesLabelGenerator legendItemToolTipGenerator;
+    private transient Stroke borderStroke;
 
     /**
-     * The legend item URL generator.
+     * The paint used to draw the chart border (if visible).
      */
-    private XYSeriesLabelGenerator legendItemURLGenerator;
+    private transient Paint borderPaint;
 
     /**
-     * Creates a renderer where the tooltip generator and the URL generator are
-     * both {@code null}.
+     * The padding between the chart border and the chart drawing area.
      */
-    protected AbstractXYItemRenderer() {
-        super();
-        this.itemLabelGeneratorMap = new HashMap<>();
-        this.toolTipGeneratorMap = new HashMap<>();
-        this.urlGenerator = null;
-        this.backgroundAnnotations = new ArrayList<>();
-        this.foregroundAnnotations = new ArrayList<>();
-        this.legendItemLabelGenerator = new StandardXYSeriesLabelGenerator("{0}");
+    private RectangleInsets padding;
+
+    /**
+     * The chart title (optional).
+     */
+    private TextTitle title;
+
+    /**
+     * The chart subtitles (zero, one or many).  This field should never be
+     * {@code null}.
+     */
+    private List<Title> subtitles;
+
+    /**
+     * Draws the visual representation of the data.
+     */
+    private Plot plot;
+
+    /**
+     * Paint used to draw the background of the chart.
+     */
+    private transient Paint backgroundPaint;
+
+    /**
+     * An optional background image for the chart.
+     */
+    // todo: not serialized yet
+    private transient Image backgroundImage;
+
+    /**
+     * The alignment for the background image.
+     */
+    private RectangleAlignment backgroundImageAlignment = RectangleAlignment.FILL;
+
+    /**
+     * The alpha transparency for the background image.
+     */
+    private float backgroundImageAlpha = 0.5f;
+
+    /**
+     * Storage for registered change listeners.
+     */
+    private transient EventListenerList changeListeners;
+
+    /**
+     * Storage for registered progress listeners.
+     */
+    private transient EventListenerList progressListeners;
+
+    /**
+     * A flag that can be used to enable/disable notification of chart change
+     * events.
+     */
+    private boolean notify;
+
+    /**
+     * A flag that controls whether rendering hints that identify
+     * chart element should be added during rendering.  This defaults to false
+     * and it should only be enabled if the output target will use the hints.
+     * JFreeSVG is one output target that supports these hints.
+     */
+    private boolean elementHinting;
+
+    /**
+     * Creates a new chart based on the supplied plot.  The chart will have
+     * a legend added automatically, but no title (although you can easily add
+     * one later).
+     * <br><br>
+     * Note that the  {@link ChartFactory} class contains a range
+     * of static methods that will return ready-made charts, and often this
+     * is a more convenient way to create charts than using this constructor.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    public JFreeChart(Plot plot) {
+        this(null, null, plot, true);
     }
 
     /**
-     * Returns the number of passes through the data that the renderer requires
-     * in order to draw the chart.  Most charts will require a single pass, but
-     * some require two passes.
+     * Creates a new chart with the given title and plot.  A default font
+     * ({@link #DEFAULT_TITLE_FONT}) is used for the title, and the chart will
+     * have a legend added automatically.
+     * <br><br>
+     * Note that the {@link ChartFactory} class contains a range
+     * of static methods that will return ready-made charts, and often this
+     * is a more convenient way to create charts than using this constructor.
      *
-     * @return The pass count.
+     * @param title  the chart title ({@code null} permitted).
+     * @param plot  the plot ({@code null} not permitted).
      */
-    @Override
-    public int getPassCount() {
-        return 1;
+    public JFreeChart(String title, Plot plot) {
+        this(title, JFreeChart.DEFAULT_TITLE_FONT, plot, true);
     }
 
     /**
-     * Returns the plot that the renderer is assigned to.
+     * Creates a new chart with the given title and plot.  The
+     * {@code createLegend} argument specifies whether a legend
+     * should be added to the chart.
+     * <br><br>
+     * Note that the  {@link ChartFactory} class contains a range
+     * of static methods that will return ready-made charts, and often this
+     * is a more convenient way to create charts than using this constructor.
      *
-     * @return The plot (possibly {@code null}).
+     * @param title  the chart title ({@code null} permitted).
+     * @param titleFont  the font for displaying the chart title
+     *                   ({@code null} permitted).
+     * @param plot  controller of the visual representation of the data
+     *              ({@code null} not permitted).
+     * @param createLegend  a flag indicating whether a legend should
+     *                      be created for the chart.
      */
-    @Override
-    public XYPlot getPlot() {
+    public JFreeChart(String title, Font titleFont, Plot plot, boolean createLegend) {
+        Args.nullNotPermitted(plot, "plot");
+        this.id = null;
+        plot.setChart(this);
+        // create storage for listeners...
+        this.progressListeners = new EventListenerList();
+        this.changeListeners = new EventListenerList();
+        // default is to notify listeners when the
+        this.notify = true;
+        // chart changes
+        this.renderingHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        // added the following hint because of
+        // http://stackoverflow.com/questions/7785082/
+        this.renderingHints.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        this.borderVisible = false;
+        this.borderStroke = new BasicStroke(1.0f);
+        this.borderPaint = Color.BLACK;
+        this.padding = RectangleInsets.ZERO_INSETS;
+        this.plot = plot;
+        plot.addChangeListener(this);
+        this.subtitles = new ArrayList<>();
+        // create a legend, if requested...
+        if (createLegend) {
+            LegendTitle legend = new LegendTitle(this.plot);
+            legend.setMargin(new RectangleInsets(1.0, 1.0, 1.0, 1.0));
+            legend.setBackgroundPaint(Color.WHITE);
+            legend.setPosition(RectangleEdge.BOTTOM);
+            this.subtitles.add(legend);
+            legend.addChangeListener(this);
+        }
+        // add the chart title, if one has been specified...
+        if (title != null) {
+            if (titleFont == null) {
+                titleFont = DEFAULT_TITLE_FONT;
+            }
+            this.title = new TextTitle(title, titleFont);
+            this.title.addChangeListener(this);
+        }
+        this.backgroundPaint = DEFAULT_BACKGROUND_PAINT;
+        this.backgroundImage = DEFAULT_BACKGROUND_IMAGE;
+        this.backgroundImageAlignment = DEFAULT_BACKGROUND_IMAGE_ALIGNMENT;
+        this.backgroundImageAlpha = DEFAULT_BACKGROUND_IMAGE_ALPHA;
+    }
+
+    /**
+     * Returns the ID for the chart.
+     *
+     * @return The ID for the chart (possibly {@code null}).
+     */
+    public String getID() {
+        return this.id;
+    }
+
+    /**
+     * Sets the ID for the chart.
+     *
+     * @param id  the id ({@code null} permitted).
+     */
+    public void setID(String id) {
+        this.id = id;
+    }
+
+    /**
+     * Returns the flag that controls whether rendering hints
+     * ({@link ChartHints#KEY_BEGIN_ELEMENT} and
+     * {@link ChartHints#KEY_END_ELEMENT}) that identify chart elements are
+     * added during rendering.  The default value is {@code false}.
+     *
+     * @return A boolean.
+     *
+     * @see #setElementHinting(boolean)
+     */
+    public boolean getElementHinting() {
+        return this.elementHinting;
+    }
+
+    /**
+     * Sets the flag that controls whether rendering hints
+     * ({@link ChartHints#KEY_BEGIN_ELEMENT} and
+     * {@link ChartHints#KEY_END_ELEMENT}) that identify chart elements are
+     * added during rendering.
+     *
+     * @param hinting  the new flag value.
+     *
+     * @see #getElementHinting()
+     */
+    public void setElementHinting(boolean hinting) {
+        this.elementHinting = hinting;
+    }
+
+    /**
+     * Returns the collection of rendering hints for the chart.
+     *
+     * @return The rendering hints for the chart (never {@code null}).
+     *
+     * @see #setRenderingHints(RenderingHints)
+     */
+    public RenderingHints getRenderingHints() {
+        return this.renderingHints;
+    }
+
+    /**
+     * Sets the rendering hints for the chart.  These will be added (using the
+     * {@code Graphics2D.addRenderingHints()} method) near the start of the
+     * {@code JFreeChart.draw()} method.
+     *
+     * @param renderingHints  the rendering hints ({@code null} not permitted).
+     *
+     * @see #getRenderingHints()
+     */
+    public void setRenderingHints(RenderingHints renderingHints) {
+        Args.nullNotPermitted(renderingHints, "renderingHints");
+        this.renderingHints = renderingHints;
+        fireChartChanged();
+    }
+
+    /**
+     * Returns a flag that controls whether a border is drawn around the
+     * outside of the chart.
+     *
+     * @return A boolean.
+     *
+     * @see #setBorderVisible(boolean)
+     */
+    public boolean isBorderVisible() {
+        return this.borderVisible;
+    }
+
+    /**
+     * Sets a flag that controls whether a border is drawn around the
+     * outside of the chart.
+     *
+     * @param visible  the flag.
+     *
+     * @see #isBorderVisible()
+     */
+    public void setBorderVisible(boolean visible) {
+        this.borderVisible = visible;
+        fireChartChanged();
+    }
+
+    /**
+     * Returns the stroke used to draw the chart border (if visible).
+     *
+     * @return The border stroke.
+     *
+     * @see #setBorderStroke(Stroke)
+     */
+    public Stroke getBorderStroke() {
+        return this.borderStroke;
+    }
+
+    /**
+     * Sets the stroke used to draw the chart border (if visible).
+     *
+     * @param stroke  the stroke.
+     *
+     * @see #getBorderStroke()
+     */
+    public void setBorderStroke(Stroke stroke) {
+        this.borderStroke = stroke;
+        fireChartChanged();
+    }
+
+    /**
+     * Returns the paint used to draw the chart border (if visible).
+     *
+     * @return The border paint.
+     *
+     * @see #setBorderPaint(Paint)
+     */
+    public Paint getBorderPaint() {
+        return this.borderPaint;
+    }
+
+    /**
+     * Sets the paint used to draw the chart border (if visible).
+     *
+     * @param paint  the paint.
+     *
+     * @see #getBorderPaint()
+     */
+    public void setBorderPaint(Paint paint) {
+        this.borderPaint = paint;
+        fireChartChanged();
+    }
+
+    /**
+     * Returns the padding between the chart border and the chart drawing area.
+     *
+     * @return The padding (never {@code null}).
+     *
+     * @see #setPadding(RectangleInsets)
+     */
+    public RectangleInsets getPadding() {
+        return this.padding;
+    }
+
+    /**
+     * Sets the padding between the chart border and the chart drawing area,
+     * and sends a {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param padding  the padding ({@code null} not permitted).
+     *
+     * @see #getPadding()
+     */
+    public void setPadding(RectangleInsets padding) {
+        Args.nullNotPermitted(padding, "padding");
+        this.padding = padding;
+        notifyListeners(new ChartChangeEvent(this));
+    }
+
+    /**
+     * Returns the main chart title.  Very often a chart will have just one
+     * title, so we make this case simple by providing accessor methods for
+     * the main title.  However, multiple titles are supported - see the
+     * {@link #addSubtitle(Title)} method.
+     *
+     * @return The chart title (possibly {@code null}).
+     *
+     * @see #setTitle(TextTitle)
+     */
+    public TextTitle getTitle() {
+        return this.title;
+    }
+
+    /**
+     * Sets the main title for the chart and sends a {@link ChartChangeEvent}
+     * to all registered listeners.  If you do not want a title for the
+     * chart, set it to {@code null}.  If you want more than one title on
+     * a chart, use the {@link #addSubtitle(Title)} method.
+     *
+     * @param title  the title ({@code null} permitted).
+     *
+     * @see #getTitle()
+     */
+    public void setTitle(TextTitle title) {
+        if (this.title != null) {
+            this.title.removeChangeListener(this);
+        }
+        this.title = title;
+        if (title != null) {
+            title.addChangeListener(this);
+        }
+        fireChartChanged();
+    }
+
+    /**
+     * Sets the chart title and sends a {@link ChartChangeEvent} to all
+     * registered listeners.  This is a convenience method that ends up calling
+     * the {@link #setTitle(TextTitle)} method.  If there is an existing title,
+     * its text is updated, otherwise a new title using the default font is
+     * added to the chart.  If {@code text} is {@code null} the chart
+     * title is set to {@code null}.
+     *
+     * @param text  the title text ({@code null} permitted).
+     *
+     * @see #getTitle()
+     */
+    public void setTitle(String text) {
+        if (text != null) {
+            if (this.title == null) {
+                setTitle(new TextTitle(text, JFreeChart.DEFAULT_TITLE_FONT));
+            } else {
+                this.title.setText(text);
+            }
+        } else {
+            setTitle((TextTitle) null);
+        }
+    }
+
+    /**
+     * Adds a legend to the plot and sends a {@link ChartChangeEvent} to all
+     * registered listeners.
+     *
+     * @param legend  the legend ({@code null} not permitted).
+     *
+     * @see #removeLegend()
+     */
+    public void addLegend(LegendTitle legend) {
+        addSubtitle(legend);
+    }
+
+    /**
+     * Returns the legend for the chart, if there is one.  Note that a chart
+     * can have more than one legend - this method returns the first.
+     *
+     * @return The legend (possibly {@code null}).
+     *
+     * @see #getLegend(int)
+     */
+    public LegendTitle getLegend() {
+        return getLegend(0);
+    }
+
+    /**
+     * Returns the nth legend for a chart, or {@code null}.
+     *
+     * @param index  the legend index (zero-based).
+     *
+     * @return The legend (possibly {@code null}).
+     *
+     * @see #addLegend(LegendTitle)
+     */
+    public LegendTitle getLegend(int index) {
+        int seen = 0;
+        for (Title subtitle : this.subtitles) {
+            if (subtitle instanceof LegendTitle) {
+                if (seen == index) {
+                    return (LegendTitle) subtitle;
+                } else {
+                    seen++;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Removes the first legend in the chart and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @see #getLegend()
+     */
+    public void removeLegend() {
+        removeSubtitle(getLegend());
+    }
+
+    /**
+     * Returns a new list containing all the subtitles for the chart.
+     *
+     * @return The subtitle list (possibly empty, but never {@code null}).
+     *
+     * @see #setSubtitles(List)
+     */
+    public List<Title> getSubtitles() {
+        return new ArrayList<>(this.subtitles);
+    }
+
+    /**
+     * Sets the title list for the chart (completely replaces any existing
+     * titles) and sends a {@link ChartChangeEvent} to all registered
+     * listeners.
+     *
+     * @param subtitles  the new list of subtitles ({@code null} not
+     *                   permitted).
+     *
+     * @see #getSubtitles()
+     */
+    public void setSubtitles(List<Title> subtitles) {
+        Args.nullNotPermitted(subtitles, "subtitles");
+        setNotify(false);
+        clearSubtitles();
+        for (Title t : subtitles) {
+            if (t != null) {
+                addSubtitle(t);
+            }
+        }
+        // this fires a ChartChangeEvent
+        setNotify(true);
+    }
+
+    /**
+     * Returns the number of titles for the chart.
+     *
+     * @return The number of titles for the chart.
+     *
+     * @see #getSubtitles()
+     */
+    public int getSubtitleCount() {
+        return this.subtitles.size();
+    }
+
+    /**
+     * Returns a chart subtitle.
+     *
+     * @param index  the index of the chart subtitle (zero based).
+     *
+     * @return A chart subtitle.
+     *
+     * @see #addSubtitle(Title)
+     */
+    public Title getSubtitle(int index) {
+        if ((index < 0) || (index >= getSubtitleCount())) {
+            throw new IllegalArgumentException("Index out of range.");
+        }
+        return this.subtitles.get(index);
+    }
+
+    /**
+     * Adds a chart subtitle, and notifies registered listeners that the chart
+     * has been modified.
+     *
+     * @param subtitle  the subtitle ({@code null} not permitted).
+     *
+     * @see #getSubtitle(int)
+     */
+    public void addSubtitle(Title subtitle) {
+        Args.nullNotPermitted(subtitle, "subtitle");
+        this.subtitles.add(subtitle);
+        subtitle.addChangeListener(this);
+        fireChartChanged();
+    }
+
+    /**
+     * Adds a subtitle at a particular position in the subtitle list, and sends
+     * a {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param index  the index (in the range 0 to {@link #getSubtitleCount()}).
+     * @param subtitle  the subtitle to add ({@code null} not permitted).
+     */
+    public void addSubtitle(int index, Title subtitle) {
+        Args.requireInRange(index, "index", 0, getSubtitleCount());
+        Args.nullNotPermitted(subtitle, "subtitle");
+        this.subtitles.add(index, subtitle);
+        subtitle.addChangeListener(this);
+        fireChartChanged();
+    }
+
+    /**
+     * Clears all subtitles from the chart and sends a {@link ChartChangeEvent}
+     * to all registered listeners.
+     *
+     * @see #addSubtitle(Title)
+     */
+    public void clearSubtitles() {
+        for (Title t : this.subtitles) {
+            t.removeChangeListener(this);
+        }
+        this.subtitles.clear();
+        fireChartChanged();
+    }
+
+    /**
+     * Removes the specified subtitle and sends a {@link ChartChangeEvent} to
+     * all registered listeners.
+     *
+     * @param title  the title.
+     *
+     * @see #addSubtitle(Title)
+     */
+    public void removeSubtitle(Title title) {
+        this.subtitles.remove(title);
+        fireChartChanged();
+    }
+
+    /**
+     * Returns the plot for the chart.  The plot is a class responsible for
+     * coordinating the visual representation of the data, including the axes
+     * (if any).
+     *
+     * @return The plot.
+     */
+    public Plot getPlot() {
         return this.plot;
     }
 
     /**
-     * Sets the plot that the renderer is assigned to.
+     * Returns a flag that indicates whether anti-aliasing is used when
+     * the chart is drawn.
      *
-     * @param plot  the plot ({@code null} permitted).
+     * @return The flag.
+     *
+     * @see #setAntiAlias(boolean)
      */
-    @Override
-    public void setPlot(XYPlot plot) {
-        this.plot = plot;
+    public boolean getAntiAlias() {
+        Object val = this.renderingHints.get(RenderingHints.KEY_ANTIALIASING);
+        return RenderingHints.VALUE_ANTIALIAS_ON.equals(val);
     }
 
     /**
-     * Initialises the renderer and returns a state object that should be
-     * passed to all subsequent calls to the drawItem() method.
+     * Sets a flag that indicates whether anti-aliasing is used when the
+     * chart is drawn.
      * <P>
-     * This method will be called before the first item is rendered, giving the
-     * renderer an opportunity to initialise any state information it wants to
-     * maintain.  The renderer can do nothing if it chooses.
+     * Anti-aliasing usually improves the appearance of charts, but is slower.
+     *
+     * @param flag  the new value of the flag.
+     *
+     * @see #getAntiAlias()
+     */
+    public void setAntiAlias(boolean flag) {
+        Object hint = flag ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF;
+        this.renderingHints.put(RenderingHints.KEY_ANTIALIASING, hint);
+        fireChartChanged();
+    }
+
+    /**
+     * Returns the current value stored in the rendering hints table for
+     * {@link RenderingHints#KEY_TEXT_ANTIALIASING}.
+     *
+     * @return The hint value (possibly {@code null}).
+     *
+     * @see #setTextAntiAlias(Object)
+     */
+    public Object getTextAntiAlias() {
+        return this.renderingHints.get(RenderingHints.KEY_TEXT_ANTIALIASING);
+    }
+
+    /**
+     * Sets the value in the rendering hints table for
+     * {@link RenderingHints#KEY_TEXT_ANTIALIASING} to either
+     * {@link RenderingHints#VALUE_TEXT_ANTIALIAS_ON} or
+     * {@link RenderingHints#VALUE_TEXT_ANTIALIAS_OFF}, then sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param flag  the new value of the flag.
+     *
+     * @see #getTextAntiAlias()
+     * @see #setTextAntiAlias(Object)
+     */
+    public void setTextAntiAlias(boolean flag) {
+        if (flag) {
+            setTextAntiAlias(RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        } else {
+            setTextAntiAlias(RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
+        }
+    }
+
+    /**
+     * Sets the value in the rendering hints table for
+     * {@link RenderingHints#KEY_TEXT_ANTIALIASING} and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param val  the new value ({@code null} permitted).
+     *
+     * @see #getTextAntiAlias()
+     * @see #setTextAntiAlias(boolean)
+     */
+    public void setTextAntiAlias(Object val) {
+        this.renderingHints.put(RenderingHints.KEY_TEXT_ANTIALIASING, val);
+        notifyListeners(new ChartChangeEvent(this));
+    }
+
+    /**
+     * Returns the paint used for the chart background.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setBackgroundPaint(Paint)
+     */
+    public Paint getBackgroundPaint() {
+        return this.backgroundPaint;
+    }
+
+    /**
+     * Sets the paint used to fill the chart background and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getBackgroundPaint()
+     */
+    public void setBackgroundPaint(Paint paint) {
+        if (this.backgroundPaint != null) {
+            if (!this.backgroundPaint.equals(paint)) {
+                this.backgroundPaint = paint;
+                fireChartChanged();
+            }
+        } else {
+            if (paint != null) {
+                this.backgroundPaint = paint;
+                fireChartChanged();
+            }
+        }
+    }
+
+    /**
+     * Returns the background image for the chart, or {@code null} if
+     * there is no image.
+     *
+     * @return The image (possibly {@code null}).
+     *
+     * @see #setBackgroundImage(Image)
+     */
+    public Image getBackgroundImage() {
+        return this.backgroundImage;
+    }
+
+    /**
+     * Sets the background image for the chart and sends a
+     * {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param image  the image ({@code null} permitted).
+     *
+     * @see #getBackgroundImage()
+     */
+    public void setBackgroundImage(Image image) {
+        if (this.backgroundImage != null) {
+            if (!this.backgroundImage.equals(image)) {
+                this.backgroundImage = image;
+                fireChartChanged();
+            }
+        } else {
+            if (image != null) {
+                this.backgroundImage = image;
+                fireChartChanged();
+            }
+        }
+    }
+
+    /**
+     * Returns the background image alignment.
+     *
+     * @return The alignment (never {@code null}).
+     *
+     * @see #setBackgroundImageAlignment(RectangleAlignment)
+     */
+    public RectangleAlignment getBackgroundImageAlignment() {
+        return this.backgroundImageAlignment;
+    }
+
+    /**
+     * Sets the background alignment and sends a change notification to all
+     * registered listeners.
+     *
+     * @param alignment  the alignment ({@code null} not permitted).
+     *
+     * @see #getBackgroundImageAlignment()
+     */
+    public void setBackgroundImageAlignment(RectangleAlignment alignment) {
+        Args.nullNotPermitted(alignment, "alignment");
+        if (this.backgroundImageAlignment != alignment) {
+            this.backgroundImageAlignment = alignment;
+            fireChartChanged();
+        }
+    }
+
+    /**
+     * Returns the alpha-transparency for the chart's background image.
+     *
+     * @return The alpha-transparency.
+     *
+     * @see #setBackgroundImageAlpha(float)
+     */
+    public float getBackgroundImageAlpha() {
+        return this.backgroundImageAlpha;
+    }
+
+    /**
+     * Sets the alpha-transparency for the chart's background image.
+     * Registered listeners are notified that the chart has been changed.
+     *
+     * @param alpha  the alpha value.
+     *
+     * @see #getBackgroundImageAlpha()
+     */
+    public void setBackgroundImageAlpha(float alpha) {
+        if (this.backgroundImageAlpha != alpha) {
+            this.backgroundImageAlpha = alpha;
+            fireChartChanged();
+        }
+    }
+
+    /**
+     * Returns a flag that controls whether change events are sent to
+     * registered listeners.
+     *
+     * @return A boolean.
+     *
+     * @see #setNotify(boolean)
+     */
+    public boolean isNotify() {
+        return this.notify;
+    }
+
+    /**
+     * Sets a flag that controls whether listeners receive
+     * {@link ChartChangeEvent} notifications.
+     *
+     * @param notify  a boolean.
+     *
+     * @see #isNotify()
+     */
+    public void setNotify(boolean notify) {
+        this.notify = notify;
+        // if the flag is being set to true, there may be queued up changes...
+        if (notify) {
+            notifyListeners(new ChartChangeEvent(this));
+        }
+    }
+
+    @Override
+    public void receive(ChartElementVisitor visitor) {
+        this.title.receive(visitor);
+        this.subtitles.forEach(subtitle -> {
+            subtitle.receive(visitor);
+        });
+        this.plot.receive(visitor);
+        visitor.visit(this);
+    }
+
+    /**
+     * Draws the chart on a Java 2D graphics device (such as the screen or a
+     * printer).
+     * <P>
+     * This method is the focus of the entire JFreeChart library.
      *
      * @param g2  the graphics device.
-     * @param dataArea  the area inside the axes.
-     * @param plot  the plot.
-     * @param dataset  the dataset.
-     * @param info  an optional info collection object to return data back to
-     *              the caller.
-     *
-     * @return The renderer state (never {@code null}).
+     * @param area  the area within which the chart should be drawn.
      */
     @Override
-    public XYItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, XYPlot plot, XYDataset dataset, PlotRenderingInfo info) {
-        return new XYItemRendererState(info);
+    public void draw(Graphics2D g2, Rectangle2D area) {
+        draw(g2, area, null, null);
     }
 
     /**
-     * Adds a {@code KEY_BEGIN_ELEMENT} hint to the graphics target.  This
-     * hint is recognised by <b>JFreeSVG</b> (in theory it could be used by
-     * other {@code Graphics2D} implementations also).
+     * Draws the chart on a Java 2D graphics device (such as the screen or a
+     * printer).  This method is the focus of the entire JFreeChart library.
      *
-     * @param g2  the graphics target ({@code null} not permitted).
-     * @param seriesKey  the series key that identifies the element
-     *     ({@code null} not permitted).
-     * @param itemIndex  the item index.
+     * @param g2  the graphics device.
+     * @param area  the area within which the chart should be drawn.
+     * @param info  records info about the drawing (null means collect no info).
      */
-    protected void beginElementGroup(Graphics2D g2, Comparable seriesKey, int itemIndex) {
-        beginElementGroup(g2, new XYItemKey(seriesKey, itemIndex));
+    public void draw(Graphics2D g2, Rectangle2D area, ChartRenderingInfo info) {
+        draw(g2, area, null, info);
     }
 
-    // ITEM LABEL GENERATOR
     /**
-     * Returns the label generator for a data item.  This implementation simply
-     * passes control to the {@link #getSeriesItemLabelGenerator(int)} method.
-     * If, for some reason, you want a different generator for individual
-     * items, you can override this method.
+     * Draws the chart on a Java 2D graphics device (such as the screen or a
+     * printer).
+     * <P>
+     * This method is the focus of the entire JFreeChart library.
      *
-     * @param series  the series index (zero based).
-     * @param item  the item index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
+     * @param g2  the graphics device.
+     * @param chartArea  the area within which the chart should be drawn.
+     * @param anchor  the anchor point (in Java2D space) for the chart
+     *                ({@code null} permitted).
+     * @param info  records info about the drawing (null means collect no info).
      */
-    @Override
-    public XYItemLabelGenerator getItemLabelGenerator(int series, int item) {
-        // otherwise look up the generator table
-        XYItemLabelGenerator generator = this.itemLabelGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultItemLabelGenerator;
+    public void draw(Graphics2D g2, Rectangle2D chartArea, Point2D anchor, ChartRenderingInfo info) {
+        notifyListeners(new ChartProgressEvent(this, this, ChartProgressEventType.DRAWING_STARTED, 0));
+        if (this.elementHinting) {
+            Map<String, String> m = new HashMap<>();
+            if (this.id != null) {
+                m.put("id", this.id);
+            }
+            m.put("ref", "JFREECHART_TOP_LEVEL");
+            g2.setRenderingHint(ChartHints.KEY_BEGIN_ELEMENT, m);
         }
-        return generator;
-    }
-
-    /**
-     * Returns the item label generator for a series.
-     *
-     * @param series  the series index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYItemLabelGenerator getSeriesItemLabelGenerator(int series) {
-        return this.itemLabelGeneratorMap.get(series);
-    }
-
-    /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero based).
-     * @param generator  the generator ({@code null} permitted).
-     */
-    @Override
-    public void setSeriesItemLabelGenerator(int series, XYItemLabelGenerator generator) {
-        this.itemLabelGeneratorMap.put(series, generator);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the default item label generator.
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYItemLabelGenerator getDefaultItemLabelGenerator() {
-        return this.defaultItemLabelGenerator;
-    }
-
-    /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     */
-    @Override
-    public void setDefaultItemLabelGenerator(XYItemLabelGenerator generator) {
-        this.defaultItemLabelGenerator = generator;
-        fireChangeEvent();
-    }
-
-    // TOOL TIP GENERATOR
-    /**
-     * Returns the tool tip generator for a data item.  If, for some reason,
-     * you want a different generator for individual items, you can override
-     * this method.
-     *
-     * @param series  the series index (zero based).
-     * @param item  the item index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYToolTipGenerator getToolTipGenerator(int series, int item) {
-        // otherwise look up the generator table
-        XYToolTipGenerator generator = this.toolTipGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultToolTipGenerator;
+        EntityCollection entities = null;
+        // record the chart area, if info is requested...
+        if (info != null) {
+            info.clear();
+            info.setChartArea(chartArea);
+            entities = info.getEntityCollection();
         }
-        return generator;
+        if (entities != null) {
+            entities.add(new JFreeChartEntity((Rectangle2D) chartArea.clone(), this));
+        }
+        // ensure no drawing occurs outside chart area...
+        Shape savedClip = g2.getClip();
+        g2.clip(chartArea);
+        g2.addRenderingHints(this.renderingHints);
+        // draw the chart background...
+        if (this.backgroundPaint != null) {
+            g2.setPaint(this.backgroundPaint);
+            g2.fill(chartArea);
+        }
+        if (this.backgroundImage != null) {
+            Composite originalComposite = g2.getComposite();
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, this.backgroundImageAlpha));
+            Rectangle2D dest = new Rectangle2D.Double(0.0, 0.0, this.backgroundImage.getWidth(null), this.backgroundImage.getHeight(null));
+            this.backgroundImageAlignment.align(dest, chartArea);
+            g2.drawImage(this.backgroundImage, (int) dest.getX(), (int) dest.getY(), (int) dest.getWidth(), (int) dest.getHeight(), null);
+            g2.setComposite(originalComposite);
+        }
+        if (isBorderVisible()) {
+            Paint paint = getBorderPaint();
+            Stroke stroke = getBorderStroke();
+            if (paint != null && stroke != null) {
+                Rectangle2D borderArea = new Rectangle2D.Double(chartArea.getX(), chartArea.getY(), chartArea.getWidth() - 1.0, chartArea.getHeight() - 1.0);
+                g2.setPaint(paint);
+                g2.setStroke(stroke);
+                g2.draw(borderArea);
+            }
+        }
+        // draw the title and subtitles...
+        Rectangle2D nonTitleArea = new Rectangle2D.Double();
+        nonTitleArea.setRect(chartArea);
+        this.padding.trim(nonTitleArea);
+        if (this.title != null && this.title.isVisible()) {
+            EntityCollection e = drawTitle(this.title, g2, nonTitleArea, (entities != null));
+            if (e != null && entities != null) {
+                entities.addAll(e);
+            }
+        }
+        for (Title currentTitle : this.subtitles) {
+            if (currentTitle.isVisible()) {
+                EntityCollection e = drawTitle(currentTitle, g2, nonTitleArea, (entities != null));
+                if (e != null && entities != null) {
+                    entities.addAll(e);
+                }
+            }
+        }
+        Rectangle2D plotArea = nonTitleArea;
+        // draw the plot (axes and data visualisation)
+        PlotRenderingInfo plotInfo = null;
+        if (info != null) {
+            plotInfo = info.getPlotInfo();
+        }
+        this.plot.draw(g2, plotArea, anchor, null, plotInfo);
+        g2.setClip(savedClip);
+        if (this.elementHinting) {
+            g2.setRenderingHint(ChartHints.KEY_END_ELEMENT, Boolean.TRUE);
+        }
+        notifyListeners(new ChartProgressEvent(this, this, ChartProgressEventType.DRAWING_FINISHED, 100));
     }
 
     /**
-     * Returns the tool tip generator for a series.
+     * Creates a rectangle that is aligned to the frame.
      *
-     * @param series  the series index (zero based).
+     * @param dimensions  the dimensions for the rectangle.
+     * @param frame  the frame to align to.
+     * @param hAlign  the horizontal alignment ({@code null} not permitted).
+     * @param vAlign  the vertical alignment ({@code null} not permitted).
      *
-     * @return The generator (possibly {@code null}).
+     * @return A rectangle.
      */
-    @Override
-    public XYToolTipGenerator getSeriesToolTipGenerator(int series) {
-        return this.toolTipGeneratorMap.get(series);
-    }
-
-    /**
-     * Sets the tool tip generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero based).
-     * @param generator  the generator ({@code null} permitted).
-     */
-    @Override
-    public void setSeriesToolTipGenerator(int series, XYToolTipGenerator generator) {
-        this.toolTipGeneratorMap.put(series, generator);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the default tool tip generator.
-     *
-     * @return The generator (possibly {@code null}).
-     *
-     * @see #setDefaultToolTipGenerator(XYToolTipGenerator)
-     */
-    @Override
-    public XYToolTipGenerator getDefaultToolTipGenerator() {
-        return this.defaultToolTipGenerator;
-    }
-
-    /**
-     * Sets the default tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    @Override
-    public void setDefaultToolTipGenerator(XYToolTipGenerator generator) {
-        this.defaultToolTipGenerator = generator;
-        fireChangeEvent();
-    }
-
-    // URL GENERATOR
-    /**
-     * Returns the URL generator for HTML image maps.
-     *
-     * @return The URL generator (possibly {@code null}).
-     */
-    @Override
-    public XYURLGenerator getURLGenerator() {
-        return this.urlGenerator;
-    }
-
-    /**
-     * Sets the URL generator for HTML image maps and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param urlGenerator  the URL generator ({@code null} permitted).
-     */
-    @Override
-    public void setURLGenerator(XYURLGenerator urlGenerator) {
-        this.urlGenerator = urlGenerator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Adds an annotation and sends a {@link RendererChangeEvent} to all
-     * registered listeners.  The annotation is added to the foreground
-     * layer.
-     *
-     * @param annotation  the annotation ({@code null} not permitted).
-     */
-    @Override
-    public void addAnnotation(XYAnnotation annotation) {
-        // defer argument checking
-        addAnnotation(annotation, Layer.FOREGROUND);
-    }
-
-    /**
-     * Adds an annotation to the specified layer and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param annotation  the annotation ({@code null} not permitted).
-     * @param layer  the layer ({@code null} not permitted).
-     */
-    @Override
-    public void addAnnotation(XYAnnotation annotation, Layer layer) {
-        Args.nullNotPermitted(annotation, "annotation");
-        Args.nullNotPermitted(layer, "layer");
-        switch(layer) {
-            case FOREGROUND:
-                this.foregroundAnnotations.add(annotation);
-                annotation.addChangeListener(this);
-                fireChangeEvent();
+    private Rectangle2D createAlignedRectangle2D(Size2D dimensions, Rectangle2D frame, HorizontalAlignment hAlign, VerticalAlignment vAlign) {
+        Args.nullNotPermitted(hAlign, "hAlign");
+        Args.nullNotPermitted(vAlign, "vAlign");
+        double x = Double.NaN;
+        double y = Double.NaN;
+        switch(hAlign) {
+            case LEFT:
+                x = frame.getX();
                 break;
-            case BACKGROUND:
-                this.backgroundAnnotations.add(annotation);
-                annotation.addChangeListener(this);
-                fireChangeEvent();
+            case CENTER:
+                x = frame.getCenterX() - (dimensions.width / 2.0);
+                break;
+            case RIGHT:
+                x = frame.getMaxX() - dimensions.width;
                 break;
             default:
-                // should never get here
-                throw new RuntimeException("Unknown layer.");
+                throw new IllegalStateException("Unexpected enum value " + hAlign);
         }
-    }
-
-    /**
-     * Removes the specified annotation and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param annotation  the annotation to remove ({@code null} not
-     *                    permitted).
-     *
-     * @return A boolean to indicate whether the annotation was
-     *         successfully removed.
-     */
-    @Override
-    public boolean removeAnnotation(XYAnnotation annotation) {
-        boolean removed = this.foregroundAnnotations.remove(annotation);
-        removed = removed & this.backgroundAnnotations.remove(annotation);
-        annotation.removeChangeListener(this);
-        fireChangeEvent();
-        return removed;
-    }
-
-    /**
-     * Removes all annotations and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     */
-    @Override
-    public void removeAnnotations() {
-        for (XYAnnotation annotation : this.foregroundAnnotations) {
-            annotation.removeChangeListener(this);
+        switch(vAlign) {
+            case TOP:
+                y = frame.getY();
+                break;
+            case CENTER:
+                y = frame.getCenterY() - (dimensions.height / 2.0);
+                break;
+            case BOTTOM:
+                y = frame.getMaxY() - dimensions.height;
+                break;
+            default:
+                throw new IllegalStateException("Unexpected enum value " + hAlign);
         }
-        for (XYAnnotation annotation : this.backgroundAnnotations) {
-            annotation.removeChangeListener(this);
-        }
-        this.foregroundAnnotations.clear();
-        this.backgroundAnnotations.clear();
-        fireChangeEvent();
+        return new Rectangle2D.Double(x, y, dimensions.width, dimensions.height);
     }
 
     /**
-     * Receives notification of a change to an {@link Annotation} added to
-     * this renderer.
+     * Draws a title.  The title should be drawn at the top, bottom, left or
+     * right of the specified area, and the area should be updated to reflect
+     * the amount of space used by the title.
      *
-     * @param event  information about the event (not used here).
+     * @param t  the title ({@code null} not permitted).
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param area  the chart area, excluding any existing titles
+     *              ({@code null} not permitted).
+     * @param entities  a flag that controls whether an entity
+     *                  collection is returned for the title.
+     *
+     * @return An entity collection for the title (possibly {@code null}).
      */
-    @Override
-    public void annotationChanged(AnnotationChangeEvent event) {
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns a collection of the annotations that are assigned to the
-     * renderer.
-     *
-     * @return A collection of annotations (possibly empty but never
-     *     {@code null}).
-     */
-    @Override
-    public Collection<XYAnnotation> getAnnotations() {
-        List<XYAnnotation> result = new ArrayList<>(this.foregroundAnnotations);
-        result.addAll(this.backgroundAnnotations);
-        return result;
-    }
-
-    /**
-     * Returns the legend item label generator.
-     *
-     * @return The label generator (never {@code null}).
-     *
-     * @see #setLegendItemLabelGenerator(XYSeriesLabelGenerator)
-     */
-    @Override
-    public XYSeriesLabelGenerator getLegendItemLabelGenerator() {
-        return this.legendItemLabelGenerator;
-    }
-
-    /**
-     * Sets the legend item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} not permitted).
-     *
-     * @see #getLegendItemLabelGenerator()
-     */
-    @Override
-    public void setLegendItemLabelGenerator(XYSeriesLabelGenerator generator) {
-        Args.nullNotPermitted(generator, "generator");
-        this.legendItemLabelGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend item tool tip generator.
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setLegendItemToolTipGenerator(XYSeriesLabelGenerator)
-     */
-    public XYSeriesLabelGenerator getLegendItemToolTipGenerator() {
-        return this.legendItemToolTipGenerator;
-    }
-
-    /**
-     * Sets the legend item tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemToolTipGenerator()
-     */
-    public void setLegendItemToolTipGenerator(XYSeriesLabelGenerator generator) {
-        this.legendItemToolTipGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend item URL generator.
-     *
-     * @return The URL generator (possibly {@code null}).
-     *
-     * @see #setLegendItemURLGenerator(XYSeriesLabelGenerator)
-     */
-    public XYSeriesLabelGenerator getLegendItemURLGenerator() {
-        return this.legendItemURLGenerator;
-    }
-
-    /**
-     * Sets the legend item URL generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemURLGenerator()
-     */
-    public void setLegendItemURLGenerator(XYSeriesLabelGenerator generator) {
-        this.legendItemURLGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the lower and upper bounds (range) of the x-values in the
-     * specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     *
-     * @see #findRangeBounds(XYDataset)
-     */
-    @Override
-    public Range findDomainBounds(XYDataset dataset) {
-        return findDomainBounds(dataset, false);
-    }
-
-    /**
-     * Returns the lower and upper bounds (range) of the x-values in the
-     * specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param includeInterval  include the interval (if any) for the dataset?
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     */
-    protected Range findDomainBounds(XYDataset dataset, boolean includeInterval) {
-        if (dataset == null) {
+    protected EntityCollection drawTitle(Title t, Graphics2D g2, Rectangle2D area, boolean entities) {
+        Args.nullNotPermitted(t, "t");
+        Args.nullNotPermitted(area, "area");
+        Rectangle2D titleArea;
+        RectangleEdge position = t.getPosition();
+        double ww = area.getWidth();
+        if (ww <= 0.0) {
             return null;
         }
-        if (getDataBoundsIncludesVisibleSeriesOnly()) {
-            List visibleSeriesKeys = new ArrayList();
-            int seriesCount = dataset.getSeriesCount();
-            for (int s = 0; s < seriesCount; s++) {
-                if (isSeriesVisible(s)) {
-                    visibleSeriesKeys.add(dataset.getSeriesKey(s));
-                }
-            }
-            return DatasetUtils.findDomainBounds(dataset, visibleSeriesKeys, includeInterval);
-        }
-        return DatasetUtils.findDomainBounds(dataset, includeInterval);
-    }
-
-    /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     *
-     * @see #findDomainBounds(XYDataset)
-     */
-    @Override
-    public Range findRangeBounds(XYDataset dataset) {
-        return findRangeBounds(dataset, false);
-    }
-
-    /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param includeInterval  include the interval (if any) for the dataset?
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     */
-    protected Range findRangeBounds(XYDataset dataset, boolean includeInterval) {
-        if (dataset == null) {
+        double hh = area.getHeight();
+        if (hh <= 0.0) {
             return null;
         }
-        if (getDataBoundsIncludesVisibleSeriesOnly()) {
-            List visibleSeriesKeys = new ArrayList();
-            int seriesCount = dataset.getSeriesCount();
-            for (int s = 0; s < seriesCount; s++) {
-                if (isSeriesVisible(s)) {
-                    visibleSeriesKeys.add(dataset.getSeriesKey(s));
+        RectangleConstraint constraint = new RectangleConstraint(ww, new Range(0.0, ww), LengthConstraintType.RANGE, hh, new Range(0.0, hh), LengthConstraintType.RANGE);
+        Object retValue = null;
+        BlockParams p = new BlockParams();
+        p.setGenerateEntities(entities);
+        switch(position) {
+            case TOP:
+                {
+                    Size2D size = t.arrange(g2, constraint);
+                    titleArea = createAlignedRectangle2D(size, area, t.getHorizontalAlignment(), VerticalAlignment.TOP);
+                    retValue = t.draw(g2, titleArea, p);
+                    area.setRect(area.getX(), Math.min(area.getY() + size.height, area.getMaxY()), area.getWidth(), Math.max(area.getHeight() - size.height, 0));
+                    break;
                 }
-            }
-            // the bounds should be calculated using just the items within
-            // the current range of the x-axis...if there is one
-            Range xRange = null;
-            XYPlot p = getPlot();
-            if (p != null) {
-                ValueAxis xAxis = null;
-                int index = p.getIndexOf(this);
-                if (index >= 0) {
-                    xAxis = this.plot.getDomainAxisForDataset(index);
+            case BOTTOM:
+                {
+                    Size2D size = t.arrange(g2, constraint);
+                    titleArea = createAlignedRectangle2D(size, area, t.getHorizontalAlignment(), VerticalAlignment.BOTTOM);
+                    retValue = t.draw(g2, titleArea, p);
+                    area.setRect(area.getX(), area.getY(), area.getWidth(), area.getHeight() - size.height);
+                    break;
                 }
-                if (xAxis != null) {
-                    xRange = xAxis.getRange();
+            case RIGHT:
+                {
+                    Size2D size = t.arrange(g2, constraint);
+                    titleArea = createAlignedRectangle2D(size, area, HorizontalAlignment.RIGHT, t.getVerticalAlignment());
+                    retValue = t.draw(g2, titleArea, p);
+                    area.setRect(area.getX(), area.getY(), area.getWidth() - size.width, area.getHeight());
+                    break;
                 }
-            }
-            if (xRange == null) {
-                xRange = new Range(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-            }
-            return DatasetUtils.findRangeBounds(dataset, visibleSeriesKeys, xRange, includeInterval);
+            case LEFT:
+                {
+                    Size2D size = t.arrange(g2, constraint);
+                    titleArea = createAlignedRectangle2D(size, area, HorizontalAlignment.LEFT, t.getVerticalAlignment());
+                    retValue = t.draw(g2, titleArea, p);
+                    area.setRect(area.getX() + size.width, area.getY(), area.getWidth() - size.width, area.getHeight());
+                    break;
+                }
+            default:
+                {
+                    throw new RuntimeException("Unrecognised title position.");
+                }
         }
-        return DatasetUtils.findRangeBounds(dataset, includeInterval);
-    }
-
-    /**
-     * Returns a (possibly empty) collection of legend items for the series
-     * that this renderer is responsible for drawing.
-     *
-     * @return The legend item collection (never {@code null}).
-     */
-    @Override
-    public LegendItemCollection getLegendItems() {
-        if (this.plot == null) {
-            return new LegendItemCollection();
-        }
-        LegendItemCollection result = new LegendItemCollection();
-        int index = this.plot.getIndexOf(this);
-        XYDataset dataset = this.plot.getDataset(index);
-        if (dataset != null) {
-            int seriesCount = dataset.getSeriesCount();
-            for (int i = 0; i < seriesCount; i++) {
-                if (isSeriesVisibleInLegend(i)) {
-                    LegendItem item = getLegendItem(index, i);
-                    if (item != null) {
-                        result.add(item);
-                    }
-                }
-            }
+        EntityCollection result = null;
+        if (retValue instanceof EntityBlockResult) {
+            EntityBlockResult ebr = (EntityBlockResult) retValue;
+            result = ebr.getEntityCollection();
         }
         return result;
     }
 
     /**
-     * Returns a default legend item for the specified series.  Subclasses
-     * should override this method to generate customised items.
+     * Creates and returns a buffered image into which the chart has been drawn.
      *
-     * @param datasetIndex  the dataset index (zero-based).
-     * @param series  the series index (zero-based).
+     * @param width  the width.
+     * @param height  the height.
      *
-     * @return A legend item for the series.
+     * @return A buffered image.
      */
-    @Override
-    public LegendItem getLegendItem(int datasetIndex, int series) {
-        XYPlot xyplot = getPlot();
-        if (xyplot == null) {
-            return null;
-        }
-        XYDataset dataset = xyplot.getDataset(datasetIndex);
-        if (dataset == null) {
-            return null;
-        }
-        String label = this.legendItemLabelGenerator.generateLabel(dataset, series);
-        String description = label;
-        String toolTipText = null;
-        if (getLegendItemToolTipGenerator() != null) {
-            toolTipText = getLegendItemToolTipGenerator().generateLabel(dataset, series);
-        }
-        String urlText = null;
-        if (getLegendItemURLGenerator() != null) {
-            urlText = getLegendItemURLGenerator().generateLabel(dataset, series);
-        }
-        Shape shape = lookupLegendShape(series);
-        Paint paint = lookupSeriesPaint(series);
-        LegendItem item = new LegendItem(label, paint);
-        item.setToolTipText(toolTipText);
-        item.setURLText(urlText);
-        item.setLabelFont(lookupLegendTextFont(series));
-        Paint labelPaint = lookupLegendTextPaint(series);
-        if (labelPaint != null) {
-            item.setLabelPaint(labelPaint);
-        }
-        item.setSeriesKey(dataset.getSeriesKey(series));
-        item.setSeriesIndex(series);
-        item.setDataset(dataset);
-        item.setDatasetIndex(datasetIndex);
-        if (getTreatLegendShapeAsLine()) {
-            item.setLineVisible(true);
-            item.setLine(shape);
-            item.setLinePaint(paint);
-            item.setShapeVisible(false);
-        } else {
-            Paint outlinePaint = lookupSeriesOutlinePaint(series);
-            Stroke outlineStroke = lookupSeriesOutlineStroke(series);
-            item.setOutlinePaint(outlinePaint);
-            item.setOutlineStroke(outlineStroke);
-        }
-        return item;
+    public BufferedImage createBufferedImage(int width, int height) {
+        return createBufferedImage(width, height, null);
     }
 
     /**
-     * Fills a band between two values on the axis.  This can be used to color
-     * bands between the grid lines.
+     * Creates and returns a buffered image into which the chart has been drawn.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the domain axis.
-     * @param dataArea  the data area.
-     * @param start  the start value.
-     * @param end  the end value.
+     * @param width  the width.
+     * @param height  the height.
+     * @param info  carries back chart state information ({@code null}
+     *              permitted).
+     *
+     * @return A buffered image.
      */
-    @Override
-    public void fillDomainGridBand(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double start, double end) {
-        double x1 = axis.valueToJava2D(start, dataArea, plot.getDomainAxisEdge());
-        double x2 = axis.valueToJava2D(end, dataArea, plot.getDomainAxisEdge());
-        Rectangle2D band;
-        if (plot.getOrientation() == PlotOrientation.VERTICAL) {
-            band = new Rectangle2D.Double(Math.min(x1, x2), dataArea.getMinY(), Math.abs(x2 - x1), dataArea.getHeight());
-        } else {
-            band = new Rectangle2D.Double(dataArea.getMinX(), Math.min(x1, x2), dataArea.getWidth(), Math.abs(x2 - x1));
-        }
-        Paint paint = plot.getDomainTickBandPaint();
-        if (paint != null) {
-            g2.setPaint(paint);
-            g2.fill(band);
-        }
+    public BufferedImage createBufferedImage(int width, int height, ChartRenderingInfo info) {
+        return createBufferedImage(width, height, BufferedImage.TYPE_INT_ARGB, info);
     }
 
     /**
-     * Fills a band between two values on the range axis.  This can be used to
-     * color bands between the grid lines.
+     * Creates and returns a buffered image into which the chart has been drawn.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the range axis.
-     * @param dataArea  the data area.
-     * @param start  the start value.
-     * @param end  the end value.
+     * @param width  the width.
+     * @param height  the height.
+     * @param imageType  the image type.
+     * @param info  carries back chart state information ({@code null}
+     *              permitted).
+     *
+     * @return A buffered image.
      */
-    @Override
-    public void fillRangeGridBand(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double start, double end) {
-        double y1 = axis.valueToJava2D(start, dataArea, plot.getRangeAxisEdge());
-        double y2 = axis.valueToJava2D(end, dataArea, plot.getRangeAxisEdge());
-        Rectangle2D band;
-        if (plot.getOrientation() == PlotOrientation.VERTICAL) {
-            band = new Rectangle2D.Double(dataArea.getMinX(), Math.min(y1, y2), dataArea.getWidth(), Math.abs(y2 - y1));
-        } else {
-            band = new Rectangle2D.Double(Math.min(y1, y2), dataArea.getMinY(), Math.abs(y2 - y1), dataArea.getHeight());
-        }
-        Paint paint = plot.getRangeTickBandPaint();
-        if (paint != null) {
-            g2.setPaint(paint);
-            g2.fill(band);
-        }
+    public BufferedImage createBufferedImage(int width, int height, int imageType, ChartRenderingInfo info) {
+        BufferedImage image = new BufferedImage(width, height, imageType);
+        Graphics2D g2 = image.createGraphics();
+        draw(g2, new Rectangle2D.Double(0, 0, width, height), null, info);
+        g2.dispose();
+        return image;
     }
 
     /**
-     * Draws a line perpendicular to the domain axis.
+     * Creates and returns a buffered image into which the chart has been drawn.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value at which the grid line should be drawn.
-     * @param paint  the paint ({@code null} not permitted).
-     * @param stroke  the stroke ({@code null} not permitted).
+     * @param imageWidth  the image width.
+     * @param imageHeight  the image height.
+     * @param drawWidth  the width for drawing the chart (will be scaled to
+     *                   fit image).
+     * @param drawHeight  the height for drawing the chart (will be scaled to
+     *                    fit image).
+     * @param info  optional object for collection chart dimension and entity
+     *              information.
+     *
+     * @return A buffered image.
      */
-    @Override
-    public void drawDomainLine(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke) {
-        Range range = axis.getRange();
-        if (!range.contains(value)) {
-            return;
-        }
-        PlotOrientation orientation = plot.getOrientation();
-        Line2D line = null;
-        double v = axis.valueToJava2D(value, dataArea, plot.getDomainAxisEdge());
-        if (orientation.isHorizontal()) {
-            line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-        } else if (orientation.isVertical()) {
-            line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-        }
-        g2.setPaint(paint);
-        g2.setStroke(stroke);
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        g2.draw(line);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+    public BufferedImage createBufferedImage(int imageWidth, int imageHeight, double drawWidth, double drawHeight, ChartRenderingInfo info) {
+        BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        double scaleX = imageWidth / drawWidth;
+        double scaleY = imageHeight / drawHeight;
+        AffineTransform st = AffineTransform.getScaleInstance(scaleX, scaleY);
+        g2.transform(st);
+        draw(g2, new Rectangle2D.Double(0, 0, drawWidth, drawHeight), null, info);
+        g2.dispose();
+        return image;
     }
 
     /**
-     * Draws a line perpendicular to the range axis.
+     * Handles a 'click' on the chart.  JFreeChart is not a UI component, so
+     * some other object (for example, {@link ChartPanel}) needs to capture
+     * the click event and pass it onto the JFreeChart object.
+     * If you are not using JFreeChart in a client application, then this
+     * method is not required.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value at which the grid line should be drawn.
-     * @param paint  the paint.
-     * @param stroke  the stroke.
+     * @param x  x-coordinate of the click (in Java2D space).
+     * @param y  y-coordinate of the click (in Java2D space).
+     * @param info  contains chart dimension and entity information
+     *              ({@code null} not permitted).
      */
-    @Override
-    public void drawRangeLine(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke) {
-        Range range = axis.getRange();
-        if (!range.contains(value)) {
-            return;
-        }
-        PlotOrientation orientation = plot.getOrientation();
-        Line2D line = null;
-        double v = axis.valueToJava2D(value, dataArea, plot.getRangeAxisEdge());
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-        }
-        g2.setPaint(paint);
-        g2.setStroke(stroke);
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        g2.draw(line);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+    public void handleClick(int x, int y, ChartRenderingInfo info) {
+        // pass the click on to the plot...
+        // rely on the plot to post a plot change event and redraw the chart...
+        this.plot.handleClick(x, y, info.getPlotInfo());
     }
 
     /**
-     * Draws a line on the chart perpendicular to the x-axis to mark
-     * a value or range of values.
+     * Registers an object for notification of changes to the chart.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param domainAxis  the domain axis.
-     * @param marker  the marker line.
-     * @param dataArea  the axis data area.
+     * @param listener  the listener ({@code null} not permitted).
+     *
+     * @see #removeChangeListener(ChartChangeListener)
      */
-    @Override
-    public void drawDomainMarker(Graphics2D g2, XYPlot plot, ValueAxis domainAxis, Marker marker, Rectangle2D dataArea) {
-        if (marker instanceof ValueMarker) {
-            ValueMarker vm = (ValueMarker) marker;
-            double value = vm.getValue();
-            Range range = domainAxis.getRange();
-            if (!range.contains(value)) {
-                return;
-            }
-            double v = domainAxis.valueToJava2D(value, dataArea, plot.getDomainAxisEdge());
-            PlotOrientation orientation = plot.getOrientation();
-            Line2D line = null;
-            switch(orientation) {
-                case HORIZONTAL:
-                    line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-                    break;
-                case VERTICAL:
-                    line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-                    break;
-                default:
-                    throw new IllegalStateException("Unrecognised orientation.");
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            g2.setPaint(marker.getPaint());
-            g2.setStroke(marker.getStroke());
-            g2.draw(line);
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateDomainMarkerTextAnchorPoint(g2, orientation, dataArea, line.getBounds2D(), marker.getLabelOffset(), LengthAdjustmentType.EXPAND, anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        } else if (marker instanceof IntervalMarker) {
-            IntervalMarker im = (IntervalMarker) marker;
-            double start = im.getStartValue();
-            double end = im.getEndValue();
-            Range range = domainAxis.getRange();
-            if (!(range.intersects(start, end))) {
-                return;
-            }
-            double start2d = domainAxis.valueToJava2D(start, dataArea, plot.getDomainAxisEdge());
-            double end2d = domainAxis.valueToJava2D(end, dataArea, plot.getDomainAxisEdge());
-            double low = Math.min(start2d, end2d);
-            double high = Math.max(start2d, end2d);
-            PlotOrientation orientation = plot.getOrientation();
-            Rectangle2D rect = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                // clip top and bottom bounds to data area
-                low = Math.max(low, dataArea.getMinY());
-                high = Math.min(high, dataArea.getMaxY());
-                rect = new Rectangle2D.Double(dataArea.getMinX(), low, dataArea.getWidth(), high - low);
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                // clip left and right bounds to data area
-                low = Math.max(low, dataArea.getMinX());
-                high = Math.min(high, dataArea.getMaxX());
-                rect = new Rectangle2D.Double(low, dataArea.getMinY(), high - low, dataArea.getHeight());
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            Paint p = marker.getPaint();
-            if (p instanceof GradientPaint) {
-                GradientPaint gp = (GradientPaint) p;
-                GradientPaintTransformer t = im.getGradientPaintTransformer();
-                if (t != null) {
-                    gp = t.transform(gp, rect);
-                }
-                g2.setPaint(gp);
-            } else {
-                g2.setPaint(p);
-            }
-            g2.fill(rect);
-            // now draw the outlines, if visible...
-            if (im.getOutlinePaint() != null && im.getOutlineStroke() != null) {
-                if (orientation == PlotOrientation.VERTICAL) {
-                    Line2D line = new Line2D.Double();
-                    double y0 = dataArea.getMinY();
-                    double y1 = dataArea.getMaxY();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(start2d, y0, start2d, y1);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(end2d, y0, end2d, y1);
-                        g2.draw(line);
-                    }
-                } else {
-                    // PlotOrientation.HORIZONTAL
-                    Line2D line = new Line2D.Double();
-                    double x0 = dataArea.getMinX();
-                    double x1 = dataArea.getMaxX();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(x0, start2d, x1, start2d);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(x0, end2d, x1, end2d);
-                        g2.draw(line);
-                    }
+    public void addChangeListener(ChartChangeListener listener) {
+        Args.nullNotPermitted(listener, "listener");
+        this.changeListeners.add(ChartChangeListener.class, listener);
+    }
+
+    /**
+     * Deregisters an object for notification of changes to the chart.
+     *
+     * @param listener  the listener ({@code null} not permitted)
+     *
+     * @see #addChangeListener(ChartChangeListener)
+     */
+    public void removeChangeListener(ChartChangeListener listener) {
+        Args.nullNotPermitted(listener, "listener");
+        this.changeListeners.remove(ChartChangeListener.class, listener);
+    }
+
+    /**
+     * Sends a default {@link ChartChangeEvent} to all registered listeners.
+     * <P>
+     * This method is for convenience only.
+     */
+    public void fireChartChanged() {
+        ChartChangeEvent event = new ChartChangeEvent(this);
+        notifyListeners(event);
+    }
+
+    /**
+     * Sends a {@link ChartChangeEvent} to all registered listeners.
+     *
+     * @param event  information about the event that triggered the
+     *               notification.
+     */
+    protected void notifyListeners(ChartChangeEvent event) {
+        if (this.notify) {
+            Object[] listeners = this.changeListeners.getListenerList();
+            for (int i = listeners.length - 2; i >= 0; i -= 2) {
+                if (listeners[i] == ChartChangeListener.class) {
+                    ((ChartChangeListener) listeners[i + 1]).chartChanged(event);
                 }
             }
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateDomainMarkerTextAnchorPoint(g2, orientation, dataArea, rect, marker.getLabelOffset(), marker.getLabelOffsetType(), anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
         }
     }
 
     /**
-     * Calculates the {@code (x, y)} coordinates for drawing a marker label.
+     * Registers an object for notification of progress events relating to the
+     * chart.
      *
-     * @param g2  the graphics device.
-     * @param orientation  the plot orientation.
-     * @param dataArea  the data area.
-     * @param markerArea  the rectangle surrounding the marker area.
-     * @param markerOffset  the marker label offset.
-     * @param labelOffsetType  the label offset type.
-     * @param anchor  the label anchor.
+     * @param listener  the object being registered.
      *
-     * @return The coordinates for drawing the marker label.
+     * @see #removeProgressListener(ChartProgressListener)
      */
-    protected Point2D calculateDomainMarkerTextAnchorPoint(Graphics2D g2, PlotOrientation orientation, Rectangle2D dataArea, Rectangle2D markerArea, RectangleInsets markerOffset, LengthAdjustmentType labelOffsetType, RectangleAnchor anchor) {
-        Rectangle2D anchorRect = null;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, LengthAdjustmentType.CONTRACT, labelOffsetType);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, labelOffsetType, LengthAdjustmentType.CONTRACT);
-        }
-        return anchor.getAnchorPoint(anchorRect);
+    public void addProgressListener(ChartProgressListener listener) {
+        this.progressListeners.add(ChartProgressListener.class, listener);
     }
 
     /**
-     * Draws a line on the chart perpendicular to the y-axis to mark a value
-     * or range of values.
+     * Deregisters an object for notification of changes to the chart.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param rangeAxis  the range axis.
-     * @param marker  the marker line.
-     * @param dataArea  the axis data area.
+     * @param listener  the object being deregistered.
+     *
+     * @see #addProgressListener(ChartProgressListener)
+     */
+    public void removeProgressListener(ChartProgressListener listener) {
+        this.progressListeners.remove(ChartProgressListener.class, listener);
+    }
+
+    /**
+     * Sends a {@link ChartProgressEvent} to all registered listeners.
+     *
+     * @param event  information about the event that triggered the
+     *               notification.
+     */
+    protected void notifyListeners(ChartProgressEvent event) {
+        Object[] listeners = this.progressListeners.getListenerList();
+        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+            if (listeners[i] == ChartProgressListener.class) {
+                ((ChartProgressListener) listeners[i + 1]).chartProgress(event);
+            }
+        }
+    }
+
+    /**
+     * Receives notification that a chart title has changed, and passes this
+     * on to registered listeners.
+     *
+     * @param event  information about the chart title change.
      */
     @Override
-    public void drawRangeMarker(Graphics2D g2, XYPlot plot, ValueAxis rangeAxis, Marker marker, Rectangle2D dataArea) {
-        if (marker instanceof ValueMarker) {
-            ValueMarker vm = (ValueMarker) marker;
-            double value = vm.getValue();
-            Range range = rangeAxis.getRange();
-            if (!range.contains(value)) {
-                return;
-            }
-            double v = rangeAxis.valueToJava2D(value, dataArea, plot.getRangeAxisEdge());
-            PlotOrientation orientation = plot.getOrientation();
-            Line2D line = null;
-            switch(orientation) {
-                case HORIZONTAL:
-                    line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-                    break;
-                case VERTICAL:
-                    line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-                    break;
-                default:
-                    throw new IllegalStateException("Unrecognised orientation.");
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            g2.setPaint(marker.getPaint());
-            g2.setStroke(marker.getStroke());
-            g2.draw(line);
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateRangeMarkerTextAnchorPoint(g2, orientation, dataArea, line.getBounds2D(), marker.getLabelOffset(), LengthAdjustmentType.EXPAND, anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        } else if (marker instanceof IntervalMarker) {
-            IntervalMarker im = (IntervalMarker) marker;
-            double start = im.getStartValue();
-            double end = im.getEndValue();
-            Range range = rangeAxis.getRange();
-            if (!(range.intersects(start, end))) {
-                return;
-            }
-            double start2d = rangeAxis.valueToJava2D(start, dataArea, plot.getRangeAxisEdge());
-            double end2d = rangeAxis.valueToJava2D(end, dataArea, plot.getRangeAxisEdge());
-            double low = Math.min(start2d, end2d);
-            double high = Math.max(start2d, end2d);
-            PlotOrientation orientation = plot.getOrientation();
-            Rectangle2D rect = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                // clip left and right bounds to data area
-                low = Math.max(low, dataArea.getMinX());
-                high = Math.min(high, dataArea.getMaxX());
-                rect = new Rectangle2D.Double(low, dataArea.getMinY(), high - low, dataArea.getHeight());
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                // clip top and bottom bounds to data area
-                low = Math.max(low, dataArea.getMinY());
-                high = Math.min(high, dataArea.getMaxY());
-                rect = new Rectangle2D.Double(dataArea.getMinX(), low, dataArea.getWidth(), high - low);
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            Paint p = marker.getPaint();
-            if (p instanceof GradientPaint) {
-                GradientPaint gp = (GradientPaint) p;
-                GradientPaintTransformer t = im.getGradientPaintTransformer();
-                if (t != null) {
-                    gp = t.transform(gp, rect);
-                }
-                g2.setPaint(gp);
-            } else {
-                g2.setPaint(p);
-            }
-            g2.fill(rect);
-            // now draw the outlines, if visible...
-            if (im.getOutlinePaint() != null && im.getOutlineStroke() != null) {
-                if (orientation == PlotOrientation.VERTICAL) {
-                    Line2D line = new Line2D.Double();
-                    double x0 = dataArea.getMinX();
-                    double x1 = dataArea.getMaxX();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(x0, start2d, x1, start2d);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(x0, end2d, x1, end2d);
-                        g2.draw(line);
-                    }
-                } else {
-                    // PlotOrientation.HORIZONTAL
-                    Line2D line = new Line2D.Double();
-                    double y0 = dataArea.getMinY();
-                    double y1 = dataArea.getMaxY();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(start2d, y0, start2d, y1);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(end2d, y0, end2d, y1);
-                        g2.draw(line);
-                    }
-                }
-            }
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateRangeMarkerTextAnchorPoint(g2, orientation, dataArea, rect, marker.getLabelOffset(), marker.getLabelOffsetType(), anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        }
+    public void titleChanged(TitleChangeEvent event) {
+        event.setChart(this);
+        notifyListeners(event);
     }
 
     /**
-     * Calculates the (x, y) coordinates for drawing a marker label.
+     * Receives notification that the plot has changed, and passes this on to
+     * registered listeners.
      *
-     * @param g2  the graphics device.
-     * @param orientation  the plot orientation.
-     * @param dataArea  the data area.
-     * @param markerArea  the marker area.
-     * @param markerOffset  the marker offset.
-     * @param labelOffsetForRange  ??
-     * @param anchor  the label anchor.
-     *
-     * @return The coordinates for drawing the marker label.
-     */
-    private Point2D calculateRangeMarkerTextAnchorPoint(Graphics2D g2, PlotOrientation orientation, Rectangle2D dataArea, Rectangle2D markerArea, RectangleInsets markerOffset, LengthAdjustmentType labelOffsetForRange, RectangleAnchor anchor) {
-        Rectangle2D anchorRect = null;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, labelOffsetForRange, LengthAdjustmentType.CONTRACT);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, LengthAdjustmentType.CONTRACT, labelOffsetForRange);
-        }
-        return anchor.getAnchorPoint(anchorRect);
-    }
-
-    /**
-     * Returns a clone of the renderer.
-     *
-     * @return A clone.
-     *
-     * @throws CloneNotSupportedException if the renderer does not support
-     *         cloning.
+     * @param event  information about the plot change.
      */
     @Override
-    protected Object clone() throws CloneNotSupportedException {
-        AbstractXYItemRenderer clone = (AbstractXYItemRenderer) super.clone();
-        // 'plot' : just retain reference, not a deep copy
-        clone.itemLabelGeneratorMap = CloneUtils.cloneMapValues(this.itemLabelGeneratorMap);
-        clone.defaultItemLabelGenerator = CloneUtils.clone(this.defaultItemLabelGenerator);
-        clone.toolTipGeneratorMap = CloneUtils.cloneMapValues(this.toolTipGeneratorMap);
-        clone.defaultToolTipGenerator = CloneUtils.clone(this.defaultToolTipGenerator);
-        clone.legendItemLabelGenerator = CloneUtils.clone(this.legendItemLabelGenerator);
-        clone.legendItemToolTipGenerator = CloneUtils.clone(this.legendItemToolTipGenerator);
-        clone.legendItemURLGenerator = CloneUtils.clone(this.legendItemURLGenerator);
-        clone.foregroundAnnotations = CloneUtils.cloneList(this.foregroundAnnotations);
-        clone.backgroundAnnotations = CloneUtils.cloneList(this.backgroundAnnotations);
-        return clone;
+    public void plotChanged(PlotChangeEvent event) {
+        event.setChart(this);
+        notifyListeners(event);
     }
 
     /**
-     * Tests this renderer for equality with another object.
+     * Tests this chart for equality with another object.
      *
      * @param obj  the object ({@code null} permitted).
      *
-     * @return {@code true} or {@code false}.
+     * @return A boolean.
      */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof AbstractXYItemRenderer)) {
+        if (!(obj instanceof JFreeChart)) {
             return false;
         }
-        AbstractXYItemRenderer that = (AbstractXYItemRenderer) obj;
-        if (!this.itemLabelGeneratorMap.equals(that.itemLabelGeneratorMap)) {
+        JFreeChart that = (JFreeChart) obj;
+        if (!this.renderingHints.equals(that.renderingHints)) {
             return false;
         }
-        if (!Objects.equals(this.defaultItemLabelGenerator, that.defaultItemLabelGenerator)) {
+        if (this.borderVisible != that.borderVisible) {
             return false;
         }
-        if (!this.toolTipGeneratorMap.equals(that.toolTipGeneratorMap)) {
+        if (!Objects.equals(this.borderStroke, that.borderStroke)) {
             return false;
         }
-        if (!Objects.equals(this.defaultToolTipGenerator, that.defaultToolTipGenerator)) {
+        if (!PaintUtils.equal(this.borderPaint, that.borderPaint)) {
             return false;
         }
-        if (!Objects.equals(this.urlGenerator, that.urlGenerator)) {
+        if (!this.padding.equals(that.padding)) {
             return false;
         }
-        if (!this.foregroundAnnotations.equals(that.foregroundAnnotations)) {
+        if (!Objects.equals(this.title, that.title)) {
             return false;
         }
-        if (!this.backgroundAnnotations.equals(that.backgroundAnnotations)) {
+        if (!Objects.equals(this.subtitles, that.subtitles)) {
             return false;
         }
-        if (!Objects.equals(this.legendItemLabelGenerator, that.legendItemLabelGenerator)) {
+        if (!Objects.equals(this.plot, that.plot)) {
             return false;
         }
-        if (!Objects.equals(this.legendItemToolTipGenerator, that.legendItemToolTipGenerator)) {
+        if (!PaintUtils.equal(this.backgroundPaint, that.backgroundPaint)) {
             return false;
         }
-        if (!Objects.equals(this.legendItemURLGenerator, that.legendItemURLGenerator)) {
+        if (!Objects.equals(this.backgroundImage, that.backgroundImage)) {
             return false;
         }
-        return super.equals(obj);
+        if (this.backgroundImageAlignment != that.backgroundImageAlignment) {
+            return false;
+        }
+        if (this.backgroundImageAlpha != that.backgroundImageAlpha) {
+            return false;
+        }
+        if (this.notify != that.notify) {
+            return false;
+        }
+        return true;
     }
 
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + itemLabelGeneratorMap.hashCode();
-        result = 31 * result + (defaultItemLabelGenerator != null ? defaultItemLabelGenerator.hashCode() : 0);
-        result = 31 * result + toolTipGeneratorMap.hashCode();
-        result = 31 * result + (defaultToolTipGenerator != null ? defaultToolTipGenerator.hashCode() : 0);
-        result = 31 * result + (urlGenerator != null ? urlGenerator.hashCode() : 0);
-        result = 31 * result + (legendItemLabelGenerator != null ? legendItemLabelGenerator.hashCode() : 0);
-        result = 31 * result + (legendItemToolTipGenerator != null ? legendItemToolTipGenerator.hashCode() : 0);
-        result = 31 * result + (legendItemURLGenerator != null ? legendItemURLGenerator.hashCode() : 0);
-        return result;
+        int hash = 7;
+        hash = 59 * hash + Objects.hashCode(this.renderingHints);
+        hash = 59 * hash + (this.borderVisible ? 1 : 0);
+        hash = 59 * hash + Objects.hashCode(this.borderStroke);
+        hash = 59 * hash + Objects.hashCode(this.borderPaint);
+        hash = 59 * hash + Objects.hashCode(this.padding);
+        hash = 59 * hash + Objects.hashCode(this.title);
+        hash = 59 * hash + Objects.hashCode(this.subtitles);
+        hash = 59 * hash + Objects.hashCode(this.plot);
+        hash = 59 * hash + Objects.hashCode(this.backgroundPaint);
+        hash = 59 * hash + Objects.hashCode(this.backgroundImage);
+        hash = 59 * hash + Objects.hashCode(this.backgroundImageAlignment);
+        hash = 59 * hash + Float.floatToIntBits(this.backgroundImageAlpha);
+        hash = 59 * hash + (this.notify ? 1 : 0);
+        return hash;
     }
 
     /**
-     * Returns the drawing supplier from the plot.
+     * Provides serialization support.
      *
-     * @return The drawing supplier (possibly {@code null}).
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writeStroke(this.borderStroke, stream);
+        SerialUtils.writePaint(this.borderPaint, stream);
+        SerialUtils.writePaint(this.backgroundPaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.borderStroke = SerialUtils.readStroke(stream);
+        this.borderPaint = SerialUtils.readPaint(stream);
+        this.backgroundPaint = SerialUtils.readPaint(stream);
+        this.progressListeners = new EventListenerList();
+        this.changeListeners = new EventListenerList();
+        this.renderingHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        this.renderingHints.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+        // register as a listener with sub-components...
+        if (this.title != null) {
+            this.title.addChangeListener(this);
+        }
+        for (int i = 0; i < getSubtitleCount(); i++) {
+            getSubtitle(i).addChangeListener(this);
+        }
+        this.plot.addChangeListener(this);
+    }
+
+    /**
+     * Clones the object, and takes care of listeners.
+     * Note: caller shall register its own listeners on cloned graph.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if the chart is not cloneable.
      */
     @Override
-    public DrawingSupplier getDrawingSupplier() {
-        DrawingSupplier result = null;
-        XYPlot p = getPlot();
-        if (p != null) {
-            result = p.getDrawingSupplier();
+    public Object clone() throws CloneNotSupportedException {
+        JFreeChart chart = (JFreeChart) super.clone();
+        chart.renderingHints = (RenderingHints) this.renderingHints.clone();
+        // private boolean borderVisible;
+        // private transient Stroke borderStroke;
+        // private transient Paint borderPaint;
+        if (this.title != null) {
+            chart.title = (TextTitle) this.title.clone();
+            chart.title.addChangeListener(chart);
         }
-        return result;
-    }
-
-    /**
-     * Considers the current (x, y) coordinate and updates the crosshair point
-     * if it meets the criteria (usually means the (x, y) coordinate is the
-     * closest to the anchor point so far).
-     *
-     * @param crosshairState  the crosshair state ({@code null} permitted,
-     *                        but the method does nothing in that case).
-     * @param x  the x-value (in data space).
-     * @param y  the y-value (in data space).
-     * @param datasetIndex  the index of the dataset for the point.
-     * @param transX  the x-value translated to Java2D space.
-     * @param transY  the y-value translated to Java2D space.
-     * @param orientation  the plot orientation ({@code null} not permitted).
-     */
-    protected void updateCrosshairValues(CrosshairState crosshairState, double x, double y, int datasetIndex, double transX, double transY, PlotOrientation orientation) {
-        Args.nullNotPermitted(orientation, "orientation");
-        if (crosshairState != null) {
-            // do we need to update the crosshair values?
-            if (this.plot.isDomainCrosshairLockedOnData()) {
-                if (this.plot.isRangeCrosshairLockedOnData()) {
-                    // both axes
-                    crosshairState.updateCrosshairPoint(x, y, datasetIndex, transX, transY, orientation);
-                } else {
-                    // just the domain axis...
-                    crosshairState.updateCrosshairX(x, transX, datasetIndex);
-                }
-            } else {
-                if (this.plot.isRangeCrosshairLockedOnData()) {
-                    // just the range axis...
-                    crosshairState.updateCrosshairY(y, transY, datasetIndex);
-                }
-            }
+        chart.subtitles = new ArrayList<>();
+        for (int i = 0; i < getSubtitleCount(); i++) {
+            Title subtitle = (Title) getSubtitle(i).clone();
+            chart.subtitles.add(subtitle);
+            subtitle.addChangeListener(chart);
         }
-    }
-
-    /**
-     * Draws an item label.
-     *
-     * @param g2  the graphics device.
-     * @param orientation  the orientation.
-     * @param dataset  the dataset.
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
-     * @param x  the x coordinate (in Java2D space).
-     * @param y  the y coordinate (in Java2D space).
-     * @param negative  indicates a negative value (which affects the item
-     *                  label position).
-     */
-    protected void drawItemLabel(Graphics2D g2, PlotOrientation orientation, XYDataset dataset, int series, int item, double x, double y, boolean negative) {
-        XYItemLabelGenerator generator = getItemLabelGenerator(series, item);
-        if (generator != null) {
-            Font labelFont = getItemLabelFont(series, item);
-            Paint paint = getItemLabelPaint(series, item);
-            g2.setFont(labelFont);
-            g2.setPaint(paint);
-            String label = generator.generateLabel(dataset, series, item);
-            // get the label position..
-            ItemLabelPosition position;
-            if (!negative) {
-                position = getPositiveItemLabelPosition(series, item);
-            } else {
-                position = getNegativeItemLabelPosition(series, item);
-            }
-            // work out the label anchor point...
-            Point2D anchorPoint = calculateLabelAnchorPoint(position.getItemLabelAnchor(), x, y, orientation);
-            TextUtils.drawRotatedString(label, g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getTextAnchor(), position.getAngle(), position.getRotationAnchor());
+        if (this.plot != null) {
+            chart.plot = (Plot) this.plot.clone();
+            chart.plot.addChangeListener(chart);
         }
-    }
-
-    /**
-     * Draws all the annotations for the specified layer.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the data area.
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param layer  the layer ({@code null} not permitted).
-     * @param info  the plot rendering info.
-     */
-    @Override
-    public void drawAnnotations(Graphics2D g2, Rectangle2D dataArea, ValueAxis domainAxis, ValueAxis rangeAxis, Layer layer, PlotRenderingInfo info) {
-        Args.nullNotPermitted(layer, "layer");
-        List<XYAnnotation> toDraw = new ArrayList<>();
-        switch(layer) {
-            case FOREGROUND:
-                toDraw.addAll(this.foregroundAnnotations);
-                break;
-            case BACKGROUND:
-                toDraw.addAll(this.backgroundAnnotations);
-                break;
-            default:
-                // should not get here
-                throw new RuntimeException("Unknown layer.");
-        }
-        int index = this.plot.getIndexOf(this);
-        for (XYAnnotation annotation : toDraw) {
-            annotation.draw(g2, this.plot, dataArea, domainAxis, rangeAxis, index, info);
-        }
-    }
-
-    /**
-     * Adds an entity to the collection.  Note the the {@code entityX} and
-     * {@code entityY} coordinates are in Java2D space, should already be
-     * adjusted for the plot orientation, and will only be used if
-     * {@code hotspot} is {@code null}.
-     *
-     * @param entities  the entity collection being populated.
-     * @param hotspot  the entity area (if {@code null} a default will be
-     *              used).
-     * @param dataset  the dataset.
-     * @param series  the series.
-     * @param item  the item.
-     * @param entityX  the entity x-coordinate (in Java2D space, only used if
-     *         {@code hotspot} is {@code null}).
-     * @param entityY  the entity y-coordinate (in Java2D space, only used if
-     *         {@code hotspot} is {@code null}).
-     */
-    protected void addEntity(EntityCollection entities, Shape hotspot, XYDataset dataset, int series, int item, double entityX, double entityY) {
-        if (!getItemCreateEntity(series, item)) {
-            return;
-        }
-        // if not hotspot is provided, we create a default based on the
-        // provided data coordinates (which are already in Java2D space)
-        if (hotspot == null) {
-            double r = getDefaultEntityRadius();
-            double w = r * 2;
-            hotspot = new Ellipse2D.Double(entityX - r, entityY - r, w, w);
-        }
-        String tip = null;
-        XYToolTipGenerator generator = getToolTipGenerator(series, item);
-        if (generator != null) {
-            tip = generator.generateToolTip(dataset, series, item);
-        }
-        String url = null;
-        if (getURLGenerator() != null) {
-            url = getURLGenerator().generateURL(dataset, series, item);
-        }
-        XYItemEntity entity = new XYItemEntity(hotspot, dataset, series, item, tip, url);
-        entities.add(entity);
-    }
-
-    /**
-     * Utility method delegating to {@link GeneralPath#moveTo} taking double as
-     * parameters.
-     *
-     * @param hotspot  the region under construction ({@code null} not
-     *           permitted);
-     * @param x  the x coordinate;
-     * @param y  the y coordinate;
-     */
-    protected static void moveTo(GeneralPath hotspot, double x, double y) {
-        hotspot.moveTo((float) x, (float) y);
-    }
-
-    /**
-     * Utility method delegating to {@link GeneralPath#lineTo} taking double as
-     * parameters.
-     *
-     * @param hotspot  the region under construction ({@code null} not
-     *           permitted);
-     * @param x  the x coordinate;
-     * @param y  the y coordinate;
-     */
-    protected static void lineTo(GeneralPath hotspot, double x, double y) {
-        hotspot.lineTo((float) x, (float) y);
+        chart.progressListeners = new EventListenerList();
+        chart.changeListeners = new EventListenerList();
+        return chart;
     }
 }
 /* ======================================================
@@ -6570,71 +6668,729 @@ public abstract class AbstractXYItemRenderer extends AbstractRenderer implements
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ------------------------
- * RendererChangeEvent.java
- * ------------------------
- * (C) Copyright 2003-present, by David Gilbert.
+ * ------------------
+ * AbstractBlock.java
+ * ------------------
+ * (C) Copyright 2004-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
  *
  */
 /**
- * An event that can be forwarded to any {@link RendererChangeListener} to
- * signal a change to a renderer.
+ * A convenience class for creating new classes that implement
+ * the {@link Block} interface.
  */
-class RendererChangeEvent extends ChartChangeEvent {
+public class AbstractBlock implements Cloneable, Serializable {
 
     /**
-     * The renderer that generated the event.
+     * For serialization.
      */
-    private final Object renderer;
+    private static final long serialVersionUID = 7689852412141274563L;
 
     /**
-     * A flag that indicates whether this event relates to a change in the
-     * series visibility.  If so, the receiver (if it is a plot) may want to
-     * update the axis bounds.
+     * The id for the block.
      */
-    private final boolean seriesVisibilityChanged;
+    private String id;
 
     /**
-     * Creates a new event.
-     *
-     * @param renderer  the renderer that generated the event.
+     * The margin around the outside of the block.
      */
-    public RendererChangeEvent(Object renderer) {
-        this(renderer, false);
+    private RectangleInsets margin;
+
+    /**
+     * The frame (or border) for the block.
+     */
+    private BlockFrame frame;
+
+    /**
+     * The padding between the block content and the border.
+     */
+    private RectangleInsets padding;
+
+    /**
+     * The natural width of the block (may be overridden if there are
+     * constraints in sizing).
+     */
+    private double width;
+
+    /**
+     * The natural height of the block (may be overridden if there are
+     * constraints in sizing).
+     */
+    private double height;
+
+    /**
+     * The current bounds for the block (position of the block in Java2D space).
+     */
+    private transient Rectangle2D bounds;
+
+    /**
+     * Creates a new block.
+     */
+    protected AbstractBlock() {
+        this.id = null;
+        this.width = 0.0;
+        this.height = 0.0;
+        this.bounds = new Rectangle2D.Float();
+        this.margin = RectangleInsets.ZERO_INSETS;
+        this.frame = BlockBorder.NONE;
+        this.padding = RectangleInsets.ZERO_INSETS;
     }
 
     /**
-     * Creates a new event.
+     * Returns the id.
      *
-     * @param renderer  the renderer that generated the event.
-     * @param seriesVisibilityChanged  a flag that indicates whether
-     *         the event relates to a change in the series visibility flags.
+     * @return The id (possibly {@code null}).
+     *
+     * @see #setID(String)
      */
-    public RendererChangeEvent(Object renderer, boolean seriesVisibilityChanged) {
-        super(renderer);
-        this.renderer = renderer;
-        this.seriesVisibilityChanged = seriesVisibilityChanged;
+    public String getID() {
+        return this.id;
     }
 
     /**
-     * Returns the renderer that generated the event.
+     * Sets the id for the block.
      *
-     * @return The renderer that generated the event.
+     * @param id  the id ({@code null} permitted).
+     *
+     * @see #getID()
      */
-    public Object getRenderer() {
-        return this.renderer;
+    public void setID(String id) {
+        this.id = id;
     }
 
     /**
-     * Returns the flag that indicates whether the event relates to
-     * a change in series visibility.
+     * Returns the natural width of the block, if this is known in advance.
+     * The actual width of the block may be overridden if layout constraints
+     * make this necessary.
+     *
+     * @return The width.
+     *
+     * @see #setWidth(double)
+     */
+    public double getWidth() {
+        return this.width;
+    }
+
+    /**
+     * Sets the natural width of the block, if this is known in advance.
+     *
+     * @param width  the width (in Java2D units)
+     *
+     * @see #getWidth()
+     */
+    public void setWidth(double width) {
+        this.width = width;
+    }
+
+    /**
+     * Returns the natural height of the block, if this is known in advance.
+     * The actual height of the block may be overridden if layout constraints
+     * make this necessary.
+     *
+     * @return The height.
+     *
+     * @see #setHeight(double)
+     */
+    public double getHeight() {
+        return this.height;
+    }
+
+    /**
+     * Sets the natural width of the block, if this is known in advance.
+     *
+     * @param height  the width (in Java2D units)
+     *
+     * @see #getHeight()
+     */
+    public void setHeight(double height) {
+        this.height = height;
+    }
+
+    /**
+     * Returns the margin.
+     *
+     * @return The margin (never {@code null}).
+     *
+     * @see #getMargin()
+     */
+    public RectangleInsets getMargin() {
+        return this.margin;
+    }
+
+    /**
+     * Sets the margin (use {@link RectangleInsets#ZERO_INSETS} for no
+     * padding).
+     *
+     * @param margin  the margin ({@code null} not permitted).
+     *
+     * @see #getMargin()
+     */
+    public void setMargin(RectangleInsets margin) {
+        Args.nullNotPermitted(margin, "margin");
+        this.margin = margin;
+    }
+
+    /**
+     * Sets the margin.
+     *
+     * @param top  the top margin.
+     * @param left  the left margin.
+     * @param bottom  the bottom margin.
+     * @param right  the right margin.
+     *
+     * @see #getMargin()
+     */
+    public void setMargin(double top, double left, double bottom, double right) {
+        setMargin(new RectangleInsets(top, left, bottom, right));
+    }
+
+    /**
+     * Sets a black border with the specified line widths.
+     *
+     * @param top  the top border line width.
+     * @param left  the left border line width.
+     * @param bottom  the bottom border line width.
+     * @param right  the right border line width.
+     */
+    public void setBorder(double top, double left, double bottom, double right) {
+        setFrame(new BlockBorder(top, left, bottom, right));
+    }
+
+    /**
+     * Returns the current frame (border).
+     *
+     * @return The frame.
+     *
+     * @see #setFrame(BlockFrame)
+     */
+    public BlockFrame getFrame() {
+        return this.frame;
+    }
+
+    /**
+     * Sets the frame (or border).
+     *
+     * @param frame  the frame ({@code null} not permitted).
+     *
+     * @see #getFrame()
+     */
+    public void setFrame(BlockFrame frame) {
+        Args.nullNotPermitted(frame, "frame");
+        this.frame = frame;
+    }
+
+    /**
+     * Returns the padding.
+     *
+     * @return The padding (never {@code null}).
+     *
+     * @see #setPadding(RectangleInsets)
+     */
+    public RectangleInsets getPadding() {
+        return this.padding;
+    }
+
+    /**
+     * Sets the padding (use {@link RectangleInsets#ZERO_INSETS} for no
+     * padding).
+     *
+     * @param padding  the padding ({@code null} not permitted).
+     *
+     * @see #getPadding()
+     */
+    public void setPadding(RectangleInsets padding) {
+        Args.nullNotPermitted(padding, "padding");
+        this.padding = padding;
+    }
+
+    /**
+     * Sets the padding.
+     *
+     * @param top  the top padding.
+     * @param left  the left padding.
+     * @param bottom  the bottom padding.
+     * @param right  the right padding.
+     */
+    public void setPadding(double top, double left, double bottom, double right) {
+        setPadding(new RectangleInsets(top, left, bottom, right));
+    }
+
+    /**
+     * Returns the x-offset for the content within the block.
+     *
+     * @return The x-offset.
+     *
+     * @see #getContentYOffset()
+     */
+    public double getContentXOffset() {
+        return this.margin.getLeft() + this.frame.getInsets().getLeft() + this.padding.getLeft();
+    }
+
+    /**
+     * Returns the y-offset for the content within the block.
+     *
+     * @return The y-offset.
+     *
+     * @see #getContentXOffset()
+     */
+    public double getContentYOffset() {
+        return this.margin.getTop() + this.frame.getInsets().getTop() + this.padding.getTop();
+    }
+
+    /**
+     * Arranges the contents of the block, with no constraints, and returns
+     * the block size.
+     *
+     * @param g2  the graphics device.
+     *
+     * @return The block size (in Java2D units, never {@code null}).
+     */
+    public Size2D arrange(Graphics2D g2) {
+        return arrange(g2, RectangleConstraint.NONE);
+    }
+
+    /**
+     * Arranges the contents of the block, within the given constraints, and
+     * returns the block size.
+     *
+     * @param g2  the graphics device.
+     * @param constraint  the constraint ({@code null} not permitted).
+     *
+     * @return The block size (in Java2D units, never {@code null}).
+     */
+    public Size2D arrange(Graphics2D g2, RectangleConstraint constraint) {
+        Size2D base = new Size2D(getWidth(), getHeight());
+        return constraint.calculateConstrainedSize(base);
+    }
+
+    /**
+     * Returns the current bounds of the block.
+     *
+     * @return The bounds.
+     *
+     * @see #setBounds(Rectangle2D)
+     */
+    public Rectangle2D getBounds() {
+        return this.bounds;
+    }
+
+    /**
+     * Sets the bounds of the block.
+     *
+     * @param bounds  the bounds ({@code null} not permitted).
+     *
+     * @see #getBounds()
+     */
+    public void setBounds(Rectangle2D bounds) {
+        Args.nullNotPermitted(bounds, "bounds");
+        this.bounds = bounds;
+    }
+
+    /**
+     * Calculate the width available for content after subtracting
+     * the margin, border and padding space from the specified fixed
+     * width.
+     *
+     * @param fixedWidth  the fixed width.
+     *
+     * @return The available space.
+     *
+     * @see #trimToContentHeight(double)
+     */
+    protected double trimToContentWidth(double fixedWidth) {
+        double result = this.margin.trimWidth(fixedWidth);
+        result = this.frame.getInsets().trimWidth(result);
+        result = this.padding.trimWidth(result);
+        return Math.max(result, 0.0);
+    }
+
+    /**
+     * Calculate the height available for content after subtracting
+     * the margin, border and padding space from the specified fixed
+     * height.
+     *
+     * @param fixedHeight  the fixed height.
+     *
+     * @return The available space.
+     *
+     * @see #trimToContentWidth(double)
+     */
+    protected double trimToContentHeight(double fixedHeight) {
+        double result = this.margin.trimHeight(fixedHeight);
+        result = this.frame.getInsets().trimHeight(result);
+        result = this.padding.trimHeight(result);
+        return Math.max(result, 0.0);
+    }
+
+    /**
+     * Returns a constraint for the content of this block that will result in
+     * the bounds of the block matching the specified constraint.
+     *
+     * @param c  the outer constraint ({@code null} not permitted).
+     *
+     * @return The content constraint.
+     */
+    protected RectangleConstraint toContentConstraint(RectangleConstraint c) {
+        Args.nullNotPermitted(c, "c");
+        if (c.equals(RectangleConstraint.NONE)) {
+            return c;
+        }
+        double w = c.getWidth();
+        Range wr = c.getWidthRange();
+        double h = c.getHeight();
+        Range hr = c.getHeightRange();
+        double ww = trimToContentWidth(w);
+        double hh = trimToContentHeight(h);
+        Range wwr = trimToContentWidth(wr);
+        Range hhr = trimToContentHeight(hr);
+        return new RectangleConstraint(ww, wwr, c.getWidthConstraintType(), hh, hhr, c.getHeightConstraintType());
+    }
+
+    private Range trimToContentWidth(Range r) {
+        if (r == null) {
+            return null;
+        }
+        double lowerBound = 0.0;
+        double upperBound = Double.POSITIVE_INFINITY;
+        if (r.getLowerBound() > 0.0) {
+            lowerBound = trimToContentWidth(r.getLowerBound());
+        }
+        if (r.getUpperBound() < Double.POSITIVE_INFINITY) {
+            upperBound = trimToContentWidth(r.getUpperBound());
+        }
+        return new Range(lowerBound, upperBound);
+    }
+
+    private Range trimToContentHeight(Range r) {
+        if (r == null) {
+            return null;
+        }
+        double lowerBound = 0.0;
+        double upperBound = Double.POSITIVE_INFINITY;
+        if (r.getLowerBound() > 0.0) {
+            lowerBound = trimToContentHeight(r.getLowerBound());
+        }
+        if (r.getUpperBound() < Double.POSITIVE_INFINITY) {
+            upperBound = trimToContentHeight(r.getUpperBound());
+        }
+        return new Range(lowerBound, upperBound);
+    }
+
+    /**
+     * Adds the margin, border and padding to the specified content width.
+     *
+     * @param contentWidth  the content width.
+     *
+     * @return The adjusted width.
+     */
+    protected double calculateTotalWidth(double contentWidth) {
+        double result = contentWidth;
+        result = this.padding.extendWidth(result);
+        result = this.frame.getInsets().extendWidth(result);
+        result = this.margin.extendWidth(result);
+        return result;
+    }
+
+    /**
+     * Adds the margin, border and padding to the specified content height.
+     *
+     * @param contentHeight  the content height.
+     *
+     * @return The adjusted height.
+     */
+    protected double calculateTotalHeight(double contentHeight) {
+        double result = contentHeight;
+        result = this.padding.extendHeight(result);
+        result = this.frame.getInsets().extendHeight(result);
+        result = this.margin.extendHeight(result);
+        return result;
+    }
+
+    /**
+     * Reduces the specified area by the amount of space consumed
+     * by the margin.
+     *
+     * @param area  the area ({@code null} not permitted).
+     *
+     * @return The trimmed area.
+     */
+    protected Rectangle2D trimMargin(Rectangle2D area) {
+        // defer argument checking...
+        this.margin.trim(area);
+        return area;
+    }
+
+    /**
+     * Reduces the specified area by the amount of space consumed
+     * by the border.
+     *
+     * @param area  the area ({@code null} not permitted).
+     *
+     * @return The trimmed area.
+     */
+    protected Rectangle2D trimBorder(Rectangle2D area) {
+        // defer argument checking...
+        this.frame.getInsets().trim(area);
+        return area;
+    }
+
+    /**
+     * Reduces the specified area by the amount of space consumed
+     * by the padding.
+     *
+     * @param area  the area ({@code null} not permitted).
+     *
+     * @return The trimmed area.
+     */
+    protected Rectangle2D trimPadding(Rectangle2D area) {
+        // defer argument checking...
+        this.padding.trim(area);
+        return area;
+    }
+
+    /**
+     * Draws the border around the perimeter of the specified area.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area.
+     */
+    protected void drawBorder(Graphics2D g2, Rectangle2D area) {
+        this.frame.draw(g2, area);
+    }
+
+    /**
+     * Tests this block for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
      *
      * @return A boolean.
      */
-    public boolean getSeriesVisibilityChanged() {
-        return this.seriesVisibilityChanged;
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AbstractBlock)) {
+            return false;
+        }
+        AbstractBlock that = (AbstractBlock) obj;
+        if (!Objects.equals(this.id, that.id)) {
+            return false;
+        }
+        if (!this.frame.equals(that.frame)) {
+            return false;
+        }
+        if (!this.bounds.equals(that.bounds)) {
+            return false;
+        }
+        if (!this.margin.equals(that.margin)) {
+            return false;
+        }
+        if (!this.padding.equals(that.padding)) {
+            return false;
+        }
+        if (this.height != that.height) {
+            return false;
+        }
+        if (this.width != that.width) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 5;
+        hash = 41 * hash + Objects.hashCode(this.id);
+        hash = 41 * hash + Objects.hashCode(this.margin);
+        hash = 41 * hash + Objects.hashCode(this.frame);
+        hash = 41 * hash + Objects.hashCode(this.padding);
+        hash = 41 * hash + (int) (Double.doubleToLongBits(this.width) ^ (Double.doubleToLongBits(this.width) >>> 32));
+        hash = 41 * hash + (int) (Double.doubleToLongBits(this.height) ^ (Double.doubleToLongBits(this.height) >>> 32));
+        hash = 41 * hash + Objects.hashCode(this.bounds);
+        return hash;
+    }
+
+    /**
+     * Returns a clone of this block.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if there is a problem creating the
+     *         clone.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        AbstractBlock clone = (AbstractBlock) super.clone();
+        clone.bounds = (Rectangle2D) CloneUtils.clone(this.bounds);
+        if (this.frame instanceof PublicCloneable) {
+            PublicCloneable pc = (PublicCloneable) this.frame;
+            clone.frame = (BlockFrame) pc.clone();
+        }
+        return clone;
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writeShape(this.bounds, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.bounds = (Rectangle2D) SerialUtils.readShape(stream);
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ---------------------
+ * WindItemRenderer.java
+ * ---------------------
+ * (C) Copyright 2001-2021, by Achilleus Mantzios and Contributors.
+ *
+ * Original Author:  Achilleus Mantzios;
+ * Contributor(s):   David Gilbert;
+ *
+ */
+/**
+ * A specialised renderer for displaying wind intensity/direction data.
+ * The example shown here is generated by the {@code WindChartDemo1.java}
+ * program included in the JFreeChart demo collection:
+ * <br><br>
+ * <img src="doc-files/WindItemRendererSample.png"
+ * alt="WindItemRendererSample.png">
+ */
+public class WindItemRenderer extends AbstractXYItemRenderer implements XYItemRenderer, Cloneable, PublicCloneable, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = 8078914101916976844L;
+
+    /**
+     * Creates a new renderer.
+     */
+    public WindItemRenderer() {
+        super();
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param state  the renderer state.
+     * @param plotArea  the area within which the plot is being drawn.
+     * @param info  optional information collection.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the horizontal axis.
+     * @param rangeAxis  the vertical axis.
+     * @param dataset  the dataset.
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    @Override
+    public void drawItem(Graphics2D g2, XYItemRendererState state, Rectangle2D plotArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        WindDataset windData = (WindDataset) dataset;
+        Paint seriesPaint = getItemPaint(series, item);
+        Stroke seriesStroke = getItemStroke(series, item);
+        g2.setPaint(seriesPaint);
+        g2.setStroke(seriesStroke);
+        // get the data point...
+        Number x = windData.getX(series, item);
+        Number windDir = windData.getWindDirection(series, item);
+        Number wforce = windData.getWindForce(series, item);
+        double windForce = wforce.doubleValue();
+        double wdirt = Math.toRadians(windDir.doubleValue() * (-30.0) - 90.0);
+        double ax1, ax2, ay1, ay2, rax2, ray2;
+        RectangleEdge domainAxisLocation = plot.getDomainAxisEdge();
+        RectangleEdge rangeAxisLocation = plot.getRangeAxisEdge();
+        ax1 = domainAxis.valueToJava2D(x.doubleValue(), plotArea, domainAxisLocation);
+        ay1 = rangeAxis.valueToJava2D(0.0, plotArea, rangeAxisLocation);
+        rax2 = x.doubleValue() + (windForce * Math.cos(wdirt) * 8000000.0);
+        ray2 = windForce * Math.sin(wdirt);
+        ax2 = domainAxis.valueToJava2D(rax2, plotArea, domainAxisLocation);
+        ay2 = rangeAxis.valueToJava2D(ray2, plotArea, rangeAxisLocation);
+        int diri = windDir.intValue();
+        int forcei = wforce.intValue();
+        String dirforce = diri + "-" + forcei;
+        Line2D line = new Line2D.Double(ax1, ay1, ax2, ay2);
+        g2.draw(line);
+        g2.setPaint(Color.BLUE);
+        g2.setFont(new Font("Dialog", 1, 9));
+        g2.drawString(dirforce, (float) ax1, (float) ay1);
+        g2.setPaint(seriesPaint);
+        g2.setStroke(seriesStroke);
+        double alx2, aly2, arx2, ary2;
+        double ralx2, raly2, rarx2, rary2;
+        double aldir = Math.toRadians(windDir.doubleValue() * (-30.0) - 90.0 - 5.0);
+        ralx2 = wforce.doubleValue() * Math.cos(aldir) * 8000000 * 0.8 + x.doubleValue();
+        raly2 = wforce.doubleValue() * Math.sin(aldir) * 0.8;
+        alx2 = domainAxis.valueToJava2D(ralx2, plotArea, domainAxisLocation);
+        aly2 = rangeAxis.valueToJava2D(raly2, plotArea, rangeAxisLocation);
+        line = new Line2D.Double(alx2, aly2, ax2, ay2);
+        g2.draw(line);
+        double ardir = Math.toRadians(windDir.doubleValue() * (-30.0) - 90.0 + 5.0);
+        rarx2 = wforce.doubleValue() * Math.cos(ardir) * 8000000 * 0.8 + x.doubleValue();
+        rary2 = wforce.doubleValue() * Math.sin(ardir) * 0.8;
+        arx2 = domainAxis.valueToJava2D(rarx2, plotArea, domainAxisLocation);
+        ary2 = rangeAxis.valueToJava2D(rary2, plotArea, rangeAxisLocation);
+        line = new Line2D.Double(arx2, ary2, ax2, ay2);
+        g2.draw(line);
+    }
+
+    /**
+     * Returns a clone of the renderer.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException  if the renderer cannot be cloned.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

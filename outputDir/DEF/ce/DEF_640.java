@@ -25,2837 +25,1601 @@ package DEF.ce;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * ChartPanel.java
- * ---------------
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ * -----------------
+ * ChartFactory.java
+ * -----------------
+ * (C) Copyright 2001-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Andrzej Porebski;
- *                   Soren Caspersen;
- *                   Jonathan Nash;
- *                   Hans-Jurgen Greiner;
- *                   Andreas Schneider;
- *                   Daniel van Enckevort;
- *                   David M O'Donnell;
- *                   Arnaud Lelievre;
- *                   Matthias Rose;
- *                   Onno vd Akker;
- *                   Sergei Ivanov;
- *                   Ulrich Voigt - patch 2686040;
- *                   Alessandro Borges - patch 1460845;
- *                   Martin Hoeller;
- *                   Simon Legner - patch from bug 1129;
+ * Contributor(s):   Serge V. Grachov;
+ *                   Joao Guilherme Del Valle;
+ *                   Bill Kelemen;
+ *                   Jon Iles;
+ *                   Jelai Wang;
+ *                   Richard Atkinson;
+ *                   David Browning (for Australian Institute of Marine
+ *                       Science);
+ *                   Benoit Xhenseval;
  */
 /**
- * A Swing GUI component for displaying a {@link JFreeChart} object.
- * <P>
- * The panel registers with the chart to receive notification of changes to any
- * component of the chart.  The chart is redrawn automatically whenever this
- * notification is received.
+ * A collection of utility methods for creating some standard charts with
+ * JFreeChart.
  */
-@SuppressWarnings("unused")
-class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressListener, ActionListener, MouseListener, MouseMotionListener, OverlayChangeListener, Printable, Serializable {
+public abstract class ChartFactory {
 
     /**
-     * For serialization.
+     * The chart theme.
      */
-    private static final long serialVersionUID = 6046366297214274674L;
+    private static ChartTheme currentTheme = new StandardChartTheme("JFree");
+
+    private ChartFactory() {
+        // no requirement to instantiate
+    }
 
     /**
-     * Default setting for buffer usage.  The default has been changed to
-     * {@code true} from version 1.0.13 onwards, because of a severe
-     * performance problem with drawing the zoom rectangle using XOR (which
-     * now happens only when the buffer is NOT used).
+     * Returns the current chart theme used by the factory.
+     *
+     * @return The chart theme.
+     *
+     * @see #setChartTheme(ChartTheme)
+     * @see ChartUtils#applyCurrentTheme(JFreeChart)
      */
-    public static final boolean DEFAULT_BUFFER_USED = true;
+    public static ChartTheme getChartTheme() {
+        return currentTheme;
+    }
 
     /**
-     * The default panel width.
+     * Sets the current chart theme.  This will be applied to all new charts
+     * created via methods in this class.
+     *
+     * @param theme  the theme ({@code null} not permitted).
+     *
+     * @see #getChartTheme()
+     * @see ChartUtils#applyCurrentTheme(JFreeChart)
      */
-    public static final int DEFAULT_WIDTH = 1024;
-
-    /**
-     * The default panel height.
-     */
-    public static final int DEFAULT_HEIGHT = 768;
-
-    /**
-     * The default limit below which chart scaling kicks in.
-     */
-    public static final int DEFAULT_MINIMUM_DRAW_WIDTH = 300;
-
-    /**
-     * The default limit below which chart scaling kicks in.
-     */
-    public static final int DEFAULT_MINIMUM_DRAW_HEIGHT = 200;
-
-    /**
-     * The default limit above which chart scaling kicks in.
-     */
-    public static final int DEFAULT_MAXIMUM_DRAW_WIDTH = 1024;
-
-    /**
-     * The default limit above which chart scaling kicks in.
-     */
-    public static final int DEFAULT_MAXIMUM_DRAW_HEIGHT = 768;
-
-    /**
-     * Properties action command.
-     */
-    public static final String PROPERTIES_COMMAND = "PROPERTIES";
-
-    /**
-     * Copy action command.
-     */
-    public static final String COPY_COMMAND = "COPY";
-
-    /**
-     * Save action command.
-     */
-    public static final String SAVE_COMMAND = "SAVE";
-
-    /**
-     * Action command to save as PNG.
-     */
-    protected static final String SAVE_AS_PNG_COMMAND = "SAVE_AS_PNG";
-
-    /**
-     * Action command to save as PNG - use screen size
-     */
-    protected static final String SAVE_AS_PNG_SIZE_COMMAND = "SAVE_AS_PNG_SIZE";
-
-    /**
-     * Action command to save as SVG.
-     */
-    protected static final String SAVE_AS_SVG_COMMAND = "SAVE_AS_SVG";
-
-    /**
-     * Action command to save as PDF.
-     */
-    protected static final String SAVE_AS_PDF_COMMAND = "SAVE_AS_PDF";
-
-    /**
-     * Print action command.
-     */
-    public static final String PRINT_COMMAND = "PRINT";
-
-    /**
-     * Zoom in (both axes) action command.
-     */
-    public static final String ZOOM_IN_BOTH_COMMAND = "ZOOM_IN_BOTH";
-
-    /**
-     * Zoom in (domain axis only) action command.
-     */
-    public static final String ZOOM_IN_DOMAIN_COMMAND = "ZOOM_IN_DOMAIN";
-
-    /**
-     * Zoom in (range axis only) action command.
-     */
-    public static final String ZOOM_IN_RANGE_COMMAND = "ZOOM_IN_RANGE";
-
-    /**
-     * Zoom out (both axes) action command.
-     */
-    public static final String ZOOM_OUT_BOTH_COMMAND = "ZOOM_OUT_BOTH";
-
-    /**
-     * Zoom out (domain axis only) action command.
-     */
-    public static final String ZOOM_OUT_DOMAIN_COMMAND = "ZOOM_DOMAIN_BOTH";
-
-    /**
-     * Zoom out (range axis only) action command.
-     */
-    public static final String ZOOM_OUT_RANGE_COMMAND = "ZOOM_RANGE_BOTH";
-
-    /**
-     * Zoom reset (both axes) action command.
-     */
-    public static final String ZOOM_RESET_BOTH_COMMAND = "ZOOM_RESET_BOTH";
-
-    /**
-     * Zoom reset (domain axis only) action command.
-     */
-    public static final String ZOOM_RESET_DOMAIN_COMMAND = "ZOOM_RESET_DOMAIN";
-
-    /**
-     * Zoom reset (range axis only) action command.
-     */
-    public static final String ZOOM_RESET_RANGE_COMMAND = "ZOOM_RESET_RANGE";
-
-    // default modifiers for zooming, private to avoid constant inlining,
-    // publicly available through getDefaultDragModifiersEx()
-    private static final int DEFAULT_DRAG_MODIFIERS_EX;
-
-    // mask for all modifier keys to check for
-    private static final int MODIFIERS_EX_MASK = InputEvent.SHIFT_DOWN_MASK | InputEvent.CTRL_DOWN_MASK | InputEvent.META_DOWN_MASK | InputEvent.ALT_DOWN_MASK;
-
-    static {
-        int dragModifiers = InputEvent.CTRL_DOWN_MASK;
-        // for MacOSX we can't use the CTRL key for mouse drags, see:
-        // http://developer.apple.com/qa/qa2004/qa1362.html
-        String osName = System.getProperty("os.name").toLowerCase();
-        if (osName.startsWith("mac os x")) {
-            dragModifiers = InputEvent.ALT_DOWN_MASK;
+    public static void setChartTheme(ChartTheme theme) {
+        Args.nullNotPermitted(theme, "theme");
+        currentTheme = theme;
+        // here we do a check to see if the user is installing the "Legacy"
+        // theme, and reset the bar painters in that case...
+        if (theme instanceof StandardChartTheme) {
+            BarRenderer.setDefaultBarPainter(new StandardBarPainter());
+            XYBarRenderer.setDefaultBarPainter(new StandardXYBarPainter());
         }
-        DEFAULT_DRAG_MODIFIERS_EX = dragModifiers;
     }
 
     /**
-     * The standard mouse button modifiers for alternative drag operations.
-     * There are two kinds of mouse drag operations: pan and zoom.
-     * To distinguish between them, one needs to require modifier keys
-     * to be held down during the dragging.  However, some modifiers
-     * may not be usable on all platforms.  For example, on Mac OS X
-     * it is impossible to perform Ctrl-drags or right-drags, see
-     * <a href="http://developer.apple.com/qa/qa2004/qa1362.html">http://developer.apple.com/qa/qa2004/qa1362.html</a>.
-     * This function returns a non-zero modifier usable for any platform:
-     * Alt for Mac OS X, Ctrl for other platforms.  It is recommended
-     * to use these modifiers for one operation, and zero modifiers for
-     * the other.
+     * Creates a pie chart with default settings.
+     * <P>
+     * The chart object returned by this method uses a {@link PiePlot} instance
+     * as the plot.
      *
-     * @return modifiers mask, as in {@link InputEvent#getModifiersEx()}
-     * @see #setPanModifiersEx(int, int)
-     * @see #setZoomModifiersEx(int, int)
-     * @see #setDefaultPanModifiersEx(int)
-     * @see #setDefaultZoomModifiersEx(int)
-     */
-    public static int getDefaultDragModifiersEx() {
-        return DEFAULT_DRAG_MODIFIERS_EX;
-    }
-
-    /**
-     * The chart that is displayed in the panel.
-     */
-    protected JFreeChart chart;
-
-    /**
-     * Storage for registered (chart) mouse listeners.
-     */
-    protected transient EventListenerList chartMouseListeners;
-
-    /**
-     * A flag that controls whether the off-screen buffer is used.
-     */
-    protected boolean useBuffer;
-
-    /**
-     * A flag that indicates that the buffer should be refreshed.
-     */
-    protected boolean refreshBuffer;
-
-    /**
-     * A buffer for the rendered chart.
-     */
-    protected transient Image chartBuffer;
-
-    /**
-     * The height of the chart buffer.
-     */
-    protected int chartBufferHeight;
-
-    /**
-     * The width of the chart buffer.
-     */
-    protected int chartBufferWidth;
-
-    /**
-     * The minimum width for drawing a chart (uses scaling for smaller widths).
-     */
-    protected int minimumDrawWidth;
-
-    /**
-     * The minimum height for drawing a chart (uses scaling for smaller
-     * heights).
-     */
-    protected int minimumDrawHeight;
-
-    /**
-     * The maximum width for drawing a chart (uses scaling for bigger
-     * widths).
-     */
-    protected int maximumDrawWidth;
-
-    /**
-     * The maximum height for drawing a chart (uses scaling for bigger
-     * heights).
-     */
-    protected int maximumDrawHeight;
-
-    /**
-     * The popup menu for the frame.
-     */
-    protected JPopupMenu popup;
-
-    /**
-     * The drawing info collected the last time the chart was drawn.
-     */
-    protected ChartRenderingInfo info;
-
-    /**
-     * The chart anchor point.
-     */
-    protected Point2D anchor;
-
-    /**
-     * The scale factor used to draw the chart.
-     */
-    protected double scaleX;
-
-    /**
-     * The scale factor used to draw the chart.
-     */
-    protected double scaleY;
-
-    /**
-     * The plot orientation.
-     */
-    protected PlotOrientation orientation = PlotOrientation.VERTICAL;
-
-    /**
-     * A flag that controls whether domain zooming is enabled.
-     */
-    protected boolean domainZoomable = false;
-
-    /**
-     * A flag that controls whether range zooming is enabled.
-     */
-    protected boolean rangeZoomable = false;
-
-    /**
-     * A strategy to handle zoom rectangle processing and painting.
-     */
-    private SelectionZoomStrategy selectionZoomStrategy = new DefaultSelectionZoomStrategy();
-
-    /**
-     * Menu item for zooming in on a chart (both axes).
-     */
-    protected JMenuItem zoomInBothMenuItem;
-
-    /**
-     * Menu item for zooming in on a chart (domain axis).
-     */
-    protected JMenuItem zoomInDomainMenuItem;
-
-    /**
-     * Menu item for zooming in on a chart (range axis).
-     */
-    protected JMenuItem zoomInRangeMenuItem;
-
-    /**
-     * Menu item for zooming out on a chart.
-     */
-    protected JMenuItem zoomOutBothMenuItem;
-
-    /**
-     * Menu item for zooming out on a chart (domain axis).
-     */
-    protected JMenuItem zoomOutDomainMenuItem;
-
-    /**
-     * Menu item for zooming out on a chart (range axis).
-     */
-    protected JMenuItem zoomOutRangeMenuItem;
-
-    /**
-     * Menu item for resetting the zoom (both axes).
-     */
-    protected JMenuItem zoomResetBothMenuItem;
-
-    /**
-     * Menu item for resetting the zoom (domain axis only).
-     */
-    protected JMenuItem zoomResetDomainMenuItem;
-
-    /**
-     * Menu item for resetting the zoom (range axis only).
-     */
-    protected JMenuItem zoomResetRangeMenuItem;
-
-    /**
-     * The default directory for saving charts to file.
-     */
-    protected File defaultDirectoryForSaveAs;
-
-    /**
-     * A flag that controls whether file extensions are enforced.
-     */
-    protected boolean enforceFileExtensions;
-
-    /**
-     * A flag that indicates if original tooltip delays are changed.
-     */
-    protected boolean ownToolTipDelaysActive;
-
-    /**
-     * Original initial tooltip delay of ToolTipManager.sharedInstance().
-     */
-    protected int originalToolTipInitialDelay;
-
-    /**
-     * Original reshow tooltip delay of ToolTipManager.sharedInstance().
-     */
-    protected int originalToolTipReshowDelay;
-
-    /**
-     * Original dismiss tooltip delay of ToolTipManager.sharedInstance().
-     */
-    protected int originalToolTipDismissDelay;
-
-    /**
-     * Own initial tooltip delay to be used in this chart panel.
-     */
-    protected int ownToolTipInitialDelay;
-
-    /**
-     * Own reshow tooltip delay to be used in this chart panel.
-     */
-    protected int ownToolTipReshowDelay;
-
-    /**
-     * Own dismiss tooltip delay to be used in this chart panel.
-     */
-    protected int ownToolTipDismissDelay;
-
-    /**
-     * The factor used to zoom in on an axis range.
-     */
-    protected double zoomInFactor = 0.5;
-
-    /**
-     * The factor used to zoom out on an axis range.
-     */
-    protected double zoomOutFactor = 2.0;
-
-    /**
-     * A flag that controls whether zoom operations are centred on the
-     * current anchor point, or the centre point of the relevant axis.
-     */
-    protected boolean zoomAroundAnchor;
-
-    /**
-     * The resourceBundle for the localization.
-     */
-    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.LocalizationBundle");
-
-    /**
-     * Temporary storage for the width and height of the chart
-     * drawing area during panning.
-     */
-    protected double panW, panH;
-
-    /**
-     * The last mouse position during panning.
-     */
-    protected Point panLast;
-
-    /**
-     * The default mask for mouse events to trigger panning.
-     * Since 2.0.0, this mask uses extended modifiers, as returned
-     * by {@link InputEvent#getModifiersEx()}.
-     * Only used if no button-specific modifiers were set in
-     * {@link #panButtonMasks}.
-     */
-    protected int panMask = getDefaultDragModifiersEx();
-
-    /**
-     * The default mask for mouse events to trigger zooming.
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param locale  the locale ({@code null} not permitted).
      *
-     * @since 2.0.0
+     * @return A pie chart.
      */
-    protected int zoomMask = 0;
-
-    /**
-     * The masks for mouse events to trigger panning, per mouse button.
-     *
-     * @since 2.0.0
-     */
-    protected final Map<Integer, Integer> panButtonMasks = new HashMap<>(3);
-
-    /**
-     * The masks for mouse events to trigger zooming, per mouse button.
-     *
-     * @since 2.0.0
-     */
-    protected final Map<Integer, Integer> zoomButtonMasks = new HashMap<>(3);
-
-    /**
-     * A list of overlays for the panel.
-     */
-    protected List<Overlay> overlays;
-
-    /**
-     * Constructs a panel that displays the specified chart.
-     *
-     * @param chart  the chart.
-     */
-    public ChartPanel(JFreeChart chart) {
-        this(// properties
-        chart, // properties
-        DEFAULT_WIDTH, // properties
-        DEFAULT_HEIGHT, // properties
-        DEFAULT_MINIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MINIMUM_DRAW_HEIGHT, // properties
-        DEFAULT_MAXIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MAXIMUM_DRAW_HEIGHT, // properties
-        DEFAULT_BUFFER_USED, // save
-        true, // print
-        true, // zoom
-        true, // tooltips
-        true, true);
-    }
-
-    /**
-     * Constructs a panel containing a chart.  The {@code useBuffer} flag
-     * controls whether an offscreen {@code BufferedImage} is
-     * maintained for the chart.  If the buffer is used, more memory is
-     * consumed, but panel repaints will be a lot quicker in cases where the
-     * chart itself hasn't changed (for example, when another frame is moved
-     * to reveal the panel).  WARNING: If you set the {@code useBuffer}
-     * flag to false, note that the mouse zooming rectangle will (in that case)
-     * be drawn using XOR, and there is a SEVERE performance problem with that
-     * on JRE6 on Windows.
-     *
-     * @param chart  the chart.
-     * @param useBuffer  a flag controlling whether an off-screen buffer
-     *                   is used (read the warning above before setting this
-     *                   to {@code false}).
-     */
-    public ChartPanel(JFreeChart chart, boolean useBuffer) {
-        this(// properties
-        chart, // properties
-        DEFAULT_WIDTH, // properties
-        DEFAULT_HEIGHT, // properties
-        DEFAULT_MINIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MINIMUM_DRAW_HEIGHT, // properties
-        DEFAULT_MAXIMUM_DRAW_WIDTH, // properties
-        DEFAULT_MAXIMUM_DRAW_HEIGHT, // properties
-        useBuffer, // save
-        true, // print
-        true, // zoom
-        true, // tooltips
-        true, true);
-    }
-
-    /**
-     * Constructs a JFreeChart panel.
-     *
-     * @param chart  the chart.
-     * @param properties  a flag indicating whether the chart property
-     *                    editor should be available via the popup menu.
-     * @param save  a flag indicating whether save options should be
-     *              available via the popup menu.
-     * @param print  a flag indicating whether the print option
-     *               should be available via the popup menu.
-     * @param zoom  a flag indicating whether zoom options should
-     *              be added to the popup menu.
-     * @param tooltips  a flag indicating whether tooltips should be
-     *                  enabled for the chart.
-     */
-    public ChartPanel(JFreeChart chart, boolean properties, boolean save, boolean print, boolean zoom, boolean tooltips) {
-        this(chart, DEFAULT_WIDTH, DEFAULT_HEIGHT, DEFAULT_MINIMUM_DRAW_WIDTH, DEFAULT_MINIMUM_DRAW_HEIGHT, DEFAULT_MAXIMUM_DRAW_WIDTH, DEFAULT_MAXIMUM_DRAW_HEIGHT, DEFAULT_BUFFER_USED, properties, save, print, zoom, tooltips);
-    }
-
-    /**
-     * Constructs a JFreeChart panel.
-     *
-     * @param chart  the chart.
-     * @param width  the preferred width of the panel.
-     * @param height  the preferred height of the panel.
-     * @param minimumDrawWidth  the minimum drawing width.
-     * @param minimumDrawHeight  the minimum drawing height.
-     * @param maximumDrawWidth  the maximum drawing width.
-     * @param maximumDrawHeight  the maximum drawing height.
-     * @param useBuffer  a flag that indicates whether to use the off-screen
-     *                   buffer to improve performance (at the expense of
-     *                   memory).
-     * @param properties  a flag indicating whether the chart property
-     *                    editor should be available via the popup menu.
-     * @param save  a flag indicating whether save options should be
-     *              available via the popup menu.
-     * @param print  a flag indicating whether the print option
-     *               should be available via the popup menu.
-     * @param zoom  a flag indicating whether zoom options should be
-     *              added to the popup menu.
-     * @param tooltips  a flag indicating whether tooltips should be
-     *                  enabled for the chart.
-     */
-    public ChartPanel(JFreeChart chart, int width, int height, int minimumDrawWidth, int minimumDrawHeight, int maximumDrawWidth, int maximumDrawHeight, boolean useBuffer, boolean properties, boolean save, boolean print, boolean zoom, boolean tooltips) {
-        this(chart, width, height, minimumDrawWidth, minimumDrawHeight, maximumDrawWidth, maximumDrawHeight, useBuffer, properties, true, save, print, zoom, tooltips);
-    }
-
-    /**
-     * Constructs a JFreeChart panel.
-     *
-     * @param chart  the chart.
-     * @param width  the preferred width of the panel.
-     * @param height  the preferred height of the panel.
-     * @param minimumDrawWidth  the minimum drawing width.
-     * @param minimumDrawHeight  the minimum drawing height.
-     * @param maximumDrawWidth  the maximum drawing width.
-     * @param maximumDrawHeight  the maximum drawing height.
-     * @param useBuffer  a flag that indicates whether to use the off-screen
-     *                   buffer to improve performance (at the expense of
-     *                   memory).
-     * @param properties  a flag indicating whether the chart property
-     *                    editor should be available via the popup menu.
-     * @param copy  a flag indicating whether a copy option should be
-     *              available via the popup menu.
-     * @param save  a flag indicating whether save options should be
-     *              available via the popup menu.
-     * @param print  a flag indicating whether the print option
-     *               should be available via the popup menu.
-     * @param zoom  a flag indicating whether zoom options should be
-     *              added to the popup menu.
-     * @param tooltips  a flag indicating whether tooltips should be
-     *                  enabled for the chart.
-     */
-    public ChartPanel(JFreeChart chart, int width, int height, int minimumDrawWidth, int minimumDrawHeight, int maximumDrawWidth, int maximumDrawHeight, boolean useBuffer, boolean properties, boolean copy, boolean save, boolean print, boolean zoom, boolean tooltips) {
-        setChart(chart);
-        this.chartMouseListeners = new EventListenerList();
-        this.info = new ChartRenderingInfo();
-        setPreferredSize(new Dimension(width, height));
-        this.useBuffer = useBuffer;
-        this.refreshBuffer = false;
-        this.minimumDrawWidth = minimumDrawWidth;
-        this.minimumDrawHeight = minimumDrawHeight;
-        this.maximumDrawWidth = maximumDrawWidth;
-        this.maximumDrawHeight = maximumDrawHeight;
-        // set up popup menu...
-        this.popup = null;
-        if (properties || copy || save || print || zoom) {
-            this.popup = createPopupMenu(properties, copy, save, print, zoom);
+    public static JFreeChart createPieChart(String title, PieDataset dataset, boolean legend, boolean tooltips, Locale locale) {
+        PiePlot plot = new PiePlot(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator(locale));
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator(locale));
         }
-        enableEvents(AWTEvent.MOUSE_EVENT_MASK);
-        enableEvents(AWTEvent.MOUSE_MOTION_EVENT_MASK);
-        setDisplayToolTips(tooltips);
-        addMouseListener(this);
-        addMouseMotionListener(this);
-        this.defaultDirectoryForSaveAs = null;
-        this.enforceFileExtensions = true;
-        // initialize ChartPanel-specific tool tip delays with
-        // values the from ToolTipManager.sharedInstance()
-        ToolTipManager ttm = ToolTipManager.sharedInstance();
-        this.ownToolTipInitialDelay = ttm.getInitialDelay();
-        this.ownToolTipDismissDelay = ttm.getDismissDelay();
-        this.ownToolTipReshowDelay = ttm.getReshowDelay();
-        this.zoomAroundAnchor = false;
-        this.overlays = new ArrayList<>();
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Returns the chart contained in the panel.
+     * Creates a pie chart with default settings.
+     * <P>
+     * The chart object returned by this method uses a {@link PiePlot} instance
+     * as the plot.
      *
-     * @return The chart (possibly {@code null}).
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A pie chart.
      */
-    public JFreeChart getChart() {
-        return this.chart;
+    public static JFreeChart createPieChart(String title, PieDataset dataset) {
+        return createPieChart(title, dataset, true, true, false);
     }
 
     /**
-     * Sets the chart that is displayed in the panel.
+     * Creates a pie chart with default settings.
+     * <P>
+     * The chart object returned by this method uses a {@link PiePlot} instance
+     * as the plot.
      *
-     * @param chart  the chart ({@code null} permitted).
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A pie chart.
      */
-    public void setChart(JFreeChart chart) {
-        // stop listening for changes to the existing chart
-        if (this.chart != null) {
-            this.chart.removeChangeListener(this);
-            this.chart.removeProgressListener(this);
+    public static JFreeChart createPieChart(String title, PieDataset dataset, boolean legend, boolean tooltips, boolean urls) {
+        PiePlot plot = new PiePlot(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator());
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator());
         }
-        // add the new chart
-        this.chart = chart;
-        if (chart != null) {
-            this.chart.addChangeListener(this);
-            this.chart.addProgressListener(this);
-            Plot plot = chart.getPlot();
-            this.domainZoomable = false;
-            this.rangeZoomable = false;
-            if (plot instanceof Zoomable) {
-                Zoomable z = (Zoomable) plot;
-                this.domainZoomable = z.isDomainZoomable();
-                this.rangeZoomable = z.isRangeZoomable();
-                this.orientation = z.getOrientation();
-            }
-        } else {
-            this.domainZoomable = false;
-            this.rangeZoomable = false;
+        if (urls) {
+            plot.setURLGenerator(new StandardPieURLGenerator());
         }
-        if (this.useBuffer) {
-            this.refreshBuffer = true;
-        }
-        repaint();
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Returns the minimum drawing width for charts.
-     * <P>
-     * If the width available on the panel is less than this, then the chart is
-     * drawn at the minimum width then scaled down to fit.
-     *
-     * @return The minimum drawing width.
-     */
-    public int getMinimumDrawWidth() {
-        return this.minimumDrawWidth;
-    }
-
-    /**
-     * Sets the minimum drawing width for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available width is
-     * less than this amount, the chart will be drawn using the minimum width
-     * then scaled down to fit the available space.
-     *
-     * @param width  The width.
-     */
-    public void setMinimumDrawWidth(int width) {
-        this.minimumDrawWidth = width;
-    }
-
-    /**
-     * Returns the maximum drawing width for charts.
-     * <P>
-     * If the width available on the panel is greater than this, then the chart
-     * is drawn at the maximum width then scaled up to fit.
-     *
-     * @return The maximum drawing width.
-     */
-    public int getMaximumDrawWidth() {
-        return this.maximumDrawWidth;
-    }
-
-    /**
-     * Sets the maximum drawing width for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available width is
-     * greater than this amount, the chart will be drawn using the maximum
-     * width then scaled up to fit the available space.
-     *
-     * @param width  The width.
-     */
-    public void setMaximumDrawWidth(int width) {
-        this.maximumDrawWidth = width;
-    }
-
-    /**
-     * Returns the minimum drawing height for charts.
-     * <P>
-     * If the height available on the panel is less than this, then the chart
-     * is drawn at the minimum height then scaled down to fit.
-     *
-     * @return The minimum drawing height.
-     */
-    public int getMinimumDrawHeight() {
-        return this.minimumDrawHeight;
-    }
-
-    /**
-     * Sets the minimum drawing height for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available height is
-     * less than this amount, the chart will be drawn using the minimum height
-     * then scaled down to fit the available space.
-     *
-     * @param height  The height.
-     */
-    public void setMinimumDrawHeight(int height) {
-        this.minimumDrawHeight = height;
-    }
-
-    /**
-     * Returns the maximum drawing height for charts.
-     * <P>
-     * If the height available on the panel is greater than this, then the
-     * chart is drawn at the maximum height then scaled up to fit.
-     *
-     * @return The maximum drawing height.
-     */
-    public int getMaximumDrawHeight() {
-        return this.maximumDrawHeight;
-    }
-
-    /**
-     * Sets the maximum drawing height for the chart on this panel.
-     * <P>
-     * At the time the chart is drawn on the panel, if the available height is
-     * greater than this amount, the chart will be drawn using the maximum
-     * height then scaled up to fit the available space.
-     *
-     * @param height  The height.
-     */
-    public void setMaximumDrawHeight(int height) {
-        this.maximumDrawHeight = height;
-    }
-
-    /**
-     * Returns the X scale factor for the chart.  This will be 1.0 if no
-     * scaling has been used.
-     *
-     * @return The scale factor.
-     */
-    public double getScaleX() {
-        return this.scaleX;
-    }
-
-    /**
-     * Returns the Y scale factory for the chart.  This will be 1.0 if no
-     * scaling has been used.
-     *
-     * @return The scale factor.
-     */
-    public double getScaleY() {
-        return this.scaleY;
-    }
-
-    /**
-     * Returns the anchor point.
-     *
-     * @return The anchor point (possibly {@code null}).
-     */
-    public Point2D getAnchor() {
-        return this.anchor;
-    }
-
-    /**
-     * Sets the anchor point.  This method is provided for the use of
-     * subclasses, not end users.
-     *
-     * @param anchor  the anchor point ({@code null} permitted).
-     */
-    protected void setAnchor(Point2D anchor) {
-        this.anchor = anchor;
-    }
-
-    /**
-     * Returns the popup menu.
-     *
-     * @return The popup menu.
-     */
-    public JPopupMenu getPopupMenu() {
-        return this.popup;
-    }
-
-    /**
-     * Sets the popup menu for the panel.
-     *
-     * @param popup  the popup menu ({@code null} permitted).
-     */
-    public void setPopupMenu(JPopupMenu popup) {
-        this.popup = popup;
-    }
-
-    /**
-     * Returns the chart rendering info from the most recent chart redraw.
-     *
-     * @return The chart rendering info.
-     */
-    public ChartRenderingInfo getChartRenderingInfo() {
-        return this.info;
-    }
-
-    /**
-     * A convenience method that switches on mouse-based zooming.
-     *
-     * @param flag  {@code true} enables zooming and rectangle fill on
-     *              zoom.
-     */
-    public void setMouseZoomable(boolean flag) {
-        setMouseZoomable(flag, true);
-    }
-
-    /**
-     * A convenience method that switches on mouse-based zooming.
-     *
-     * @param flag  {@code true} if zooming enabled
-     * @param fillRectangle  {@code true} if zoom rectangle is filled,
-     *                       false if rectangle is shown as outline only.
-     */
-    public void setMouseZoomable(boolean flag, boolean fillRectangle) {
-        setDomainZoomable(flag);
-        setRangeZoomable(flag);
-        setFillZoomRectangle(fillRectangle);
-    }
-
-    /**
-     * Sets default modifier keys for pan operations for all mouse buttons.
-     * Modifiers for a specific button can be set with
-     * {@link #setPanModifiersEx(int, int)}.  If there are none set for
-     * a certain button, it will use the modifiers passed to this function,
-     * defaulting to {@link #getDefaultDragModifiersEx()} if this function
-     * was never called.
+     * Creates a pie chart with default settings that compares 2 datasets.
+     * The colour of each section will be determined by the move from the value
+     * for the same key in {@code previousDataset}. ie if value1 &gt;
+     * value2 then the section will be in green (unless
+     * {@code greenForIncrease} is {@code false}, in which case it
+     * would be {@code red}). Each section can have a shade of red or
+     * green as the difference can be tailored between 0% (black) and
+     * percentDiffForMaxScale% (bright red/green).
      * <p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
+     * For instance if {@code percentDiffForMaxScale} is 10 (10%), a
+     * difference of 5% will have a half shade of red/green, a difference of
+     * 10% or more will have a maximum shade/brightness of red/green.
+     * <P>
+     * The chart object returned by this method uses a {@link PiePlot} instance
+     * as the plot.
      * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
+     * Written by <a href="mailto:opensource@objectlab.co.uk">Benoit
+     * Xhenseval</a>.
      *
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setDefaultPanModifiersEx(int modifiersEx) {
-        this.panMask = modifiersEx;
-    }
-
-    /**
-     * Sets default modifier keys for zoom operations for all mouse buttons.
-     * Modifiers for a specific button can be set with
-     * {@link #setZoomModifiersEx(int, int)}.  If there are none set for
-     * a certain button, it will use the modifiers passed to this function,
-     * defaulting to zero (no modifiers) if this function was never called.
-     * <p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param previousDataset  the dataset for the last run, this will be used
+     *                         to compare each key in the dataset
+     * @param percentDiffForMaxScale scale goes from bright red/green to black,
+     *                               percentDiffForMaxScale indicate the change
+     *                               required to reach top scale.
+     * @param greenForIncrease  an increase since previousDataset will be
+     *                          displayed in green (decrease red) if true.
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param locale  the locale ({@code null} not permitted).
+     * @param subTitle displays a subtitle with colour scheme if true
+     * @param showDifference  create a new dataset that will show the %
+     *                        difference between the two datasets.
      *
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
+     * @return A pie chart.
      */
-    public void setDefaultZoomModifiersEx(int modifiersEx) {
-        this.zoomMask = modifiersEx;
-    }
-
-    /**
-     * Sets modifier keys for panning with a specific mouse button. If there are
-     * none set for a certain button with this function, default modifiers set
-     * with {@link #setDefaultPanModifiersEx(int)} will be used, defaulting to
-     * {@link #getDefaultDragModifiersEx()} if none were set either.<p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
-     *
-     * @param mouseButton  the mouse button
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setPanModifiersEx(int mouseButton, int modifiersEx) {
-        panButtonMasks.put(mouseButton, modifiersEx);
-    }
-
-    /**
-     * Sets modifier keys for zooming with a specific mouse button.
-     * If there are none set for a certain button with this function,
-     * default modifiers set with {@link #setDefaultZoomModifiersEx(int)}
-     * will be used, defaulting to zero (no modifiers)
-     * if none were set either.
-     * <p>
-     * Only {@link InputEvent#SHIFT_DOWN_MASK}, {@link InputEvent#CTRL_DOWN_MASK},
-     * {@link InputEvent#META_DOWN_MASK} and {@link InputEvent#ALT_DOWN_MASK} are
-     * checked.  To avoid platform-specific problems, it is recommended to use
-     * {@link #getDefaultDragModifiersEx()} for one operation, and zero modifiers
-     * for the other.
-     * <p>
-     * If the same modifiers are set for both zooming and panning,
-     * panning will be performed.
-     *
-     * @param mouseButton  the mouse button.
-     * @param modifiersEx modifier keys, as returned by {@link InputEvent#getModifiersEx()}
-     */
-    public void setZoomModifiersEx(int mouseButton, int modifiersEx) {
-        zoomButtonMasks.put(mouseButton, modifiersEx);
-    }
-
-    /**
-     * Returns the flag that determines whether zooming is enabled for
-     * the domain axis.
-     *
-     * @return A boolean.
-     */
-    public boolean isDomainZoomable() {
-        return this.domainZoomable;
-    }
-
-    /**
-     * Sets the flag that controls whether zooming is enabled for the
-     * domain axis.  A check is made to ensure that the current plot supports
-     * zooming for the domain values.
-     *
-     * @param flag  {@code true} enables zooming if possible.
-     */
-    public void setDomainZoomable(boolean flag) {
-        if (flag) {
-            Plot plot = this.chart.getPlot();
-            if (plot instanceof Zoomable) {
-                Zoomable z = (Zoomable) plot;
-                this.domainZoomable = z.isDomainZoomable();
-            }
-        } else {
-            this.domainZoomable = false;
+    public static JFreeChart createPieChart(String title, PieDataset<String> dataset, PieDataset<String> previousDataset, int percentDiffForMaxScale, boolean greenForIncrease, boolean legend, boolean tooltips, Locale locale, boolean subTitle, boolean showDifference) {
+        PiePlot<String> plot = new PiePlot<>(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator<>(locale));
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator<>(locale));
         }
-    }
-
-    /**
-     * Returns the flag that determines whether zooming is enabled for
-     * the range axis.
-     *
-     * @return A boolean.
-     */
-    public boolean isRangeZoomable() {
-        return this.rangeZoomable;
-    }
-
-    /**
-     * A flag that controls mouse-based zooming on the vertical axis.
-     *
-     * @param flag  {@code true} enables zooming.
-     */
-    public void setRangeZoomable(boolean flag) {
-        if (flag) {
-            Plot plot = this.chart.getPlot();
-            if (plot instanceof Zoomable) {
-                Zoomable z = (Zoomable) plot;
-                this.rangeZoomable = z.isRangeZoomable();
-            }
-        } else {
-            this.rangeZoomable = false;
+        List<String> keys = dataset.getKeys();
+        DefaultPieDataset<String> series = null;
+        if (showDifference) {
+            series = new DefaultPieDataset<>();
         }
-    }
-
-    /**
-     * Returns a strategy used to control and draw zoom rectangle.
-     *
-     * @return A zoom rectangle strategy.
-     */
-    public SelectionZoomStrategy getSelectionZoomStrategy() {
-        return selectionZoomStrategy;
-    }
-
-    /**
-     * A strategy used to control and draw zoom rectangle.
-     *
-     * @param selectionZoomStrategy  A zoom rectangle strategy.
-     */
-    public void setSelectionZoomStrategy(SelectionZoomStrategy selectionZoomStrategy) {
-        this.selectionZoomStrategy = selectionZoomStrategy;
-    }
-
-    /**
-     * Returns the flag that controls whether the zoom rectangle is
-     * filled when drawn.
-     *
-     * @return A boolean.
-     */
-    public boolean getFillZoomRectangle() {
-        return this.selectionZoomStrategy.getFillZoomRectangle();
-    }
-
-    /**
-     * A flag that controls how the zoom rectangle is drawn.
-     *
-     * @param flag  {@code true} instructs to fill the rectangle on
-     *              zoom, otherwise it will be outlined.
-     */
-    public void setFillZoomRectangle(boolean flag) {
-        this.selectionZoomStrategy.setFillZoomRectangle(flag);
-    }
-
-    /**
-     * Returns the zoom trigger distance.  This controls how far the mouse must
-     * move before a zoom action is triggered.
-     *
-     * @return The distance (in Java2D units).
-     */
-    public int getZoomTriggerDistance() {
-        return this.selectionZoomStrategy.getZoomTriggerDistance();
-    }
-
-    /**
-     * Sets the zoom trigger distance.  This controls how far the mouse must
-     * move before a zoom action is triggered.
-     *
-     * @param distance  the distance (in Java2D units).
-     */
-    public void setZoomTriggerDistance(int distance) {
-        this.selectionZoomStrategy.setZoomTriggerDistance(distance);
-    }
-
-    /**
-     * Returns the default directory for the "save as" option.
-     *
-     * @return The default directory (possibly {@code null}).
-     */
-    public File getDefaultDirectoryForSaveAs() {
-        return this.defaultDirectoryForSaveAs;
-    }
-
-    /**
-     * Sets the default directory for the "save as" option.  If you set this
-     * to {@code null}, the user's default directory will be used.
-     *
-     * @param directory  the directory ({@code null} permitted).
-     */
-    public void setDefaultDirectoryForSaveAs(File directory) {
-        if (directory != null) {
-            if (!directory.isDirectory()) {
-                throw new IllegalArgumentException("The 'directory' argument is not a directory.");
-            }
-        }
-        this.defaultDirectoryForSaveAs = directory;
-    }
-
-    /**
-     * Returns {@code true} if file extensions should be enforced, and
-     * {@code false} otherwise.
-     *
-     * @return The flag.
-     *
-     * @see #setEnforceFileExtensions(boolean)
-     */
-    public boolean isEnforceFileExtensions() {
-        return this.enforceFileExtensions;
-    }
-
-    /**
-     * Sets a flag that controls whether file extensions are enforced.
-     *
-     * @param enforce  the new flag value.
-     *
-     * @see #isEnforceFileExtensions()
-     */
-    public void setEnforceFileExtensions(boolean enforce) {
-        this.enforceFileExtensions = enforce;
-    }
-
-    /**
-     * Returns the flag that controls whether zoom operations are
-     * centered around the current anchor point.
-     *
-     * @return A boolean.
-     *
-     * @see #setZoomAroundAnchor(boolean)
-     */
-    public boolean getZoomAroundAnchor() {
-        return this.zoomAroundAnchor;
-    }
-
-    /**
-     * Sets the flag that controls whether zoom operations are
-     * centered around the current anchor point.
-     *
-     * @param zoomAroundAnchor  the new flag value.
-     *
-     * @see #getZoomAroundAnchor()
-     */
-    public void setZoomAroundAnchor(boolean zoomAroundAnchor) {
-        this.zoomAroundAnchor = zoomAroundAnchor;
-    }
-
-    /**
-     * Returns the zoom rectangle fill paint.
-     *
-     * @return The zoom rectangle fill paint (never {@code null}).
-     *
-     * @see #setZoomFillPaint(java.awt.Paint)
-     * @see #setFillZoomRectangle(boolean)
-     */
-    public Paint getZoomFillPaint() {
-        return selectionZoomStrategy.getZoomFillPaint();
-    }
-
-    /**
-     * Sets the zoom rectangle fill paint.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getZoomFillPaint()
-     * @see #getFillZoomRectangle()
-     */
-    public void setZoomFillPaint(Paint paint) {
-        selectionZoomStrategy.setZoomFillPaint(paint);
-    }
-
-    /**
-     * Returns the zoom rectangle outline paint.
-     *
-     * @return The zoom rectangle outline paint (never {@code null}).
-     *
-     * @see #setZoomOutlinePaint(java.awt.Paint)
-     * @see #setFillZoomRectangle(boolean)
-     */
-    public Paint getZoomOutlinePaint() {
-        return selectionZoomStrategy.getZoomOutlinePaint();
-    }
-
-    /**
-     * Sets the zoom rectangle outline paint.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getZoomOutlinePaint()
-     * @see #getFillZoomRectangle()
-     */
-    public void setZoomOutlinePaint(Paint paint) {
-        this.selectionZoomStrategy.setZoomOutlinePaint(paint);
-    }
-
-    /**
-     * The mouse wheel handler.
-     */
-    protected MouseWheelHandler mouseWheelHandler;
-
-    /**
-     * Returns {@code true} if the mouse wheel handler is enabled, and
-     * {@code false} otherwise.
-     *
-     * @return A boolean.
-     */
-    public boolean isMouseWheelEnabled() {
-        return this.mouseWheelHandler != null;
-    }
-
-    /**
-     * Enables or disables mouse wheel support for the panel.
-     *
-     * @param flag  a boolean.
-     */
-    public void setMouseWheelEnabled(boolean flag) {
-        if (flag && this.mouseWheelHandler == null) {
-            this.mouseWheelHandler = new MouseWheelHandler(this);
-        } else if (!flag && this.mouseWheelHandler != null) {
-            this.removeMouseWheelListener(this.mouseWheelHandler);
-            this.mouseWheelHandler = null;
-        }
-    }
-
-    /**
-     * Add an overlay to the panel.
-     *
-     * @param overlay  the overlay ({@code null} not permitted).
-     */
-    public void addOverlay(Overlay overlay) {
-        Args.nullNotPermitted(overlay, "overlay");
-        this.overlays.add(overlay);
-        overlay.addChangeListener(this);
-        repaint();
-    }
-
-    /**
-     * Removes an overlay from the panel.
-     *
-     * @param overlay  the overlay to remove ({@code null} not permitted).
-     */
-    public void removeOverlay(Overlay overlay) {
-        Args.nullNotPermitted(overlay, "overlay");
-        boolean removed = this.overlays.remove(overlay);
-        if (removed) {
-            overlay.removeChangeListener(this);
-            repaint();
-        }
-    }
-
-    /**
-     * Handles a change to an overlay by repainting the panel.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void overlayChanged(OverlayChangeEvent event) {
-        repaint();
-    }
-
-    /**
-     * Switches the display of tooltips for the panel on or off.  Note that
-     * tooltips can only be displayed if the chart has been configured to
-     * generate tooltip items.
-     *
-     * @param flag  {@code true} to enable tooltips, {@code false} to
-     *              disable tooltips.
-     */
-    public void setDisplayToolTips(boolean flag) {
-        if (flag) {
-            ToolTipManager.sharedInstance().registerComponent(this);
-        } else {
-            ToolTipManager.sharedInstance().unregisterComponent(this);
-        }
-    }
-
-    /**
-     * Returns a string for the tooltip.
-     *
-     * @param e  the mouse event.
-     *
-     * @return A tool tip or {@code null} if no tooltip is available.
-     */
-    @Override
-    public String getToolTipText(MouseEvent e) {
-        String result = null;
-        if (this.info != null) {
-            EntityCollection entities = this.info.getEntityCollection();
-            if (entities != null) {
-                Insets insets = getInsets();
-                ChartEntity entity = entities.getEntity((int) ((e.getX() - insets.left) / this.scaleX), (int) ((e.getY() - insets.top) / this.scaleY));
-                if (entity != null) {
-                    result = entity.getToolTipText();
+        double colorPerPercent = 255.0 / percentDiffForMaxScale;
+        for (String key : keys) {
+            Number newValue = dataset.getValue(key);
+            Number oldValue = previousDataset.getValue(key);
+            if (oldValue == null) {
+                if (greenForIncrease) {
+                    plot.setSectionPaint(key, Color.GREEN);
+                } else {
+                    plot.setSectionPaint(key, Color.RED);
+                }
+                if (showDifference) {
+                    // suppresses compiler warning
+                    assert series != null;
+                    series.setValue(key + " (+100%)", newValue);
+                }
+            } else {
+                double percentChange = (newValue.doubleValue() / oldValue.doubleValue() - 1.0) * 100.0;
+                double shade = (Math.abs(percentChange) >= percentDiffForMaxScale ? 255 : Math.abs(percentChange) * colorPerPercent);
+                if (greenForIncrease && newValue.doubleValue() > oldValue.doubleValue() || !greenForIncrease && newValue.doubleValue() < oldValue.doubleValue()) {
+                    plot.setSectionPaint(key, new Color(0, (int) shade, 0));
+                } else {
+                    plot.setSectionPaint(key, new Color((int) shade, 0, 0));
+                }
+                if (showDifference) {
+                    // suppresses compiler warning
+                    assert series != null;
+                    series.setValue(key + " (" + (percentChange >= 0 ? "+" : "") + NumberFormat.getPercentInstance().format(percentChange / 100.0) + ")", newValue);
                 }
             }
         }
-        return result;
+        if (showDifference) {
+            plot.setDataset(series);
+        }
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        if (subTitle) {
+            TextTitle subtitle = new TextTitle("Bright " + (greenForIncrease ? "red" : "green") + "=change >=-" + percentDiffForMaxScale + "%, Bright " + (!greenForIncrease ? "red" : "green") + "=change >=+" + percentDiffForMaxScale + "%", new Font("SansSerif", Font.PLAIN, 10));
+            chart.addSubtitle(subtitle);
+        }
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Translates a Java2D point on the chart to a screen location.
+     * Creates a pie chart with default settings that compares 2 datasets.
+     * The colour of each section will be determined by the move from the value
+     * for the same key in {@code previousDataset}. ie if value1 &gt;
+     * value2 then the section will be in green (unless
+     * {@code greenForIncrease} is {@code false}, in which case it
+     * would be {@code red}). Each section can have a shade of red or
+     * green as the difference can be tailored between 0% (black) and
+     * percentDiffForMaxScale% (bright red/green).
+     * <p>
+     * For instance if {@code percentDiffForMaxScale} is 10 (10%), a
+     * difference of 5% will have a half shade of red/green, a difference of
+     * 10% or more will have a maximum shade/brightness of red/green.
+     * <P>
+     * The chart object returned by this method uses a {@link PiePlot} instance
+     * as the plot.
+     * <p>
+     * Written by <a href="mailto:opensource@objectlab.co.uk">Benoit
+     * Xhenseval</a>.
      *
-     * @param java2DPoint  the Java2D point.
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param previousDataset  the dataset for the last run, this will be used
+     *                         to compare each key in the dataset
+     * @param percentDiffForMaxScale scale goes from bright red/green to black,
+     *                               percentDiffForMaxScale indicate the change
+     *                               required to reach top scale.
+     * @param greenForIncrease  an increase since previousDataset will be
+     *                          displayed in green (decrease red) if true.
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     * @param subTitle displays a subtitle with colour scheme if true
+     * @param showDifference  create a new dataset that will show the %
+     *                        difference between the two datasets.
      *
-     * @return The screen location.
+     * @return A pie chart.
      */
-    public Point translateJava2DToScreen(Point2D java2DPoint) {
-        Insets insets = getInsets();
-        int x = (int) (java2DPoint.getX() * this.scaleX + insets.left);
-        int y = (int) (java2DPoint.getY() * this.scaleY + insets.top);
-        return new Point(x, y);
+    public static JFreeChart createPieChart(String title, PieDataset<String> dataset, PieDataset<String> previousDataset, int percentDiffForMaxScale, boolean greenForIncrease, boolean legend, boolean tooltips, boolean urls, boolean subTitle, boolean showDifference) {
+        PiePlot<String> plot = new PiePlot<>(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator<>());
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator<>());
+        }
+        if (urls) {
+            plot.setURLGenerator(new StandardPieURLGenerator());
+        }
+        List<String> keys = dataset.getKeys();
+        DefaultPieDataset<String> series = null;
+        if (showDifference) {
+            series = new DefaultPieDataset();
+        }
+        double colorPerPercent = 255.0 / percentDiffForMaxScale;
+        for (String key : keys) {
+            Number newValue = dataset.getValue(key);
+            Number oldValue = previousDataset.getValue(key);
+            if (oldValue == null) {
+                if (greenForIncrease) {
+                    plot.setSectionPaint(key, Color.GREEN);
+                } else {
+                    plot.setSectionPaint(key, Color.RED);
+                }
+                if (showDifference) {
+                    // suppresses compiler warning
+                    assert series != null;
+                    series.setValue(key + " (+100%)", newValue);
+                }
+            } else {
+                double percentChange = (newValue.doubleValue() / oldValue.doubleValue() - 1.0) * 100.0;
+                double shade = (Math.abs(percentChange) >= percentDiffForMaxScale ? 255 : Math.abs(percentChange) * colorPerPercent);
+                if (greenForIncrease && newValue.doubleValue() > oldValue.doubleValue() || !greenForIncrease && newValue.doubleValue() < oldValue.doubleValue()) {
+                    plot.setSectionPaint(key, new Color(0, (int) shade, 0));
+                } else {
+                    plot.setSectionPaint(key, new Color((int) shade, 0, 0));
+                }
+                if (showDifference) {
+                    // suppresses compiler warning
+                    assert series != null;
+                    series.setValue(key + " (" + (percentChange >= 0 ? "+" : "") + NumberFormat.getPercentInstance().format(percentChange / 100.0) + ")", newValue);
+                }
+            }
+        }
+        if (showDifference) {
+            plot.setDataset(series);
+        }
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        if (subTitle) {
+            TextTitle subtitle = new TextTitle("Bright " + (greenForIncrease ? "red" : "green") + "=change >=-" + percentDiffForMaxScale + "%, Bright " + (!greenForIncrease ? "red" : "green") + "=change >=+" + percentDiffForMaxScale + "%", new Font("SansSerif", Font.PLAIN, 10));
+            chart.addSubtitle(subtitle);
+        }
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Translates a panel (component) location to a Java2D point.
+     * Creates a ring chart with default settings.
+     * <P>
+     * The chart object returned by this method uses a {@link RingPlot}
+     * instance as the plot.
      *
-     * @param screenPoint  the screen location ({@code null} not
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param locale  the locale ({@code null} not permitted).
+     *
+     * @return A ring chart.
+     */
+    public static JFreeChart createRingChart(String title, PieDataset dataset, boolean legend, boolean tooltips, Locale locale) {
+        RingPlot plot = new RingPlot(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator(locale));
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator(locale));
+        }
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a ring chart with default settings.
+     * <P>
+     * The chart object returned by this method uses a {@link RingPlot}
+     * instance as the plot.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A ring chart.
+     */
+    public static JFreeChart createRingChart(String title, PieDataset dataset, boolean legend, boolean tooltips, boolean urls) {
+        RingPlot plot = new RingPlot(dataset);
+        plot.setLabelGenerator(new StandardPieSectionLabelGenerator());
+        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
+        if (tooltips) {
+            plot.setToolTipGenerator(new StandardPieToolTipGenerator());
+        }
+        if (urls) {
+            plot.setURLGenerator(new StandardPieURLGenerator());
+        }
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a chart that displays multiple pie plots.  The chart object
+     * returned by this method uses a {@link MultiplePiePlot} instance as the
+     * plot.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset ({@code null} permitted).
+     * @param order  the order that the data is extracted (by row or by column)
+     *               ({@code null} not permitted).
+     * @param legend  include a legend?
+     * @param tooltips  generate tooltips?
+     * @param urls  generate URLs?
+     *
+     * @return A chart.
+     */
+    public static JFreeChart createMultiplePieChart(String title, CategoryDataset dataset, TableOrder order, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(order, "order");
+        MultiplePiePlot plot = new MultiplePiePlot(dataset);
+        plot.setDataExtractOrder(order);
+        plot.setBackgroundPaint(null);
+        plot.setOutlineStroke(null);
+        if (tooltips) {
+            PieToolTipGenerator tooltipGenerator = new StandardPieToolTipGenerator();
+            PiePlot pp = (PiePlot) plot.getPieChart().getPlot();
+            pp.setToolTipGenerator(tooltipGenerator);
+        }
+        if (urls) {
+            PieURLGenerator urlGenerator = new StandardPieURLGenerator();
+            PiePlot pp = (PiePlot) plot.getPieChart().getPlot();
+            pp.setURLGenerator(urlGenerator);
+        }
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a bar chart with a vertical orientation.  The chart object
+     * returned by this method uses a {@link CategoryPlot} instance as the
+     * plot, with a {@link CategoryAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link BarRenderer} as the
+     * renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis
+     *                        ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A bar chart.
+     */
+    public static JFreeChart createBarChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
+        return createBarChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    }
+
+    /**
+     * Creates a bar chart.  The chart object returned by this method uses a
+     * {@link CategoryPlot} instance as the plot, with a {@link CategoryAxis}
+     * for the domain axis, a {@link NumberAxis} as the range axis, and a
+     * {@link BarRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis
+     *                        ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} not permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A bar chart.
+     */
+    public static JFreeChart createBarChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
+        BarRenderer renderer = new BarRenderer();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            ItemLabelPosition position1 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE3, TextAnchor.CENTER_LEFT);
+            renderer.setDefaultPositiveItemLabelPosition(position1);
+            ItemLabelPosition position2 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE9, TextAnchor.CENTER_RIGHT);
+            renderer.setDefaultNegativeItemLabelPosition(position2);
+        } else if (orientation == PlotOrientation.VERTICAL) {
+            ItemLabelPosition position1 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER);
+            renderer.setDefaultPositiveItemLabelPosition(position1);
+            ItemLabelPosition position2 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE6, TextAnchor.TOP_CENTER);
+            renderer.setDefaultNegativeItemLabelPosition(position2);
+        }
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a stacked bar chart with default settings.  The chart object
+     * returned by this method uses a {@link CategoryPlot} instance as the
+     * plot, with a {@link CategoryAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link StackedBarRenderer}
+     * as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param domainAxisLabel  the label for the category axis
+     *                         ({@code null} permitted).
+     * @param rangeAxisLabel  the label for the value axis
+     *                        ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A stacked bar chart.
+     */
+    public static JFreeChart createStackedBarChart(String title, String domainAxisLabel, String rangeAxisLabel, CategoryDataset dataset) {
+        return createStackedBarChart(title, domainAxisLabel, rangeAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    }
+
+    /**
+     * Creates a stacked bar chart with default settings.  The chart object
+     * returned by this method uses a {@link CategoryPlot} instance as the
+     * plot, with a {@link CategoryAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link StackedBarRenderer}
+     * as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param domainAxisLabel  the label for the category axis
+     *                         ({@code null} permitted).
+     * @param rangeAxisLabel  the label for the value axis
+     *                        ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the orientation of the chart (horizontal or
+     *                     vertical) ({@code null} not permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A stacked bar chart.
+     */
+    public static JFreeChart createStackedBarChart(String title, String domainAxisLabel, String rangeAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        CategoryAxis categoryAxis = new CategoryAxis(domainAxisLabel);
+        ValueAxis valueAxis = new NumberAxis(rangeAxisLabel);
+        StackedBarRenderer renderer = new StackedBarRenderer();
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates an area chart with default settings.  The chart object returned
+     * by this method uses a {@link CategoryPlot} instance as the plot, with a
+     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and an {@link AreaRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return An area chart.
+     */
+    public static JFreeChart createAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
+        return createAreaChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    }
+
+    /**
+     * Creates an area chart with default settings.  The chart object returned
+     * by this method uses a {@link CategoryPlot} instance as the plot, with a
+     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and an {@link AreaRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation ({@code null} not
      *                     permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
      *
-     * @return The Java2D coordinates.
+     * @return An area chart.
      */
-    public Point2D translateScreenToJava2D(Point screenPoint) {
-        Insets insets = getInsets();
-        double x = (screenPoint.getX() - insets.left) / this.scaleX;
-        double y = (screenPoint.getY() - insets.top) / this.scaleY;
-        return new Point2D.Double(x, y);
+    public static JFreeChart createAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        categoryAxis.setCategoryMargin(0.0);
+        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
+        AreaRenderer renderer = new AreaRenderer();
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Applies any scaling that is in effect for the chart drawing to the
-     * given rectangle.
+     * Creates a stacked area chart with default settings.  The chart object
+     * returned by this method uses a {@link CategoryPlot} instance as the
+     * plot, with a {@link CategoryAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link StackedAreaRenderer}
+     * as the renderer.
      *
-     * @param rect  the rectangle ({@code null} not permitted).
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
      *
-     * @return A new scaled rectangle.
+     * @return A stacked area chart.
      */
-    public Rectangle2D scale(Rectangle2D rect) {
-        Insets insets = getInsets();
-        double x = rect.getX() * getScaleX() + insets.left;
-        double y = rect.getY() * getScaleY() + insets.top;
-        double w = rect.getWidth() * getScaleX();
-        double h = rect.getHeight() * getScaleY();
-        return new Rectangle2D.Double(x, y, w, h);
+    public static JFreeChart createStackedAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
+        return createStackedAreaChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Returns the chart entity at a given point.
+     * Creates a stacked area chart with default settings.  The chart object
+     * returned by this method uses a {@link CategoryPlot} instance as the
+     * plot, with a {@link CategoryAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link StackedAreaRenderer}
+     * as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} not permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A stacked area chart.
+     */
+    public static JFreeChart createStackedAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        categoryAxis.setCategoryMargin(0.0);
+        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
+        StackedAreaRenderer renderer = new StackedAreaRenderer();
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a line chart with default settings.  The chart object returned
+     * by this method uses a {@link CategoryPlot} instance as the plot, with a
+     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and a {@link LineAndShapeRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A line chart.
+     */
+    public static JFreeChart createLineChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
+        return createLineChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    }
+
+    /**
+     * Creates a line chart with default settings.  The chart object returned
+     * by this method uses a {@link CategoryPlot} instance as the plot, with a
+     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and a {@link LineAndShapeRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the chart orientation (horizontal or vertical)
+     *                     ({@code null} not permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A line chart.
+     */
+    public static JFreeChart createLineChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
+        LineAndShapeRenderer renderer = new LineAndShapeRenderer(true, false);
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a Gantt chart using the supplied attributes plus default values
+     * where required.  The chart object returned by this method uses a
+     * {@link CategoryPlot} instance as the plot, with a {@link CategoryAxis}
+     * for the domain axis, a {@link DateAxis} as the range axis, and a
+     * {@link GanttRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param dateAxisLabel  the label for the date axis
+     *                       ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A Gantt chart.
+     */
+    public static JFreeChart createGanttChart(String title, String categoryAxisLabel, String dateAxisLabel, IntervalCategoryDataset dataset) {
+        return createGanttChart(title, categoryAxisLabel, dateAxisLabel, dataset, true, true, false);
+    }
+
+    /**
+     * Creates a Gantt chart using the supplied attributes plus default values
+     * where required.  The chart object returned by this method uses a
+     * {@link CategoryPlot} instance as the plot, with a {@link CategoryAxis}
+     * for the domain axis, a {@link DateAxis} as the range axis, and a
+     * {@link GanttRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param dateAxisLabel  the label for the date axis
+     *                       ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A Gantt chart.
+     */
+    public static JFreeChart createGanttChart(String title, String categoryAxisLabel, String dateAxisLabel, IntervalCategoryDataset dataset, boolean legend, boolean tooltips, boolean urls) {
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        DateAxis dateAxis = new DateAxis(dateAxisLabel);
+        CategoryItemRenderer renderer = new GanttRenderer();
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new IntervalCategoryToolTipGenerator("{3} - {4}", DateFormat.getDateInstance()));
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, dateAxis, renderer);
+        plot.setOrientation(PlotOrientation.HORIZONTAL);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a waterfall chart.  The chart object returned by this method
+     * uses a {@link CategoryPlot} instance as the plot, with a
+     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and a {@link WaterfallBarRenderer} as the renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  the label for the category axis
+     *                           ({@code null} permitted).
+     * @param valueAxisLabel  the label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A waterfall chart.
+     */
+    public static JFreeChart createWaterfallChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        categoryAxis.setCategoryMargin(0.0);
+        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
+        WaterfallBarRenderer renderer = new WaterfallBarRenderer();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            ItemLabelPosition position = new ItemLabelPosition(ItemLabelAnchor.CENTER, TextAnchor.CENTER, TextAnchor.CENTER, Math.PI / 2.0);
+            renderer.setDefaultPositiveItemLabelPosition(position);
+            renderer.setDefaultNegativeItemLabelPosition(position);
+        } else if (orientation == PlotOrientation.VERTICAL) {
+            ItemLabelPosition position = new ItemLabelPosition(ItemLabelAnchor.CENTER, TextAnchor.CENTER, TextAnchor.CENTER, 0.0);
+            renderer.setDefaultPositiveItemLabelPosition(position);
+            renderer.setDefaultNegativeItemLabelPosition(position);
+        }
+        if (tooltips) {
+            StandardCategoryToolTipGenerator generator = new StandardCategoryToolTipGenerator();
+            renderer.setDefaultToolTipGenerator(generator);
+        }
+        if (urls) {
+            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
+        }
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        plot.clearRangeMarkers();
+        Marker baseline = new ValueMarker(0.0);
+        baseline.setPaint(Color.BLACK);
+        plot.addRangeMarker(baseline, Layer.FOREGROUND);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a polar plot for the specified dataset (x-values interpreted as
+     * angles in degrees).  The chart object returned by this method uses a
+     * {@link PolarPlot} instance as the plot, with a {@link NumberAxis} for
+     * the radial axis.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset ({@code null} permitted).
+     * @param legend  legend required?
+     * @param tooltips  tooltips required?
+     * @param urls  URLs required?
+     *
+     * @return A chart.
+     */
+    public static JFreeChart createPolarChart(String title, XYDataset dataset, boolean legend, boolean tooltips, boolean urls) {
+        PolarPlot plot = new PolarPlot();
+        plot.setDataset(dataset);
+        NumberAxis rangeAxis = new NumberAxis();
+        rangeAxis.setAxisLineVisible(false);
+        rangeAxis.setTickMarksVisible(false);
+        rangeAxis.setTickLabelInsets(new RectangleInsets(0.0, 0.0, 0.0, 0.0));
+        plot.setAxis(rangeAxis);
+        plot.setRenderer(new DefaultPolarItemRenderer());
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates a scatter plot with default settings.  The chart object
+     * returned by this method uses an {@link XYPlot} instance as the plot,
+     * with a {@link NumberAxis} for the domain axis, a  {@link NumberAxis}
+     * as the range axis, and an {@link XYLineAndShapeRenderer} as the
+     * renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A scatter plot.
+     */
+    public static JFreeChart createScatterPlot(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
+        return createScatterPlot(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    }
+
+    /**
+     * Creates a scatter plot with default settings.  The chart object
+     * returned by this method uses an {@link XYPlot} instance as the plot,
+     * with a {@link NumberAxis} for the domain axis, a  {@link NumberAxis}
+     * as the range axis, and an {@link XYLineAndShapeRenderer} as the
+     * renderer.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A scatter plot.
+     */
+    public static JFreeChart createScatterPlot(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        yAxis.setAutoRangeIncludesZero(false);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
+        XYToolTipGenerator toolTipGenerator = null;
+        if (tooltips) {
+            toolTipGenerator = new StandardXYToolTipGenerator();
+        }
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+        XYItemRenderer renderer = new XYLineAndShapeRenderer(false, true);
+        renderer.setDefaultToolTipGenerator(toolTipGenerator);
+        renderer.setURLGenerator(urlGenerator);
+        plot.setRenderer(renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
+    }
+
+    /**
+     * Creates and returns a default instance of an XY bar chart.
      * <P>
-     * This method will return null if there is (a) no entity at the given
-     * point, or (b) no entity collection has been generated.
+     * The chart object returned by this method uses an {@link XYPlot} instance
+     * as the plot, with a {@link DateAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link XYBarRenderer} as the
+     * renderer.
      *
-     * @param viewX  the x-coordinate.
-     * @param viewY  the y-coordinate.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param dateAxis  make the domain axis display dates?
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
      *
-     * @return The chart entity (possibly {@code null}).
+     * @return An XY bar chart.
      */
-    public ChartEntity getEntityForPoint(int viewX, int viewY) {
-        ChartEntity result = null;
-        if (this.info != null) {
-            Insets insets = getInsets();
-            double x = (viewX - insets.left) / this.scaleX;
-            double y = (viewY - insets.top) / this.scaleY;
-            EntityCollection entities = this.info.getEntityCollection();
-            result = entities != null ? entities.getEntity(x, y) : null;
-        }
-        return result;
+    public static JFreeChart createXYBarChart(String title, String xAxisLabel, boolean dateAxis, String yAxisLabel, IntervalXYDataset dataset) {
+        return createXYBarChart(title, xAxisLabel, dateAxis, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Returns the flag that controls whether the offscreen buffer
-     * needs to be refreshed.
-     *
-     * @return A boolean.
-     */
-    public boolean getRefreshBuffer() {
-        return this.refreshBuffer;
-    }
-
-    /**
-     * Sets the refresh buffer flag.  This flag is used to avoid unnecessary
-     * redrawing of the chart when the offscreen image buffer is used.
-     *
-     * @param flag  {@code true} indicates that the buffer should be
-     *              refreshed.
-     */
-    public void setRefreshBuffer(boolean flag) {
-        this.refreshBuffer = flag;
-    }
-
-    /**
-     * Paints the component by drawing the chart to fill the entire component,
-     * but allowing for the insets (which will be non-zero if a border has been
-     * set for this component).  To increase performance (at the expense of
-     * memory), an off-screen buffer image can be used.
-     *
-     * @param g  the graphics device for drawing on.
-     */
-    @Override
-    public void paintComponent(Graphics g) {
-        super.paintComponent(g);
-        if (this.chart == null) {
-            return;
-        }
-        Graphics2D g2 = (Graphics2D) g.create();
-        // first determine the size of the chart rendering area...
-        Dimension size = getSize();
-        Insets insets = getInsets();
-        Rectangle2D available = new Rectangle2D.Double(insets.left, insets.top, size.getWidth() - insets.left - insets.right, size.getHeight() - insets.top - insets.bottom);
-        // work out if scaling is required...
-        boolean scale = false;
-        double drawWidth = available.getWidth();
-        double drawHeight = available.getHeight();
-        this.scaleX = 1.0;
-        this.scaleY = 1.0;
-        if (drawWidth < this.minimumDrawWidth) {
-            this.scaleX = drawWidth / this.minimumDrawWidth;
-            drawWidth = this.minimumDrawWidth;
-            scale = true;
-        } else if (drawWidth > this.maximumDrawWidth) {
-            this.scaleX = drawWidth / this.maximumDrawWidth;
-            drawWidth = this.maximumDrawWidth;
-            scale = true;
-        }
-        if (drawHeight < this.minimumDrawHeight) {
-            this.scaleY = drawHeight / this.minimumDrawHeight;
-            drawHeight = this.minimumDrawHeight;
-            scale = true;
-        } else if (drawHeight > this.maximumDrawHeight) {
-            this.scaleY = drawHeight / this.maximumDrawHeight;
-            drawHeight = this.maximumDrawHeight;
-            scale = true;
-        }
-        Rectangle2D chartArea = new Rectangle2D.Double(0.0, 0.0, drawWidth, drawHeight);
-        // are we using the chart buffer?
-        if (this.useBuffer) {
-            // for better rendering on the HiDPI monitors upscaling the buffer to the "native" resoution
-            // instead of using logical one provided by Swing
-            final AffineTransform globalTransform = ((Graphics2D) g).getTransform();
-            final double globalScaleX = globalTransform.getScaleX();
-            final double globalScaleY = globalTransform.getScaleY();
-            final int scaledWidth = (int) (available.getWidth() * globalScaleX);
-            final int scaledHeight = (int) (available.getHeight() * globalScaleY);
-            // do we need to resize the buffer?
-            if ((this.chartBuffer == null) || (this.chartBufferWidth != scaledWidth) || (this.chartBufferHeight != scaledHeight)) {
-                this.chartBufferWidth = scaledWidth;
-                this.chartBufferHeight = scaledHeight;
-                GraphicsConfiguration gc = g2.getDeviceConfiguration();
-                this.chartBuffer = gc.createCompatibleImage(this.chartBufferWidth, this.chartBufferHeight, Transparency.TRANSLUCENT);
-                this.refreshBuffer = true;
-            }
-            // do we need to redraw the buffer?
-            if (this.refreshBuffer) {
-                // clear the flag
-                this.refreshBuffer = false;
-                // scale graphics of the buffer to the same value as global
-                // Swing graphics - this allow to paint all elements as usual
-                // but applies all necessary smoothing
-                Graphics2D bufferG2 = (Graphics2D) this.chartBuffer.getGraphics();
-                bufferG2.scale(globalScaleX, globalScaleY);
-                Rectangle2D bufferArea = new Rectangle2D.Double(0, 0, available.getWidth(), available.getHeight());
-                // make the background of the buffer clear and transparent
-                Composite savedComposite = bufferG2.getComposite();
-                bufferG2.setComposite(AlphaComposite.getInstance(AlphaComposite.CLEAR, 0.0f));
-                Rectangle r = new Rectangle(0, 0, (int) available.getWidth(), (int) available.getHeight());
-                bufferG2.fill(r);
-                bufferG2.setComposite(savedComposite);
-                if (scale) {
-                    AffineTransform saved = bufferG2.getTransform();
-                    AffineTransform st = AffineTransform.getScaleInstance(this.scaleX, this.scaleY);
-                    bufferG2.transform(st);
-                    this.chart.draw(bufferG2, chartArea, this.anchor, this.info);
-                    bufferG2.setTransform(saved);
-                } else {
-                    this.chart.draw(bufferG2, bufferArea, this.anchor, this.info);
-                }
-                bufferG2.dispose();
-            }
-            // zap the buffer onto the panel...
-            g2.drawImage(this.chartBuffer, insets.left, insets.top, (int) available.getWidth(), (int) available.getHeight(), this);
-            // bug#187
-            g2.addRenderingHints(this.chart.getRenderingHints());
-        } else {
-            // redrawing the chart every time...
-            AffineTransform saved = g2.getTransform();
-            g2.translate(insets.left, insets.top);
-            if (scale) {
-                AffineTransform st = AffineTransform.getScaleInstance(this.scaleX, this.scaleY);
-                g2.transform(st);
-            }
-            this.chart.draw(g2, chartArea, this.anchor, this.info);
-            g2.setTransform(saved);
-        }
-        for (Overlay overlay : this.overlays) {
-            overlay.paintOverlay(g2, this);
-        }
-        // redraw the zoom rectangle (if present) - if useBuffer is false,
-        // we use XOR so we can XOR the rectangle away again without redrawing
-        // the chart
-        selectionZoomStrategy.drawZoomRectangle(g2, !this.useBuffer);
-        g2.dispose();
-        this.anchor = null;
-    }
-
-    /**
-     * Receives notification of changes to the chart, and redraws the chart.
-     *
-     * @param event  details of the chart change event.
-     */
-    @Override
-    public void chartChanged(ChartChangeEvent event) {
-        this.refreshBuffer = true;
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            this.orientation = z.getOrientation();
-        }
-        repaint();
-    }
-
-    /**
-     * Receives notification of a chart progress event.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void chartProgress(ChartProgressEvent event) {
-        // does nothing - override if necessary
-    }
-
-    /**
-     * Handles action events generated by the popup menu.
-     *
-     * @param event  the event.
-     */
-    @Override
-    public void actionPerformed(ActionEvent event) {
-        String command = event.getActionCommand();
-        // many of the zoom methods need a screen location - all we have is
-        // the zoomPoint, but it might be null.  Here we grab the x and y
-        // coordinates, or use defaults...
-        double screenX = -1.0;
-        double screenY = -1.0;
-        Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-        if (zoomPoint != null) {
-            screenX = zoomPoint.getX();
-            screenY = zoomPoint.getY();
-        }
-        switch(command) {
-            case PROPERTIES_COMMAND:
-                doEditChartProperties();
-                break;
-            case COPY_COMMAND:
-                doCopy();
-                break;
-            case SAVE_AS_PNG_COMMAND:
-                try {
-                    doSaveAs();
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(this, "I/O error occurred.", localizationResources.getString("Save_as_PNG"), JOptionPane.WARNING_MESSAGE);
-                }
-                break;
-            case SAVE_AS_PNG_SIZE_COMMAND:
-                try {
-                    final Dimension ss = Toolkit.getDefaultToolkit().getScreenSize();
-                    doSaveAs(ss.width, ss.height);
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(ChartPanel.this, "I/O error occurred.", localizationResources.getString("Save_as_PNG"), JOptionPane.WARNING_MESSAGE);
-                }
-                break;
-            case SAVE_AS_SVG_COMMAND:
-                try {
-                    saveAsSVG(null);
-                } catch (IOException e) {
-                    JOptionPane.showMessageDialog(this, "I/O error occurred.", localizationResources.getString("Save_as_SVG"), JOptionPane.WARNING_MESSAGE);
-                }
-                break;
-            case SAVE_AS_PDF_COMMAND:
-                saveAsPDF(null);
-                break;
-            case PRINT_COMMAND:
-                createChartPrintJob();
-                break;
-            case ZOOM_IN_BOTH_COMMAND:
-                zoomInBoth(screenX, screenY);
-                break;
-            case ZOOM_IN_DOMAIN_COMMAND:
-                zoomInDomain(screenX, screenY);
-                break;
-            case ZOOM_IN_RANGE_COMMAND:
-                zoomInRange(screenX, screenY);
-                break;
-            case ZOOM_OUT_BOTH_COMMAND:
-                zoomOutBoth(screenX, screenY);
-                break;
-            case ZOOM_OUT_DOMAIN_COMMAND:
-                zoomOutDomain(screenX, screenY);
-                break;
-            case ZOOM_OUT_RANGE_COMMAND:
-                zoomOutRange(screenX, screenY);
-                break;
-            case ZOOM_RESET_BOTH_COMMAND:
-                restoreAutoBounds();
-                break;
-            case ZOOM_RESET_DOMAIN_COMMAND:
-                restoreAutoDomainBounds();
-                break;
-            case ZOOM_RESET_RANGE_COMMAND:
-                restoreAutoRangeBounds();
-                break;
-        }
-    }
-
-    /**
-     * Handles a 'mouse entered' event. This method changes the tooltip delays
-     * of ToolTipManager.sharedInstance() to the possibly different values set
-     * for this chart panel.
-     *
-     * @param e  the mouse event.
-     */
-    @Override
-    public void mouseEntered(MouseEvent e) {
-        if (!this.ownToolTipDelaysActive) {
-            ToolTipManager ttm = ToolTipManager.sharedInstance();
-            this.originalToolTipInitialDelay = ttm.getInitialDelay();
-            ttm.setInitialDelay(this.ownToolTipInitialDelay);
-            this.originalToolTipReshowDelay = ttm.getReshowDelay();
-            ttm.setReshowDelay(this.ownToolTipReshowDelay);
-            this.originalToolTipDismissDelay = ttm.getDismissDelay();
-            ttm.setDismissDelay(this.ownToolTipDismissDelay);
-            this.ownToolTipDelaysActive = true;
-        }
-    }
-
-    /**
-     * Handles a 'mouse exited' event. This method resets the tooltip delays of
-     * ToolTipManager.sharedInstance() to their
-     * original values in effect before mouseEntered()
-     *
-     * @param e  the mouse event.
-     */
-    @Override
-    public void mouseExited(MouseEvent e) {
-        if (this.ownToolTipDelaysActive) {
-            // restore original tooltip dealys
-            ToolTipManager ttm = ToolTipManager.sharedInstance();
-            ttm.setInitialDelay(this.originalToolTipInitialDelay);
-            ttm.setReshowDelay(this.originalToolTipReshowDelay);
-            ttm.setDismissDelay(this.originalToolTipDismissDelay);
-            this.ownToolTipDelaysActive = false;
-        }
-    }
-
-    /**
-     * Handles a 'mouse pressed' event.
+     * Creates and returns a default instance of an XY bar chart.
      * <P>
-     * This event is the popup trigger on Unix/Linux.  For Windows, the popup
-     * trigger is the 'mouse released' event.
+     * The chart object returned by this method uses an {@link XYPlot} instance
+     * as the plot, with a {@link DateAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link XYBarRenderer} as the
+     * renderer.
      *
-     * @param e  The mouse event.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param dateAxis  make the domain axis display dates?
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return An XY bar chart.
      */
-    @Override
-    public void mousePressed(MouseEvent e) {
-        if (this.chart == null) {
-            return;
+    public static JFreeChart createXYBarChart(String title, String xAxisLabel, boolean dateAxis, String yAxisLabel, IntervalXYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        ValueAxis domainAxis;
+        if (dateAxis) {
+            domainAxis = new DateAxis(xAxisLabel);
+        } else {
+            NumberAxis axis = new NumberAxis(xAxisLabel);
+            axis.setAutoRangeIncludesZero(false);
+            domainAxis = axis;
         }
-        Plot plot = this.chart.getPlot();
-        int button = e.getButton();
-        int mods = e.getModifiersEx();
-        if ((mods & MODIFIERS_EX_MASK) == panButtonMasks.getOrDefault(button, panMask)) {
-            // can we pan this plot?
-            if (plot instanceof Pannable) {
-                Pannable pannable = (Pannable) plot;
-                if (pannable.isDomainPannable() || pannable.isRangePannable()) {
-                    Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
-                    if (screenDataArea != null && screenDataArea.contains(e.getPoint())) {
-                        this.panW = screenDataArea.getWidth();
-                        this.panH = screenDataArea.getHeight();
-                        this.panLast = e.getPoint();
-                        setCursor(Cursor.getPredefinedCursor(Cursor.MOVE_CURSOR));
-                    }
-                }
-                // the actual panning occurs later in the mouseDragged()
-                // method
-            }
-        } else if (!this.selectionZoomStrategy.isActivated()) {
-            if ((mods & MODIFIERS_EX_MASK) == zoomButtonMasks.getOrDefault(button, zoomMask)) {
-                Rectangle2D screenDataArea = getScreenDataArea(e.getX(), e.getY());
-                if (screenDataArea != null) {
-                    Point2D zoomPoint = getPointInRectangle(e.getX(), e.getY(), screenDataArea);
-                    selectionZoomStrategy.setZoomPoint(zoomPoint);
-                } else {
-                    selectionZoomStrategy.setZoomPoint(null);
-                }
-            }
-            if (e.isPopupTrigger()) {
-                if (this.popup != null) {
-                    displayPopupMenu(e.getX(), e.getY());
-                }
-            }
-        }
-    }
-
-    /**
-     * Returns a point based on (x, y) but constrained to be within the bounds
-     * of the given rectangle.  This method could be moved to JCommon.
-     *
-     * @param x  the x-coordinate.
-     * @param y  the y-coordinate.
-     * @param area  the rectangle ({@code null} not permitted).
-     *
-     * @return A point within the rectangle.
-     */
-    protected Point2D getPointInRectangle(int x, int y, Rectangle2D area) {
-        double xx = Math.max(area.getMinX(), Math.min(x, area.getMaxX()));
-        double yy = Math.max(area.getMinY(), Math.min(y, area.getMaxY()));
-        return new Point2D.Double(xx, yy);
-    }
-
-    /**
-     * Handles a 'mouse dragged' event.
-     *
-     * @param e  the mouse event.
-     */
-    @Override
-    public void mouseDragged(MouseEvent e) {
-        // if the popup menu has already been triggered, then ignore dragging...
-        if (this.popup != null && this.popup.isShowing()) {
-            return;
-        }
-        // handle panning if we have a start point
-        if (this.panLast != null) {
-            double dx = e.getX() - this.panLast.getX();
-            double dy = e.getY() - this.panLast.getY();
-            if (dx == 0.0 && dy == 0.0) {
-                return;
-            }
-            double wPercent = -dx / this.panW;
-            double hPercent = dy / this.panH;
-            boolean old = this.chart.getPlot().isNotify();
-            this.chart.getPlot().setNotify(false);
-            Pannable p = (Pannable) this.chart.getPlot();
-            if (p.getOrientation() == PlotOrientation.VERTICAL) {
-                p.panDomainAxes(wPercent, this.info.getPlotInfo(), this.panLast);
-                p.panRangeAxes(hPercent, this.info.getPlotInfo(), this.panLast);
+        ValueAxis valueAxis = new NumberAxis(yAxisLabel);
+        XYBarRenderer renderer = new XYBarRenderer();
+        if (tooltips) {
+            XYToolTipGenerator tt;
+            if (dateAxis) {
+                tt = StandardXYToolTipGenerator.getTimeSeriesInstance();
             } else {
-                p.panDomainAxes(hPercent, this.info.getPlotInfo(), this.panLast);
-                p.panRangeAxes(wPercent, this.info.getPlotInfo(), this.panLast);
+                tt = new StandardXYToolTipGenerator();
             }
-            this.panLast = e.getPoint();
-            this.chart.getPlot().setNotify(old);
-            return;
+            renderer.setDefaultToolTipGenerator(tt);
         }
-        // if no initial zoom point was set, ignore dragging...
-        if (this.selectionZoomStrategy.getZoomPoint() == null) {
-            return;
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
         }
-        Graphics2D g2 = (Graphics2D) getGraphics();
-        // erase the previous zoom rectangle (if any).  We only need to do
-        // this is we are using XOR mode, which we do when we're not using
-        // the buffer (if there is a buffer, then at the end of this method we
-        // just trigger a repaint)
-        if (!this.useBuffer) {
-            selectionZoomStrategy.drawZoomRectangle(g2, true);
-        }
-        boolean hZoom, vZoom;
-        if (this.orientation == PlotOrientation.HORIZONTAL) {
-            hZoom = this.rangeZoomable;
-            vZoom = this.domainZoomable;
-        } else {
-            hZoom = this.domainZoomable;
-            vZoom = this.rangeZoomable;
-        }
-        Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-        Rectangle2D scaledDataArea = getScreenDataArea((int) zoomPoint.getX(), (int) zoomPoint.getY());
-        selectionZoomStrategy.updateZoomRectangleSelection(e, hZoom, vZoom, scaledDataArea);
-        // Draw the new zoom rectangle...
-        if (this.useBuffer) {
-            repaint();
-        } else {
-            // with no buffer, we use XOR to draw the rectangle "over" the
-            // chart...
-            selectionZoomStrategy.drawZoomRectangle(g2, true);
-        }
-        g2.dispose();
+        XYPlot plot = new XYPlot(dataset, domainAxis, valueAxis, renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Handles a 'mouse released' event.  On Windows, we need to check if this
-     * is a popup trigger, but only if we haven't already been tracking a zoom
-     * rectangle.
+     * Creates an area chart using an {@link XYDataset}.
+     * <P>
+     * The chart object returned by this method uses an {@link XYPlot} instance
+     * as the plot, with a {@link NumberAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link XYAreaRenderer} as
+     * the renderer.
      *
-     * @param e  information about the event.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return An XY area chart.
+     *
+     * @param <S> the type for series keys.
      */
-    @Override
-    public void mouseReleased(MouseEvent e) {
-        // if we've been panning, we need to reset now that the mouse is
-        // released...
-        if (this.panLast != null) {
-            this.panLast = null;
-            setCursor(Cursor.getDefaultCursor());
-        } else if (this.selectionZoomStrategy.isActivated()) {
-            boolean hZoom, vZoom;
-            if (this.orientation == PlotOrientation.HORIZONTAL) {
-                hZoom = this.rangeZoomable;
-                vZoom = this.domainZoomable;
-            } else {
-                hZoom = this.domainZoomable;
-                vZoom = this.rangeZoomable;
-            }
-            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-            boolean zoomTrigger1 = hZoom && Math.abs(e.getX() - zoomPoint.getX()) >= this.selectionZoomStrategy.getZoomTriggerDistance();
-            boolean zoomTrigger2 = vZoom && Math.abs(e.getY() - zoomPoint.getY()) >= this.selectionZoomStrategy.getZoomTriggerDistance();
-            if (zoomTrigger1 || zoomTrigger2) {
-                if ((hZoom && (e.getX() < zoomPoint.getX())) || (vZoom && (e.getY() < zoomPoint.getY()))) {
-                    restoreAutoBounds();
-                } else {
-                    Rectangle2D screenDataArea = getScreenDataArea((int) zoomPoint.getX(), (int) zoomPoint.getY());
-                    Rectangle2D zoomArea = selectionZoomStrategy.getZoomRectangle(hZoom, vZoom, screenDataArea);
-                    zoom(zoomArea);
-                }
-                this.selectionZoomStrategy.reset();
-            } else {
-                // erase the zoom rectangle
-                Graphics2D g2 = (Graphics2D) getGraphics();
-                if (this.useBuffer) {
-                    repaint();
-                } else {
-                    selectionZoomStrategy.drawZoomRectangle(g2, true);
-                }
-                g2.dispose();
-                this.selectionZoomStrategy.reset();
-            }
-        } else if (e.isPopupTrigger()) {
-            if (this.popup != null) {
-                displayPopupMenu(e.getX(), e.getY());
-            }
-        }
+    public static <S extends Comparable<S>> JFreeChart createXYAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset<S> dataset) {
+        return createXYAreaChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Receives notification of mouse clicks on the panel. These are
-     * translated and passed on to any registered {@link ChartMouseListener}s.
+     * Creates an area chart using an {@link XYDataset}.
+     * <P>
+     * The chart object returned by this method uses an {@link XYPlot} instance
+     * as the plot, with a {@link NumberAxis} for the domain axis, a
+     * {@link NumberAxis} as the range axis, and a {@link XYAreaRenderer} as
+     * the renderer.
      *
-     * @param event  Information about the mouse event.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @param <S> the type for series keys.
+     *
+     * @return An XY area chart.
      */
-    @Override
-    public void mouseClicked(MouseEvent event) {
-        Insets insets = getInsets();
-        int x = (int) ((event.getX() - insets.left) / this.scaleX);
-        int y = (int) ((event.getY() - insets.top) / this.scaleY);
-        this.anchor = new Point2D.Double(x, y);
-        if (this.chart == null) {
-            return;
+    public static <S extends Comparable<S>> JFreeChart createXYAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset<S> dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        XYPlot<S> plot = new XYPlot<>(dataset, xAxis, yAxis, null);
+        plot.setOrientation(orientation);
+        plot.setForegroundAlpha(0.5f);
+        XYToolTipGenerator tipGenerator = null;
+        if (tooltips) {
+            tipGenerator = new StandardXYToolTipGenerator();
         }
-        // force a redraw
-        this.chart.setNotify(true);
-        // new entity code...
-        Object[] listeners = this.chartMouseListeners.getListeners(ChartMouseListener.class);
-        if (listeners.length == 0) {
-            return;
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
         }
-        ChartEntity entity = null;
-        if (this.info != null) {
-            EntityCollection entities = this.info.getEntityCollection();
-            if (entities != null) {
-                entity = entities.getEntity(x, y);
-            }
-        }
-        ChartMouseEvent chartEvent = new ChartMouseEvent(getChart(), event, entity);
-        for (int i = listeners.length - 1; i >= 0; i -= 1) {
-            ((ChartMouseListener) listeners[i]).chartMouseClicked(chartEvent);
-        }
+        plot.setRenderer(new XYAreaRenderer(XYAreaRenderer.AREA, tipGenerator, urlGenerator));
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Implementation of the MouseMotionListener's method.
+     * Creates a stacked XY area plot.  The chart object returned by this
+     * method uses an {@link XYPlot} instance as the plot, with a
+     * {@link NumberAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and a {@link StackedXYAreaRenderer2} as the renderer.
      *
-     * @param e  the event.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A stacked XY area chart.
      */
-    @Override
-    public void mouseMoved(MouseEvent e) {
-        Graphics2D g2 = (Graphics2D) getGraphics();
-        g2.dispose();
-        Object[] listeners = this.chartMouseListeners.getListeners(ChartMouseListener.class);
-        if (listeners.length == 0) {
-            return;
-        }
-        Insets insets = getInsets();
-        int x = (int) ((e.getX() - insets.left) / this.scaleX);
-        int y = (int) ((e.getY() - insets.top) / this.scaleY);
-        ChartEntity entity = null;
-        if (this.info != null) {
-            EntityCollection entities = this.info.getEntityCollection();
-            if (entities != null) {
-                entity = entities.getEntity(x, y);
-            }
-        }
-        // we can only generate events if the panel's chart is not null
-        // (see bug report 1556951)
-        if (this.chart != null) {
-            ChartMouseEvent event = new ChartMouseEvent(getChart(), e, entity);
-            for (int i = listeners.length - 1; i >= 0; i -= 1) {
-                ((ChartMouseListener) listeners[i]).chartMouseMoved(event);
-            }
-        }
+    public static JFreeChart createStackedXYAreaChart(String title, String xAxisLabel, String yAxisLabel, TableXYDataset dataset) {
+        return createStackedXYAreaChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Zooms in on an anchor point (specified in screen coordinate space).
+     * Creates a stacked XY area plot.  The chart object returned by this
+     * method uses an {@link XYPlot} instance as the plot, with a
+     * {@link NumberAxis} for the domain axis, a {@link NumberAxis} as the
+     * range axis, and a {@link StackedXYAreaRenderer2} as the renderer.
      *
-     * @param x  the x value (in screen coordinates).
-     * @param y  the y value (in screen coordinates).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A stacked XY area chart.
      */
-    public void zoomInBoth(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot == null) {
-            return;
+    public static JFreeChart createStackedXYAreaChart(String title, String xAxisLabel, String yAxisLabel, TableXYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        xAxis.setLowerMargin(0.0);
+        xAxis.setUpperMargin(0.0);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        XYToolTipGenerator toolTipGenerator = null;
+        if (tooltips) {
+            toolTipGenerator = new StandardXYToolTipGenerator();
         }
-        // here we tweak the notify flag on the plot so that only
-        // one notification happens even though we update multiple
-        // axes...
-        boolean savedNotify = plot.isNotify();
-        plot.setNotify(false);
-        zoomInDomain(x, y);
-        zoomInRange(x, y);
-        plot.setNotify(savedNotify);
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+        StackedXYAreaRenderer2 renderer = new StackedXYAreaRenderer2(toolTipGenerator, urlGenerator);
+        renderer.setOutline(true);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+        plot.setOrientation(orientation);
+        // forces recalculation of the axis range
+        plot.setRangeAxis(yAxis);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Decreases the length of the domain axis, centered about the given
-     * coordinate on the screen.  The length of the domain axis is reduced
-     * by the value of {@link #getZoomInFactor()}.
+     * Creates a line chart (based on an {@link XYDataset}) with default
+     * settings.
      *
-     * @param x  the x coordinate (in screen coordinates).
-     * @param y  the y-coordinate (in screen coordinates).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return The chart.
      */
-    public void zoomInDomain(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomDomainAxes(this.zoomInFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
-        }
+    public static JFreeChart createXYLineChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
+        return createXYLineChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Decreases the length of the range axis, centered about the given
-     * coordinate on the screen.  The length of the range axis is reduced by
-     * the value of {@link #getZoomInFactor()}.
+     * Creates a line chart (based on an {@link XYDataset}) with default
+     * settings.
      *
-     * @param x  the x-coordinate (in screen coordinates).
-     * @param y  the y coordinate (in screen coordinates).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return The chart.
      */
-    public void zoomInRange(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomRangeAxes(this.zoomInFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
+    public static JFreeChart createXYLineChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+        plot.setOrientation(orientation);
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
         }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+        JFreeChart chart = null;
+        chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Zooms out on an anchor point (specified in screen coordinate space).
+     * Creates a stepped XY plot with default settings.
      *
-     * @param x  the x value (in screen coordinates).
-     * @param y  the y value (in screen coordinates).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A chart.
      */
-    public void zoomOutBoth(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot == null) {
-            return;
-        }
-        // here we tweak the notify flag on the plot so that only
-        // one notification happens even though we update multiple
-        // axes...
-        boolean savedNotify = plot.isNotify();
-        plot.setNotify(false);
-        zoomOutDomain(x, y);
-        zoomOutRange(x, y);
-        plot.setNotify(savedNotify);
+    public static JFreeChart createXYStepChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
+        return createXYStepChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Increases the length of the domain axis, centered about the given
-     * coordinate on the screen.  The length of the domain axis is increased
-     * by the value of {@link #getZoomOutFactor()}.
+     * Creates a stepped XY plot with default settings.
      *
-     * @param x  the x coordinate (in screen coordinates).
-     * @param y  the y-coordinate (in screen coordinates).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A chart.
      */
-    public void zoomOutDomain(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomDomainAxes(this.zoomOutFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
+    public static JFreeChart createXYStepChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        DateAxis xAxis = new DateAxis(xAxisLabel);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
+        XYToolTipGenerator toolTipGenerator = null;
+        if (tooltips) {
+            toolTipGenerator = new StandardXYToolTipGenerator();
         }
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+        XYItemRenderer renderer = new XYStepRenderer(toolTipGenerator, urlGenerator);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
+        plot.setRenderer(renderer);
+        plot.setOrientation(orientation);
+        plot.setDomainCrosshairVisible(false);
+        plot.setRangeCrosshairVisible(false);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Increases the length the range axis, centered about the given
-     * coordinate on the screen.  The length of the range axis is increased
-     * by the value of {@link #getZoomOutFactor()}.
+     * Creates a filled stepped XY plot with default settings.
      *
-     * @param x  the x coordinate (in screen coordinates).
-     * @param y  the y-coordinate (in screen coordinates).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A chart.
      */
-    public void zoomOutRange(double x, double y) {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            Zoomable z = (Zoomable) plot;
-            z.zoomRangeAxes(this.zoomOutFactor, this.info.getPlotInfo(), translateScreenToJava2D(new Point((int) x, (int) y)), this.zoomAroundAnchor);
-            plot.setNotify(savedNotify);
-        }
+    public static JFreeChart createXYStepAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
+        return createXYStepAreaChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Zooms in on a selected region.
+     * Creates a filled stepped XY plot with default settings.
      *
-     * @param selection  the selected region.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A chart.
      */
-    public void zoom(Rectangle2D selection) {
-        // get the origin of the zoom selection in the Java2D space used for
-        // drawing the chart (that is, before any scaling to fit the panel)
-        Point2D selectOrigin = translateScreenToJava2D(new Point((int) Math.ceil(selection.getX()), (int) Math.ceil(selection.getY())));
-        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
-        Rectangle2D scaledDataArea = getScreenDataArea((int) selection.getCenterX(), (int) selection.getCenterY());
-        if ((selection.getHeight() > 0) && (selection.getWidth() > 0)) {
-            double hLower = (selection.getMinX() - scaledDataArea.getMinX()) / scaledDataArea.getWidth();
-            double hUpper = (selection.getMaxX() - scaledDataArea.getMinX()) / scaledDataArea.getWidth();
-            double vLower = (scaledDataArea.getMaxY() - selection.getMaxY()) / scaledDataArea.getHeight();
-            double vUpper = (scaledDataArea.getMaxY() - selection.getMinY()) / scaledDataArea.getHeight();
-            Plot p = this.chart.getPlot();
-            if (p instanceof Zoomable) {
-                // here we tweak the notify flag on the plot so that only
-                // one notification happens even though we update multiple
-                // axes...
-                boolean savedNotify = p.isNotify();
-                p.setNotify(false);
-                Zoomable z = (Zoomable) p;
-                if (z.getOrientation() == PlotOrientation.HORIZONTAL) {
-                    z.zoomDomainAxes(vLower, vUpper, plotInfo, selectOrigin);
-                    z.zoomRangeAxes(hLower, hUpper, plotInfo, selectOrigin);
-                } else {
-                    z.zoomDomainAxes(hLower, hUpper, plotInfo, selectOrigin);
-                    z.zoomRangeAxes(vLower, vUpper, plotInfo, selectOrigin);
-                }
-                p.setNotify(savedNotify);
-            }
+    public static JFreeChart createXYStepAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        XYToolTipGenerator toolTipGenerator = null;
+        if (tooltips) {
+            toolTipGenerator = new StandardXYToolTipGenerator();
         }
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+        XYItemRenderer renderer = new XYStepAreaRenderer(XYStepAreaRenderer.AREA_AND_SHAPES, toolTipGenerator, urlGenerator);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
+        plot.setRenderer(renderer);
+        plot.setOrientation(orientation);
+        plot.setDomainCrosshairVisible(false);
+        plot.setRangeCrosshairVisible(false);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Restores the auto-range calculation on both axes.
+     * Creates and returns a time series chart.  A time series chart is an
+     * {@link XYPlot} with a {@link DateAxis} for the x-axis and a
+     * {@link NumberAxis} for the y-axis.  The default renderer is an
+     * {@link XYLineAndShapeRenderer}.
+     * <P>
+     * A convenient dataset to use with this chart is a
+     * {@link org.jfree.data.time.TimeSeriesCollection}.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param timeAxisLabel  a label for the time axis ({@code null}
+     *                       permitted).
+     * @param valueAxisLabel  a label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     *
+     * @return A time series chart.
      */
-    public void restoreAutoBounds() {
-        Plot plot = this.chart.getPlot();
-        if (plot == null) {
-            return;
-        }
-        // here we tweak the notify flag on the plot so that only
-        // one notification happens even though we update multiple
-        // axes...
-        boolean savedNotify = plot.isNotify();
-        plot.setNotify(false);
-        restoreAutoDomainBounds();
-        restoreAutoRangeBounds();
-        plot.setNotify(savedNotify);
+    public static JFreeChart createTimeSeriesChart(String title, String timeAxisLabel, String valueAxisLabel, XYDataset dataset) {
+        return createTimeSeriesChart(title, timeAxisLabel, valueAxisLabel, dataset, true, true, false);
     }
 
     /**
-     * Restores the auto-range calculation on the domain axis.
+     * Creates and returns a time series chart.  A time series chart is an
+     * {@link XYPlot} with a {@link DateAxis} for the x-axis and a
+     * {@link NumberAxis} for the y-axis.  The default renderer is an
+     * {@link XYLineAndShapeRenderer}.
+     * <P>
+     * A convenient dataset to use with this chart is a
+     * {@link org.jfree.data.time.TimeSeriesCollection}.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param timeAxisLabel  a label for the time axis ({@code null}
+     *                       permitted).
+     * @param valueAxisLabel  a label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
+     *
+     * @return A time series chart.
      */
-    public void restoreAutoDomainBounds() {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            // we need to guard against this.zoomPoint being null
-            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-            Point2D zp = zoomPoint != null ? zoomPoint : new Point();
-            z.zoomDomainAxes(0.0, this.info.getPlotInfo(), zp);
-            plot.setNotify(savedNotify);
+    public static JFreeChart createTimeSeriesChart(String title, String timeAxisLabel, String valueAxisLabel, XYDataset dataset, boolean legend, boolean tooltips, boolean urls) {
+        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
+        // reduce the default margins
+        timeAxis.setLowerMargin(0.02);
+        timeAxis.setUpperMargin(0.02);
+        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
+        // override default
+        valueAxis.setAutoRangeIncludesZero(false);
+        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, null);
+        XYToolTipGenerator toolTipGenerator = null;
+        if (tooltips) {
+            toolTipGenerator = StandardXYToolTipGenerator.getTimeSeriesInstance();
         }
+        XYURLGenerator urlGenerator = null;
+        if (urls) {
+            urlGenerator = new StandardXYURLGenerator();
+        }
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        renderer.setDefaultToolTipGenerator(toolTipGenerator);
+        renderer.setURLGenerator(urlGenerator);
+        plot.setRenderer(renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Restores the auto-range calculation on the range axis.
+     * Creates and returns a default instance of a candlesticks chart.
+     *
+     * @param title  the chart title ({@code null} permitted).
+     * @param timeAxisLabel  a label for the time axis ({@code null}
+     *                       permitted).
+     * @param valueAxisLabel  a label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     *
+     * @return A candlestick chart.
      */
-    public void restoreAutoRangeBounds() {
-        Plot plot = this.chart.getPlot();
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            // here we tweak the notify flag on the plot so that only
-            // one notification happens even though we update multiple
-            // axes...
-            boolean savedNotify = plot.isNotify();
-            plot.setNotify(false);
-            // we need to guard against this.zoomPoint being null
-            Point2D zoomPoint = this.selectionZoomStrategy.getZoomPoint();
-            Point2D zp = zoomPoint != null ? zoomPoint : new Point();
-            z.zoomRangeAxes(0.0, this.info.getPlotInfo(), zp);
-            plot.setNotify(savedNotify);
-        }
+    public static JFreeChart createCandlestickChart(String title, String timeAxisLabel, String valueAxisLabel, OHLCDataset dataset, boolean legend) {
+        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
+        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
+        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, null);
+        plot.setRenderer(new CandlestickRenderer());
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Returns the data area for the chart (the area inside the axes) with the
-     * current scaling applied (that is, the area as it appears on screen).
+     * Creates and returns a default instance of a high-low-open-close chart.
      *
-     * @return The scaled data area.
+     * @param title  the chart title ({@code null} permitted).
+     * @param timeAxisLabel  a label for the time axis ({@code null}
+     *                       permitted).
+     * @param valueAxisLabel  a label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     *
+     * @return A high-low-open-close chart.
      */
-    public Rectangle2D getScreenDataArea() {
-        Rectangle2D dataArea = this.info.getPlotInfo().getDataArea();
-        Insets insets = getInsets();
-        double x = dataArea.getX() * this.scaleX + insets.left;
-        double y = dataArea.getY() * this.scaleY + insets.top;
-        double w = dataArea.getWidth() * this.scaleX;
-        double h = dataArea.getHeight() * this.scaleY;
-        return new Rectangle2D.Double(x, y, w, h);
+    public static JFreeChart createHighLowChart(String title, String timeAxisLabel, String valueAxisLabel, OHLCDataset dataset, boolean legend) {
+        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
+        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
+        HighLowRenderer renderer = new HighLowRenderer();
+        renderer.setDefaultToolTipGenerator(new HighLowItemLabelGenerator());
+        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Returns the data area (the area inside the axes) for the plot or subplot,
-     * with the current scaling applied.
+     * Creates a bubble chart with default settings.  The chart is composed of
+     * an {@link XYPlot}, with a {@link NumberAxis} for the domain axis,
+     * a {@link NumberAxis} for the range axis, and an {@link XYBubbleRenderer}
+     * to draw the data items.
      *
-     * @param x  the x-coordinate (for subplot selection).
-     * @param y  the y-coordinate (for subplot selection).
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
      *
-     * @return The scaled data area.
+     * @return A bubble chart.
      */
-    public Rectangle2D getScreenDataArea(int x, int y) {
-        PlotRenderingInfo plotInfo = this.info.getPlotInfo();
-        Rectangle2D result;
-        if (plotInfo.getSubplotCount() == 0) {
-            result = getScreenDataArea();
-        } else {
-            // get the origin of the zoom selection in the Java2D space used for
-            // drawing the chart (that is, before any scaling to fit the panel)
-            Point2D selectOrigin = translateScreenToJava2D(new Point(x, y));
-            int subplotIndex = plotInfo.getSubplotIndex(selectOrigin);
-            if (subplotIndex == -1) {
-                return null;
-            }
-            result = scale(plotInfo.getSubplotInfo(subplotIndex).getDataArea());
-        }
-        return result;
+    public static JFreeChart createBubbleChart(String title, String xAxisLabel, String yAxisLabel, XYZDataset dataset) {
+        return createBubbleChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Returns the initial tooltip delay value used inside this chart panel.
+     * Creates a bubble chart with default settings.  The chart is composed of
+     * an {@link XYPlot}, with a {@link NumberAxis} for the domain axis,
+     * a {@link NumberAxis} for the range axis, and an {@link XYBubbleRenderer}
+     * to draw the data items.
      *
-     * @return An integer representing the initial delay value, in milliseconds.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param orientation  the orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  a flag specifying whether a legend is required.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
      *
-     * @see javax.swing.ToolTipManager#getInitialDelay()
+     * @return A bubble chart.
      */
-    public int getInitialDelay() {
-        return this.ownToolTipInitialDelay;
+    public static JFreeChart createBubbleChart(String title, String xAxisLabel, String yAxisLabel, XYZDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        NumberAxis yAxis = new NumberAxis(yAxisLabel);
+        yAxis.setAutoRangeIncludesZero(false);
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
+        XYItemRenderer renderer = new XYBubbleRenderer(XYBubbleRenderer.SCALE_ON_RANGE_AXIS);
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardXYZToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYZURLGenerator());
+        }
+        plot.setRenderer(renderer);
+        plot.setOrientation(orientation);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Returns the reshow tooltip delay value used inside this chart panel.
+     * Creates a histogram chart.  This chart is constructed with an
+     * {@link XYPlot} using an {@link XYBarRenderer}.  The domain and range
+     * axes are {@link NumberAxis} instances.
      *
-     * @return An integer representing the reshow  delay value, in milliseconds.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  the x-axis label ({@code null} permitted).
+     * @param yAxisLabel  the y-axis label ({@code null} permitted).
+     * @param dataset  the dataset ({@code null} permitted).
      *
-     * @see javax.swing.ToolTipManager#getReshowDelay()
+     * @return A chart.
      */
-    public int getReshowDelay() {
-        return this.ownToolTipReshowDelay;
+    public static JFreeChart createHistogram(String title, String xAxisLabel, String yAxisLabel, IntervalXYDataset dataset) {
+        return createHistogram(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
     }
 
     /**
-     * Returns the dismissal tooltip delay value used inside this chart panel.
+     * Creates a histogram chart.  This chart is constructed with an
+     * {@link XYPlot} using an {@link XYBarRenderer}.  The domain and range
+     * axes are {@link NumberAxis} instances.
      *
-     * @return An integer representing the dismissal delay value, in
-     *         milliseconds.
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  the x axis label ({@code null} permitted).
+     * @param yAxisLabel  the y axis label ({@code null} permitted).
+     * @param dataset  the dataset ({@code null} permitted).
+     * @param orientation  the orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted).
+     * @param legend  create a legend?
+     * @param tooltips  display tooltips?
+     * @param urls  generate URLs?
      *
-     * @see javax.swing.ToolTipManager#getDismissDelay()
+     * @return The chart.
      */
-    public int getDismissDelay() {
-        return this.ownToolTipDismissDelay;
+    public static JFreeChart createHistogram(String title, String xAxisLabel, String yAxisLabel, IntervalXYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        NumberAxis xAxis = new NumberAxis(xAxisLabel);
+        xAxis.setAutoRangeIncludesZero(false);
+        ValueAxis yAxis = new NumberAxis(yAxisLabel);
+        XYItemRenderer renderer = new XYBarRenderer();
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+        plot.setOrientation(orientation);
+        plot.setDomainZeroBaselineVisible(true);
+        plot.setRangeZeroBaselineVisible(true);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Specifies the initial delay value for this chart panel.
+     * Creates and returns a default instance of a box and whisker chart
+     * based on data from a {@link BoxAndWhiskerCategoryDataset}.
      *
-     * @param delay  the number of milliseconds to delay (after the cursor has
-     *               paused) before displaying.
+     * @param title  the chart title ({@code null} permitted).
+     * @param categoryAxisLabel  a label for the category axis
+     *     ({@code null} permitted).
+     * @param valueAxisLabel  a label for the value axis ({@code null}
+     *     permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
      *
-     * @see javax.swing.ToolTipManager#setInitialDelay(int)
+     * @return A box and whisker chart.
      */
-    public void setInitialDelay(int delay) {
-        this.ownToolTipInitialDelay = delay;
+    public static JFreeChart createBoxAndWhiskerChart(String title, String categoryAxisLabel, String valueAxisLabel, BoxAndWhiskerCategoryDataset dataset, boolean legend) {
+        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
+        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
+        valueAxis.setAutoRangeIncludesZero(false);
+        BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer();
+        renderer.setDefaultToolTipGenerator(new BoxAndWhiskerToolTipGenerator());
+        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Specifies the amount of time before the user has to wait initialDelay
-     * milliseconds before a tooltip will be shown.
+     * Creates and returns a default instance of a box and whisker chart.
      *
-     * @param delay  time in milliseconds
+     * @param title  the chart title ({@code null} permitted).
+     * @param timeAxisLabel  a label for the time axis ({@code null}
+     *                       permitted).
+     * @param valueAxisLabel  a label for the value axis ({@code null}
+     *                        permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag specifying whether a legend is required.
      *
-     * @see javax.swing.ToolTipManager#setReshowDelay(int)
+     * @return A box and whisker chart.
      */
-    public void setReshowDelay(int delay) {
-        this.ownToolTipReshowDelay = delay;
+    public static JFreeChart createBoxAndWhiskerChart(String title, String timeAxisLabel, String valueAxisLabel, BoxAndWhiskerXYDataset dataset, boolean legend) {
+        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
+        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
+        valueAxis.setAutoRangeIncludesZero(false);
+        XYBoxAndWhiskerRenderer renderer = new XYBoxAndWhiskerRenderer(10.0);
+        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Specifies the dismissal delay value for this chart panel.
+     * Creates a wind plot with default settings.
      *
-     * @param delay the number of milliseconds to delay before taking away the
-     *              tooltip
+     * @param title  the chart title ({@code null} permitted).
+     * @param xAxisLabel  a label for the x-axis ({@code null} permitted).
+     * @param yAxisLabel  a label for the y-axis ({@code null} permitted).
+     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param legend  a flag that controls whether a legend is created.
+     * @param tooltips  configure chart to generate tool tips?
+     * @param urls  configure chart to generate URLs?
      *
-     * @see javax.swing.ToolTipManager#setDismissDelay(int)
+     * @return A wind plot.
      */
-    public void setDismissDelay(int delay) {
-        this.ownToolTipDismissDelay = delay;
+    public static JFreeChart createWindPlot(String title, String xAxisLabel, String yAxisLabel, WindDataset dataset, boolean legend, boolean tooltips, boolean urls) {
+        ValueAxis xAxis = new DateAxis(xAxisLabel);
+        ValueAxis yAxis = new NumberAxis(yAxisLabel);
+        yAxis.setRange(-12.0, 12.0);
+        WindItemRenderer renderer = new WindItemRenderer();
+        if (tooltips) {
+            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+        }
+        if (urls) {
+            renderer.setURLGenerator(new StandardXYURLGenerator());
+        }
+        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 
     /**
-     * Returns the zoom in factor.
+     * Creates a wafer map chart.
      *
-     * @return The zoom in factor.
+     * @param title  the chart title ({@code null} permitted).
+     * @param dataset  the dataset ({@code null} permitted).
+     * @param orientation  the plot orientation (horizontal or vertical)
+     *                     ({@code null} NOT permitted.
+     * @param legend  display a legend?
+     * @param tooltips  generate tooltips?
+     * @param urls  generate URLs?
      *
-     * @see #setZoomInFactor(double)
+     * @return A wafer map chart.
      */
-    public double getZoomInFactor() {
-        return this.zoomInFactor;
-    }
-
-    /**
-     * Sets the zoom in factor.
-     *
-     * @param factor  the factor.
-     *
-     * @see #getZoomInFactor()
-     */
-    public void setZoomInFactor(double factor) {
-        this.zoomInFactor = factor;
-    }
-
-    /**
-     * Returns the zoom out factor.
-     *
-     * @return The zoom out factor.
-     *
-     * @see #setZoomOutFactor(double)
-     */
-    public double getZoomOutFactor() {
-        return this.zoomOutFactor;
-    }
-
-    /**
-     * Sets the zoom out factor.
-     *
-     * @param factor  the factor.
-     *
-     * @see #getZoomOutFactor()
-     */
-    public void setZoomOutFactor(double factor) {
-        this.zoomOutFactor = factor;
-    }
-
-    /**
-     * Displays a dialog that allows the user to edit the properties for the
-     * current chart.
-     */
-    public void doEditChartProperties() {
-        ChartEditor editor = ChartEditorManager.getChartEditor(this.chart);
-        int result = JOptionPane.showConfirmDialog(this, editor, localizationResources.getString("Chart_Properties"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-        if (result == JOptionPane.OK_OPTION) {
-            editor.updateChart(this.chart);
-        }
-    }
-
-    /**
-     * Copies the current chart to the system clipboard.
-     */
-    public void doCopy() {
-        Clipboard systemClipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        Insets insets = getInsets();
-        int w = getWidth() - insets.left - insets.right;
-        int h = getHeight() - insets.top - insets.bottom;
-        ChartTransferable selection = new ChartTransferable(this.chart, w, h, getMinimumDrawWidth(), getMinimumDrawHeight(), getMaximumDrawWidth(), getMaximumDrawHeight(), true);
-        systemClipboard.setContents(selection, null);
-    }
-
-    /**
-     * Opens a file chooser and gives the user an opportunity to save the chart
-     * in PNG format.
-     *
-     * @throws IOException if there is an I/O error.
-     */
-    public void doSaveAs() throws IOException {
-        doSaveAs(-1, -1);
-    }
-
-    /**
-     * Opens a file chooser and gives the user an opportunity to save the chart
-     * in PNG format.
-     *
-     * @param w  the width for the saved image (if less than or equal to zero,
-     *      the panel width will be used);
-     * @param h  the height for the PNG image (if less than or equal to zero,
-     *      the panel height will be used);
-     *
-     * @throws IOException if there is an I/O error.
-     */
-    public void doSaveAs(int w, int h) throws IOException {
-        JFileChooser fileChooser = new JFileChooser();
-        fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
-        FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("PNG_Image_Files"), "png");
-        fileChooser.addChoosableFileFilter(filter);
-        fileChooser.setFileFilter(filter);
-        int option = fileChooser.showSaveDialog(this);
-        if (option == JFileChooser.APPROVE_OPTION) {
-            String filename = fileChooser.getSelectedFile().getPath();
-            if (isEnforceFileExtensions()) {
-                if (!filename.endsWith(".png")) {
-                    filename = filename + ".png";
-                }
-            }
-            if (w <= 0) {
-                w = getWidth();
-            }
-            if (h <= 0) {
-                h = getHeight();
-            }
-            ChartUtils.saveChartAsPNG(new File(filename), this.chart, w, h);
-        }
-    }
-
-    /**
-     * Saves the chart in SVG format (a filechooser will be displayed so that
-     * the user can specify the filename).  Note that this method only works
-     * if the JFreeSVG library is on the classpath...if this library is not
-     * present, the method will fail.
-     *
-     * @param f  the file.
-     *
-     * @throws IOException if there is an exception.
-     */
-    protected void saveAsSVG(File f) throws IOException {
-        File file = f;
-        if (file == null) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
-            FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("SVG_Files"), "svg");
-            fileChooser.addChoosableFileFilter(filter);
-            fileChooser.setFileFilter(filter);
-            int option = fileChooser.showSaveDialog(this);
-            if (option == JFileChooser.APPROVE_OPTION) {
-                String filename = fileChooser.getSelectedFile().getPath();
-                if (isEnforceFileExtensions()) {
-                    if (!filename.endsWith(".svg")) {
-                        filename = filename + ".svg";
-                    }
-                }
-                file = new File(filename);
-                if (file.exists()) {
-                    String fileExists = localizationResources.getString("FILE_EXISTS_CONFIRM_OVERWRITE");
-                    int response = JOptionPane.showConfirmDialog(this, fileExists, localizationResources.getString("Save_as_SVG"), JOptionPane.OK_CANCEL_OPTION);
-                    if (response == JOptionPane.CANCEL_OPTION) {
-                        file = null;
-                    }
-                }
-            }
-        }
-        if (file != null) {
-            // use reflection to get the SVG string
-            String svg = generateSVG(getWidth(), getHeight());
-            BufferedWriter writer = null;
-            Exception originalException = null;
-            try {
-                writer = new BufferedWriter(new FileWriter(file));
-                writer.write("<!DOCTYPE svg PUBLIC \"-//W3C//DTD SVG 1.1//EN\" \"http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd\">\n");
-                writer.write(svg + "\n");
-                writer.flush();
-            } catch (Exception e) {
-                originalException = e;
-            }
-            try {
-                if (writer != null) {
-                    writer.close();
-                }
-            } catch (IOException ex) {
-                RuntimeException th = new RuntimeException(ex);
-                if (originalException != null)
-                    th.addSuppressed(originalException);
-                throw th;
-            }
-        }
-    }
-
-    /**
-     * Generates a string containing a rendering of the chart in SVG format.
-     * This feature is only supported if the JFreeSVG library is included on
-     * the classpath.
-     *
-     * @param width  the width.
-     * @param height  the height.
-     *
-     * @return A string containing an SVG element for the current chart, or
-     *     {@code null} if there is a problem with the method invocation
-     *     by reflection.
-     */
-    protected String generateSVG(int width, int height) {
-        Graphics2D g2 = createSVGGraphics2D(width, height);
-        if (g2 == null) {
-            throw new IllegalStateException("JFreeSVG library is not present.");
-        }
-        // we suppress shadow generation, because SVG is a vector format and
-        // the shadow effect is applied via bitmap effects...
-        g2.setRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION, true);
-        String svg = null;
-        Rectangle2D drawArea = new Rectangle2D.Double(0, 0, width, height);
-        this.chart.draw(g2, drawArea);
-        try {
-            Method m = g2.getClass().getMethod("getSVGElement");
-            svg = (String) m.invoke(g2);
-        } catch (NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-            // null will be returned
-        }
-        return svg;
-    }
-
-    /**
-     * Creates an {@code SVGGraphics2D} instance (from JFreeSVG) using reflection.
-     * If JFreeSVG is not on the classpath, this method returns {@code null}.
-     *
-     * @param w  the width.
-     * @param h  the height.
-     *
-     * @return An {@code SVGGraphics2D} instance or {@code null}.
-     */
-    protected Graphics2D createSVGGraphics2D(int w, int h) {
-        try {
-            Class<?> svgGraphics2d = Class.forName("org.jfree.graphics2d.svg.SVGGraphics2D");
-            Constructor<?> ctor = svgGraphics2d.getConstructor(int.class, int.class);
-            return (Graphics2D) ctor.newInstance(w, h);
-        } catch (ClassNotFoundException | NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ex) {
-            return null;
-        }
-    }
-
-    /**
-     * Saves the chart in PDF format (a filechooser will be displayed so that
-     * the user can specify the filename).  Note that this method only works
-     * if the OrsonPDF library is on the classpath...if this library is not
-     * present, the method will fail.
-     *
-     * @param f  the file.
-     */
-    protected void saveAsPDF(File f) {
-        File file = f;
-        if (file == null) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setCurrentDirectory(this.defaultDirectoryForSaveAs);
-            FileNameExtensionFilter filter = new FileNameExtensionFilter(localizationResources.getString("PDF_Files"), "pdf");
-            fileChooser.addChoosableFileFilter(filter);
-            fileChooser.setFileFilter(filter);
-            int option = fileChooser.showSaveDialog(this);
-            if (option == JFileChooser.APPROVE_OPTION) {
-                String filename = fileChooser.getSelectedFile().getPath();
-                if (isEnforceFileExtensions()) {
-                    if (!filename.endsWith(".pdf")) {
-                        filename = filename + ".pdf";
-                    }
-                }
-                file = new File(filename);
-                if (file.exists()) {
-                    String fileExists = localizationResources.getString("FILE_EXISTS_CONFIRM_OVERWRITE");
-                    int response = JOptionPane.showConfirmDialog(this, fileExists, localizationResources.getString("Save_as_PDF"), JOptionPane.OK_CANCEL_OPTION);
-                    if (response == JOptionPane.CANCEL_OPTION) {
-                        file = null;
-                    }
-                }
-            }
-        }
-        if (file != null) {
-            writeAsPDF(file, getWidth(), getHeight());
-        }
-    }
-
-    /**
-     * Writes the current chart to the specified file in PDF format.  This
-     * will only work when the OrsonPDF library is found on the classpath.
-     * Reflection is used to ensure there is no compile-time dependency on
-     * OrsonPDF (which is non-free software).
-     *
-     * @param file  the output file ({@code null} not permitted).
-     * @param w  the chart width.
-     * @param h  the chart height.
-     */
-    private void writeAsPDF(File file, int w, int h) {
-        if (!ChartUtils.isOrsonPDFAvailable()) {
-            throw new IllegalStateException("OrsonPDF is not present on the classpath.");
-        }
-        Args.nullNotPermitted(file, "file");
-        try {
-            Class<?> pdfDocClass = Class.forName("com.orsonpdf.PDFDocument");
-            Object pdfDoc = pdfDocClass.getDeclaredConstructor().newInstance();
-            Method m = pdfDocClass.getMethod("createPage", Rectangle2D.class);
-            Rectangle2D rect = new Rectangle(w, h);
-            Object page = m.invoke(pdfDoc, rect);
-            Method m2 = page.getClass().getMethod("getGraphics2D");
-            Graphics2D g2 = (Graphics2D) m2.invoke(page);
-            // we suppress shadow generation, because PDF is a vector format and
-            // the shadow effect is applied via bitmap effects...
-            g2.setRenderingHint(JFreeChart.KEY_SUPPRESS_SHADOW_GENERATION, true);
-            Rectangle2D drawArea = new Rectangle2D.Double(0, 0, w, h);
-            this.chart.draw(g2, drawArea);
-            Method m3 = pdfDocClass.getMethod("writeToFile", File.class);
-            m3.invoke(pdfDoc, file);
-        } catch (ClassNotFoundException | InstantiationException | IllegalAccessException | NoSuchMethodException | SecurityException | IllegalArgumentException | InvocationTargetException ex) {
-            throw new RuntimeException(ex);
-        }
-    }
-
-    /**
-     * Creates a print job for the chart.
-     */
-    public void createChartPrintJob() {
-        PrinterJob job = PrinterJob.getPrinterJob();
-        PageFormat pf = job.defaultPage();
-        PageFormat pf2 = job.pageDialog(pf);
-        if (pf2 != pf) {
-            job.setPrintable(this, pf2);
-            if (job.printDialog()) {
-                try {
-                    job.print();
-                } catch (PrinterException e) {
-                    JOptionPane.showMessageDialog(this, e);
-                }
-            }
-        }
-    }
-
-    /**
-     * Prints the chart on a single page.
-     *
-     * @param g  the graphics context.
-     * @param pf  the page format to use.
-     * @param pageIndex  the index of the page. If not {@code 0}, nothing
-     *                   gets printed.
-     *
-     * @return The result of printing.
-     */
-    @Override
-    public int print(Graphics g, PageFormat pf, int pageIndex) {
-        if (pageIndex != 0) {
-            return NO_SUCH_PAGE;
-        }
-        Graphics2D g2 = (Graphics2D) g;
-        double x = pf.getImageableX();
-        double y = pf.getImageableY();
-        double w = pf.getImageableWidth();
-        double h = pf.getImageableHeight();
-        this.chart.draw(g2, new Rectangle2D.Double(x, y, w, h), this.anchor, null);
-        return PAGE_EXISTS;
-    }
-
-    /**
-     * Adds a listener to the list of objects listening for chart mouse events.
-     *
-     * @param listener  the listener ({@code null} not permitted).
-     */
-    public void addChartMouseListener(ChartMouseListener listener) {
-        Args.nullNotPermitted(listener, "listener");
-        this.chartMouseListeners.add(ChartMouseListener.class, listener);
-    }
-
-    /**
-     * Removes a listener from the list of objects listening for chart mouse
-     * events.
-     *
-     * @param listener  the listener.
-     */
-    public void removeChartMouseListener(ChartMouseListener listener) {
-        this.chartMouseListeners.remove(ChartMouseListener.class, listener);
-    }
-
-    /**
-     * Returns an array of the listeners of the given type registered with the
-     * panel.
-     *
-     * @param listenerType  the listener type.
-     *
-     * @return An array of listeners.
-     */
-    @Override
-    public <T extends EventListener> T[] getListeners(Class<T> listenerType) {
-        if (listenerType == ChartMouseListener.class) {
-            // fetch listeners from local storage
-            return this.chartMouseListeners.getListeners(listenerType);
-        } else {
-            return super.getListeners(listenerType);
-        }
-    }
-
-    /**
-     * Creates a popup menu for the panel.  This method includes code that
-     * auto-detects JFreeSVG and OrsonPDF (via reflection) and, if they are
-     * present (and the {@code save} argument is {@code true}, adds a menu item
-     * for each.
-     *
-     * @param properties  include a menu item for the chart property editor.
-     * @param copy include a menu item for copying to the clipboard.
-     * @param save  include one or more menu items for saving the chart to
-     *     supported image formats.
-     * @param print  include a menu item for printing the chart.
-     * @param zoom  include menu items for zooming.
-     *
-     * @return The popup menu.
-     */
-    protected JPopupMenu createPopupMenu(boolean properties, boolean copy, boolean save, boolean print, boolean zoom) {
-        JPopupMenu result = new JPopupMenu(localizationResources.getString("Chart") + ":");
-        boolean separator = false;
-        if (properties) {
-            JMenuItem propertiesItem = new JMenuItem(localizationResources.getString("Properties..."));
-            propertiesItem.setActionCommand(PROPERTIES_COMMAND);
-            propertiesItem.addActionListener(this);
-            result.add(propertiesItem);
-            separator = true;
-        }
-        if (copy) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenuItem copyItem = new JMenuItem(localizationResources.getString("Copy"));
-            copyItem.setActionCommand(COPY_COMMAND);
-            copyItem.addActionListener(this);
-            result.add(copyItem);
-            separator = !save;
-        }
-        if (save) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenu saveSubMenu = new JMenu(localizationResources.getString("Save_as"));
-            // PNG - current res
-            {
-                JMenuItem pngItem = new JMenuItem(localizationResources.getString("PNG..."));
-                pngItem.setActionCommand(SAVE_AS_PNG_COMMAND);
-                pngItem.addActionListener(this);
-                saveSubMenu.add(pngItem);
-            }
-            // PNG - screen res
-            {
-                final Dimension ss = Toolkit.getDefaultToolkit().getScreenSize();
-                final String pngName = "PNG (" + ss.width + "x" + ss.height + ") ...";
-                JMenuItem pngItem = new JMenuItem(pngName);
-                pngItem.setActionCommand(SAVE_AS_PNG_SIZE_COMMAND);
-                pngItem.addActionListener(this);
-                saveSubMenu.add(pngItem);
-            }
-            if (ChartUtils.isJFreeSVGAvailable()) {
-                JMenuItem svgItem = new JMenuItem(localizationResources.getString("SVG..."));
-                svgItem.setActionCommand(SAVE_AS_SVG_COMMAND);
-                svgItem.addActionListener(this);
-                saveSubMenu.add(svgItem);
-            }
-            if (ChartUtils.isOrsonPDFAvailable()) {
-                JMenuItem pdfItem = new JMenuItem(localizationResources.getString("PDF..."));
-                pdfItem.setActionCommand(SAVE_AS_PDF_COMMAND);
-                pdfItem.addActionListener(this);
-                saveSubMenu.add(pdfItem);
-            }
-            result.add(saveSubMenu);
-            separator = true;
-        }
-        if (print) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenuItem printItem = new JMenuItem(localizationResources.getString("Print..."));
-            printItem.setActionCommand(PRINT_COMMAND);
-            printItem.addActionListener(this);
-            result.add(printItem);
-            separator = true;
-        }
-        if (zoom) {
-            if (separator) {
-                result.addSeparator();
-            }
-            JMenu zoomInMenu = new JMenu(localizationResources.getString("Zoom_In"));
-            this.zoomInBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
-            this.zoomInBothMenuItem.setActionCommand(ZOOM_IN_BOTH_COMMAND);
-            this.zoomInBothMenuItem.addActionListener(this);
-            zoomInMenu.add(this.zoomInBothMenuItem);
-            zoomInMenu.addSeparator();
-            this.zoomInDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
-            this.zoomInDomainMenuItem.setActionCommand(ZOOM_IN_DOMAIN_COMMAND);
-            this.zoomInDomainMenuItem.addActionListener(this);
-            zoomInMenu.add(this.zoomInDomainMenuItem);
-            this.zoomInRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
-            this.zoomInRangeMenuItem.setActionCommand(ZOOM_IN_RANGE_COMMAND);
-            this.zoomInRangeMenuItem.addActionListener(this);
-            zoomInMenu.add(this.zoomInRangeMenuItem);
-            result.add(zoomInMenu);
-            JMenu zoomOutMenu = new JMenu(localizationResources.getString("Zoom_Out"));
-            this.zoomOutBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
-            this.zoomOutBothMenuItem.setActionCommand(ZOOM_OUT_BOTH_COMMAND);
-            this.zoomOutBothMenuItem.addActionListener(this);
-            zoomOutMenu.add(this.zoomOutBothMenuItem);
-            zoomOutMenu.addSeparator();
-            this.zoomOutDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
-            this.zoomOutDomainMenuItem.setActionCommand(ZOOM_OUT_DOMAIN_COMMAND);
-            this.zoomOutDomainMenuItem.addActionListener(this);
-            zoomOutMenu.add(this.zoomOutDomainMenuItem);
-            this.zoomOutRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
-            this.zoomOutRangeMenuItem.setActionCommand(ZOOM_OUT_RANGE_COMMAND);
-            this.zoomOutRangeMenuItem.addActionListener(this);
-            zoomOutMenu.add(this.zoomOutRangeMenuItem);
-            result.add(zoomOutMenu);
-            JMenu autoRangeMenu = new JMenu(localizationResources.getString("Auto_Range"));
-            this.zoomResetBothMenuItem = new JMenuItem(localizationResources.getString("All_Axes"));
-            this.zoomResetBothMenuItem.setActionCommand(ZOOM_RESET_BOTH_COMMAND);
-            this.zoomResetBothMenuItem.addActionListener(this);
-            autoRangeMenu.add(this.zoomResetBothMenuItem);
-            autoRangeMenu.addSeparator();
-            this.zoomResetDomainMenuItem = new JMenuItem(localizationResources.getString("Domain_Axis"));
-            this.zoomResetDomainMenuItem.setActionCommand(ZOOM_RESET_DOMAIN_COMMAND);
-            this.zoomResetDomainMenuItem.addActionListener(this);
-            autoRangeMenu.add(this.zoomResetDomainMenuItem);
-            this.zoomResetRangeMenuItem = new JMenuItem(localizationResources.getString("Range_Axis"));
-            this.zoomResetRangeMenuItem.setActionCommand(ZOOM_RESET_RANGE_COMMAND);
-            this.zoomResetRangeMenuItem.addActionListener(this);
-            autoRangeMenu.add(this.zoomResetRangeMenuItem);
-            result.addSeparator();
-            result.add(autoRangeMenu);
-        }
-        return result;
-    }
-
-    /**
-     * The idea is to modify the zooming options depending on the type of chart
-     * being displayed by the panel.
-     *
-     * @param x  horizontal position of the popup.
-     * @param y  vertical position of the popup.
-     */
-    protected void displayPopupMenu(int x, int y) {
-        if (this.popup == null) {
-            return;
-        }
-        // go through each zoom menu item and decide whether to
-        // enable it...
-        boolean isDomainZoomable = false;
-        boolean isRangeZoomable = false;
-        Plot plot = (this.chart != null ? this.chart.getPlot() : null);
-        if (plot instanceof Zoomable) {
-            Zoomable z = (Zoomable) plot;
-            isDomainZoomable = z.isDomainZoomable();
-            isRangeZoomable = z.isRangeZoomable();
-        }
-        if (this.zoomInDomainMenuItem != null) {
-            this.zoomInDomainMenuItem.setEnabled(isDomainZoomable);
-        }
-        if (this.zoomOutDomainMenuItem != null) {
-            this.zoomOutDomainMenuItem.setEnabled(isDomainZoomable);
-        }
-        if (this.zoomResetDomainMenuItem != null) {
-            this.zoomResetDomainMenuItem.setEnabled(isDomainZoomable);
-        }
-        if (this.zoomInRangeMenuItem != null) {
-            this.zoomInRangeMenuItem.setEnabled(isRangeZoomable);
-        }
-        if (this.zoomOutRangeMenuItem != null) {
-            this.zoomOutRangeMenuItem.setEnabled(isRangeZoomable);
-        }
-        if (this.zoomResetRangeMenuItem != null) {
-            this.zoomResetRangeMenuItem.setEnabled(isRangeZoomable);
-        }
-        if (this.zoomInBothMenuItem != null) {
-            this.zoomInBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
-        }
-        if (this.zoomOutBothMenuItem != null) {
-            this.zoomOutBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
-        }
-        if (this.zoomResetBothMenuItem != null) {
-            this.zoomResetBothMenuItem.setEnabled(isDomainZoomable && isRangeZoomable);
-        }
-        this.popup.show(this, x, y);
-    }
-
-    /**
-     * Updates the UI for a LookAndFeel change.
-     */
-    @Override
-    public void updateUI() {
-        // here we need to update the UI for the popup menu, if the panel
-        // has one...
-        if (this.popup != null) {
-            SwingUtilities.updateComponentTreeUI(this.popup);
-        }
-        super.updateUI();
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the output stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     */
-    protected void writeObject(ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the input stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
-     */
-    protected void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-        // we create a new but empty chartMouseListeners list
-        this.chartMouseListeners = new EventListenerList();
-        // register as a listener with sub-components...
-        if (this.chart != null) {
-            this.chart.addChangeListener(this);
-        }
+    public static JFreeChart createWaferMapChart(String title, WaferMapDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
+        Args.nullNotPermitted(orientation, "orientation");
+        WaferMapPlot plot = new WaferMapPlot(dataset);
+        WaferMapRenderer renderer = new WaferMapRenderer();
+        plot.setRenderer(renderer);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
+        currentTheme.apply(chart);
+        return chart;
     }
 }
 /* ======================================================
@@ -2884,407 +1648,940 @@ class ChartPanel extends JPanel implements ChartChangeListener, ChartProgressLis
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * --------------------------
- * DefaultHighLowDataset.java
- * --------------------------
- * (C) Copyright 2002-present, by David Gilbert.
+ * ---------------
+ * SerialDate.java
+ * ---------------
+ * (C) Copyright 2006-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
  *
  */
 /**
- * A simple implementation of the {@link OHLCDataset} interface.  See also
- * the {@link DefaultOHLCDataset} class, which provides another implementation
- * that is very similar.
+ *  An abstract class that defines our requirements for manipulating dates,
+ *  without tying down a particular implementation.
+ *  <P>
+ *  Requirement 1 : match at least what Excel does for dates;
+ *  Requirement 2 : the date represented by the class is immutable;
+ *  <P>
+ *  Why not just use java.util.Date?  We will, when it makes sense.  At times,
+ *  java.util.Date can be *too* precise - it represents an instant in time,
+ *  accurate to 1/1000th of a second (with the date itself depending on the
+ *  time-zone).  Sometimes we just want to represent a particular day (e.g. 21
+ *  January 2015) without concerning ourselves about the time of day, or the
+ *  time-zone, or anything else.  That's what we've defined SerialDate for.
+ *  <P>
+ *  You can call getInstance() to get a concrete subclass of SerialDate,
+ *  without worrying about the exact implementation.
  */
-class DefaultHighLowDataset extends AbstractXYDataset implements OHLCDataset, PublicCloneable {
+public abstract class SerialDate implements Comparable, Serializable, MonthConstants {
 
     /**
-     * The series key.
+     * For serialization.
      */
-    private Comparable seriesKey;
+    private static final long serialVersionUID = -293716040467423637L;
 
     /**
-     * Storage for the dates.
+     * Date format symbols.
      */
-    private Date[] date;
+    public static final DateFormatSymbols DATE_FORMAT_SYMBOLS = new SimpleDateFormat().getDateFormatSymbols();
 
     /**
-     * Storage for the high values.
+     * The serial number for 1 January 1900.
      */
-    private Number[] high;
+    public static final int SERIAL_LOWER_BOUND = 2;
 
     /**
-     * Storage for the low values.
+     * The serial number for 31 December 9999.
      */
-    private Number[] low;
+    public static final int SERIAL_UPPER_BOUND = 2958465;
 
     /**
-     * Storage for the open values.
+     * The lowest year value supported by this date format.
      */
-    private Number[] open;
+    public static final int MINIMUM_YEAR_SUPPORTED = 1900;
 
     /**
-     * Storage for the close values.
+     * The highest year value supported by this date format.
      */
-    private Number[] close;
+    public static final int MAXIMUM_YEAR_SUPPORTED = 9999;
 
     /**
-     * Storage for the volume values.
+     * Useful constant for Monday. Equivalent to java.util.Calendar.MONDAY.
      */
-    private Number[] volume;
+    public static final int MONDAY = Calendar.MONDAY;
 
     /**
-     * Constructs a new high/low/open/close dataset.
-     * <p>
-     * The current implementation allows only one series in the dataset.
-     * This may be extended in a future version.
-     *
-     * @param seriesKey  the key for the series ({@code null} not
-     *     permitted).
-     * @param date  the dates ({@code null} not permitted).
-     * @param high  the high values ({@code null} not permitted).
-     * @param low  the low values ({@code null} not permitted).
-     * @param open  the open values ({@code null} not permitted).
-     * @param close  the close values ({@code null} not permitted).
-     * @param volume  the volume values ({@code null} not permitted).
+     * Useful constant for Tuesday. Equivalent to java.util.Calendar.TUESDAY.
      */
-    public DefaultHighLowDataset(Comparable seriesKey, Date[] date, double[] high, double[] low, double[] open, double[] close, double[] volume) {
-        Args.nullNotPermitted(seriesKey, "seriesKey");
-        Args.nullNotPermitted(date, "date");
-        this.seriesKey = seriesKey;
-        this.date = date;
-        this.high = createNumberArray(high);
-        this.low = createNumberArray(low);
-        this.open = createNumberArray(open);
-        this.close = createNumberArray(close);
-        this.volume = createNumberArray(volume);
+    public static final int TUESDAY = Calendar.TUESDAY;
+
+    /**
+     * Useful constant for Wednesday. Equivalent to
+     * java.util.Calendar.WEDNESDAY.
+     */
+    public static final int WEDNESDAY = Calendar.WEDNESDAY;
+
+    /**
+     * Useful constant for Thrusday. Equivalent to java.util.Calendar.THURSDAY.
+     */
+    public static final int THURSDAY = Calendar.THURSDAY;
+
+    /**
+     * Useful constant for Friday. Equivalent to java.util.Calendar.FRIDAY.
+     */
+    public static final int FRIDAY = Calendar.FRIDAY;
+
+    /**
+     * Useful constant for Saturday. Equivalent to java.util.Calendar.SATURDAY.
+     */
+    public static final int SATURDAY = Calendar.SATURDAY;
+
+    /**
+     * Useful constant for Sunday. Equivalent to java.util.Calendar.SUNDAY.
+     */
+    public static final int SUNDAY = Calendar.SUNDAY;
+
+    /**
+     * The number of days in each month in non leap years.
+     */
+    static final int[] LAST_DAY_OF_MONTH = { 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+
+    /**
+     * The number of days in a (non-leap) year up to the end of each month.
+     */
+    static final int[] AGGREGATE_DAYS_TO_END_OF_MONTH = { 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+
+    /**
+     * The number of days in a year up to the end of the preceding month.
+     */
+    static final int[] AGGREGATE_DAYS_TO_END_OF_PRECEDING_MONTH = { 0, 0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365 };
+
+    /**
+     * The number of days in a leap year up to the end of each month.
+     */
+    static final int[] LEAP_YEAR_AGGREGATE_DAYS_TO_END_OF_MONTH = { 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+
+    /**
+     * The number of days in a leap year up to the end of the preceding month.
+     */
+    static final int[] LEAP_YEAR_AGGREGATE_DAYS_TO_END_OF_PRECEDING_MONTH = { 0, 0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366 };
+
+    /**
+     * A useful constant for referring to the first week in a month.
+     */
+    public static final int FIRST_WEEK_IN_MONTH = 1;
+
+    /**
+     * A useful constant for referring to the second week in a month.
+     */
+    public static final int SECOND_WEEK_IN_MONTH = 2;
+
+    /**
+     * A useful constant for referring to the third week in a month.
+     */
+    public static final int THIRD_WEEK_IN_MONTH = 3;
+
+    /**
+     * A useful constant for referring to the fourth week in a month.
+     */
+    public static final int FOURTH_WEEK_IN_MONTH = 4;
+
+    /**
+     * A useful constant for referring to the last week in a month.
+     */
+    public static final int LAST_WEEK_IN_MONTH = 0;
+
+    /**
+     * Useful range constant.
+     */
+    public static final int INCLUDE_NONE = 0;
+
+    /**
+     * Useful range constant.
+     */
+    public static final int INCLUDE_FIRST = 1;
+
+    /**
+     * Useful range constant.
+     */
+    public static final int INCLUDE_SECOND = 2;
+
+    /**
+     * Useful range constant.
+     */
+    public static final int INCLUDE_BOTH = 3;
+
+    /**
+     * Useful constant for specifying a day of the week relative to a fixed
+     * date.
+     */
+    public static final int PRECEDING = -1;
+
+    /**
+     * Useful constant for specifying a day of the week relative to a fixed
+     * date.
+     */
+    public static final int NEAREST = 0;
+
+    /**
+     * Useful constant for specifying a day of the week relative to a fixed
+     * date.
+     */
+    public static final int FOLLOWING = 1;
+
+    /**
+     * A description for the date.
+     */
+    private String description;
+
+    /**
+     * Default constructor.
+     */
+    protected SerialDate() {
     }
 
     /**
-     * Returns the key for the series stored in this dataset.
+     * Returns {@code true} if the supplied integer code represents a
+     * valid day-of-the-week, and {@code false} otherwise.
      *
-     * @param series  the index of the series (ignored, this dataset supports
-     *     only one series and this method always returns the key for series 0).
+     * @param code  the code being checked for validity.
      *
-     * @return The series key (never {@code null}).
+     * @return {@code true} if the supplied integer code represents a
+     *         valid day-of-the-week, and {@code false} otherwise.
      */
-    @Override
-    public Comparable getSeriesKey(int series) {
-        return this.seriesKey;
+    public static boolean isValidWeekdayCode(int code) {
+        switch(code) {
+            case SUNDAY:
+            case MONDAY:
+            case TUESDAY:
+            case WEDNESDAY:
+            case THURSDAY:
+            case FRIDAY:
+            case SATURDAY:
+                return true;
+            default:
+                return false;
+        }
     }
 
     /**
-     * Returns the x-value for one item in a series.  The value returned is a
-     * {@code Long} instance generated from the underlying
-     * {@code Date} object.  To avoid generating a new object instance,
-     * you might prefer to call {@link #getXValue(int, int)}.
+     * Converts the supplied string to a day of the week.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
+     * @param s  a string representing the day of the week.
      *
-     * @return The x-value.
-     *
-     * @see #getXValue(int, int)
-     * @see #getXDate(int, int)
+     * @return {@code -1} if the string is not convertable, the day of
+     *         the week otherwise.
      */
-    @Override
-    public Number getX(int series, int item) {
-        return this.date[item].getTime();
-    }
-
-    /**
-     * Returns the x-value for one item in a series, as a Date.
-     * <p>
-     * This method is provided for convenience only.
-     *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The x-value as a Date.
-     *
-     * @see #getX(int, int)
-     */
-    public Date getXDate(int series, int item) {
-        return this.date[item];
-    }
-
-    /**
-     * Returns the y-value for one item in a series.
-     * <p>
-     * This method (from the {@link XYDataset} interface) is mapped to the
-     * {@link #getCloseValue(int, int)} method.
-     *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The y-value.
-     *
-     * @see #getYValue(int, int)
-     */
-    @Override
-    public Number getY(int series, int item) {
-        return getClose(series, item);
-    }
-
-    /**
-     * Returns the high-value for one item in a series.
-     *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The high-value.
-     *
-     * @see #getHighValue(int, int)
-     */
-    @Override
-    public Number getHigh(int series, int item) {
-        return this.high[item];
-    }
-
-    /**
-     * Returns the high-value (as a double primitive) for an item within a
-     * series.
-     *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The high-value.
-     *
-     * @see #getHigh(int, int)
-     */
-    @Override
-    public double getHighValue(int series, int item) {
-        double result = Double.NaN;
-        Number h = getHigh(series, item);
-        if (h != null) {
-            result = h.doubleValue();
+    public static int stringToWeekdayCode(String s) {
+        final String[] shortWeekdayNames = DATE_FORMAT_SYMBOLS.getShortWeekdays();
+        final String[] weekDayNames = DATE_FORMAT_SYMBOLS.getWeekdays();
+        int result = -1;
+        s = s.trim();
+        for (int i = 0; i < weekDayNames.length; i++) {
+            if (s.equals(shortWeekdayNames[i])) {
+                result = i;
+                break;
+            }
+            if (s.equals(weekDayNames[i])) {
+                result = i;
+                break;
+            }
         }
         return result;
     }
 
     /**
-     * Returns the low-value for one item in a series.
+     * Returns a string representing the supplied day-of-the-week.
+     * <P>
+     * Need to find a better approach.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
+     * @param weekday  the day of the week.
      *
-     * @return The low-value.
-     *
-     * @see #getLowValue(int, int)
+     * @return a string representing the supplied day-of-the-week.
      */
-    @Override
-    public Number getLow(int series, int item) {
-        return this.low[item];
+    public static String weekdayCodeToString(int weekday) {
+        final String[] weekdays = DATE_FORMAT_SYMBOLS.getWeekdays();
+        return weekdays[weekday];
     }
 
     /**
-     * Returns the low-value (as a double primitive) for an item within a
-     * series.
+     * Returns an array of month names.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The low-value.
-     *
-     * @see #getLow(int, int)
+     * @return an array of month names.
      */
-    @Override
-    public double getLowValue(int series, int item) {
-        double result = Double.NaN;
-        Number l = getLow(series, item);
-        if (l != null) {
-            result = l.doubleValue();
+    public static String[] getMonths() {
+        return getMonths(false);
+    }
+
+    /**
+     * Returns an array of month names.
+     *
+     * @param shortened  a flag indicating that shortened month names should
+     *                   be returned.
+     *
+     * @return an array of month names.
+     */
+    public static String[] getMonths(boolean shortened) {
+        if (shortened) {
+            return DATE_FORMAT_SYMBOLS.getShortMonths();
+        } else {
+            return DATE_FORMAT_SYMBOLS.getMonths();
+        }
+    }
+
+    /**
+     * Returns true if the supplied integer code represents a valid month.
+     *
+     * @param code  the code being checked for validity.
+     *
+     * @return {@code true} if the supplied integer code represents a
+     *         valid month.
+     */
+    public static boolean isValidMonthCode(int code) {
+        switch(code) {
+            case JANUARY:
+            case FEBRUARY:
+            case MARCH:
+            case APRIL:
+            case MAY:
+            case JUNE:
+            case JULY:
+            case AUGUST:
+            case SEPTEMBER:
+            case OCTOBER:
+            case NOVEMBER:
+            case DECEMBER:
+                return true;
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Returns the quarter for the specified month.
+     *
+     * @param code  the month code (1-12).
+     *
+     * @return the quarter that the month belongs to.
+     */
+    public static int monthCodeToQuarter(int code) {
+        switch(code) {
+            case JANUARY:
+            case FEBRUARY:
+            case MARCH:
+                return 1;
+            case APRIL:
+            case MAY:
+            case JUNE:
+                return 2;
+            case JULY:
+            case AUGUST:
+            case SEPTEMBER:
+                return 3;
+            case OCTOBER:
+            case NOVEMBER:
+            case DECEMBER:
+                return 4;
+            default:
+                throw new IllegalArgumentException("SerialDate.monthCodeToQuarter: invalid month code.");
+        }
+    }
+
+    /**
+     * Returns a string representing the supplied month.
+     * <P>
+     * The string returned is the long form of the month name taken from the
+     * default locale.
+     *
+     * @param month  the month.
+     *
+     * @return a string representing the supplied month.
+     */
+    public static String monthCodeToString(int month) {
+        return monthCodeToString(month, false);
+    }
+
+    /**
+     * Returns a string representing the supplied month.
+     * <P>
+     * The string returned is the long or short form of the month name taken
+     * from the default locale.
+     *
+     * @param month  the month.
+     * @param shortened  if {@code true} return the abbreviation of the month.
+     *
+     * @return a string representing the supplied month.
+     */
+    public static String monthCodeToString(int month, boolean shortened) {
+        // check arguments...
+        if (!isValidMonthCode(month)) {
+            throw new IllegalArgumentException("SerialDate.monthCodeToString: month outside valid range.");
+        }
+        final String[] months;
+        if (shortened) {
+            months = DATE_FORMAT_SYMBOLS.getShortMonths();
+        } else {
+            months = DATE_FORMAT_SYMBOLS.getMonths();
+        }
+        return months[month - 1];
+    }
+
+    /**
+     * Converts a string to a month code.
+     * <P>
+     * This method will return one of the constants JANUARY, FEBRUARY, ...,
+     * DECEMBER that corresponds to the string.  If the string is not
+     * recognised, this method returns -1.
+     *
+     * @param s  the string to parse.
+     *
+     * @return {@code -1} if the string is not parseable, the month of the
+     *         year otherwise.
+     */
+    public static int stringToMonthCode(String s) {
+        final String[] shortMonthNames = DATE_FORMAT_SYMBOLS.getShortMonths();
+        final String[] monthNames = DATE_FORMAT_SYMBOLS.getMonths();
+        int result = -1;
+        s = s.trim();
+        // first try parsing the string as an integer (1-12)...
+        try {
+            result = Integer.parseInt(s);
+        } catch (NumberFormatException e) {
+            // suppress
+        }
+        // now search through the month names...
+        if ((result < 1) || (result > 12)) {
+            for (int i = 0; i < monthNames.length; i++) {
+                if (s.equals(shortMonthNames[i])) {
+                    result = i + 1;
+                    break;
+                }
+                if (s.equals(monthNames[i])) {
+                    result = i + 1;
+                    break;
+                }
+            }
         }
         return result;
     }
 
     /**
-     * Returns the open-value for one item in a series.
+     * Returns true if the supplied integer code represents a valid
+     * week-in-the-month, and false otherwise.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The open-value.
-     *
-     * @see #getOpenValue(int, int)
+     * @param code  the code being checked for validity.
+     * @return {@code true} if the supplied integer code represents a
+     *         valid week-in-the-month.
      */
-    @Override
-    public Number getOpen(int series, int item) {
-        return this.open[item];
-    }
-
-    /**
-     * Returns the open-value (as a double primitive) for an item within a
-     * series.
-     *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The open-value.
-     *
-     * @see #getOpen(int, int)
-     */
-    @Override
-    public double getOpenValue(int series, int item) {
-        double result = Double.NaN;
-        Number open = getOpen(series, item);
-        if (open != null) {
-            result = open.doubleValue();
+    public static boolean isValidWeekInMonthCode(int code) {
+        switch(code) {
+            case FIRST_WEEK_IN_MONTH:
+            case SECOND_WEEK_IN_MONTH:
+            case THIRD_WEEK_IN_MONTH:
+            case FOURTH_WEEK_IN_MONTH:
+            case LAST_WEEK_IN_MONTH:
+                return true;
+            default:
+                return false;
         }
-        return result;
     }
 
     /**
-     * Returns the close-value for one item in a series.
+     * Determines whether the specified year is a leap year.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
+     * @param yyyy  the year (in the range 1900 to 9999).
      *
-     * @return The close-value.
-     *
-     * @see #getCloseValue(int, int)
+     * @return {@code true} if the specified year is a leap year.
      */
-    @Override
-    public Number getClose(int series, int item) {
-        return this.close[item];
-    }
-
-    /**
-     * Returns the close-value (as a double primitive) for an item within a
-     * series.
-     *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
-     *
-     * @return The close-value.
-     *
-     * @see #getClose(int, int)
-     */
-    @Override
-    public double getCloseValue(int series, int item) {
-        double result = Double.NaN;
-        Number c = getClose(series, item);
-        if (c != null) {
-            result = c.doubleValue();
+    public static boolean isLeapYear(int yyyy) {
+        if ((yyyy % 4) != 0) {
+            return false;
+        } else if ((yyyy % 400) == 0) {
+            return true;
+        } else if ((yyyy % 100) == 0) {
+            return false;
+        } else {
+            return true;
         }
-        return result;
     }
 
     /**
-     * Returns the volume-value for one item in a series.
+     * Returns the number of leap years from 1900 to the specified year
+     * INCLUSIVE.
+     * <P>
+     * Note that 1900 is not a leap year.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
+     * @param yyyy  the year (in the range 1900 to 9999).
      *
-     * @return The volume-value.
-     *
-     * @see #getVolumeValue(int, int)
+     * @return the number of leap years from 1900 to the specified year.
      */
-    @Override
-    public Number getVolume(int series, int item) {
-        return this.volume[item];
+    public static int leapYearCount(int yyyy) {
+        int leap4 = (yyyy - 1896) / 4;
+        int leap100 = (yyyy - 1800) / 100;
+        int leap400 = (yyyy - 1600) / 400;
+        return leap4 - leap100 + leap400;
     }
 
     /**
-     * Returns the volume-value (as a double primitive) for an item within a
-     * series.
+     * Returns the number of the last day of the month, taking into account
+     * leap years.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
+     * @param month  the month.
+     * @param yyyy  the year (in the range 1900 to 9999).
      *
-     * @return The volume-value.
-     *
-     * @see #getVolume(int, int)
+     * @return the number of the last day of the month.
      */
-    @Override
-    public double getVolumeValue(int series, int item) {
-        double result = Double.NaN;
-        Number v = getVolume(series, item);
-        if (v != null) {
-            result = v.doubleValue();
+    public static int lastDayOfMonth(int month, int yyyy) {
+        final int result = LAST_DAY_OF_MONTH[month];
+        if (month != FEBRUARY) {
+            return result;
+        } else if (isLeapYear(yyyy)) {
+            return result + 1;
+        } else {
+            return result;
         }
-        return result;
     }
 
     /**
-     * Returns the number of series in the dataset.
-     * <p>
-     * This implementation only allows one series.
+     * Creates a new date by adding the specified number of days to the base
+     * date.
      *
-     * @return The number of series.
+     * @param days  the number of days to add (can be negative).
+     * @param base  the base date.
+     *
+     * @return a new date.
+     */
+    public static SerialDate addDays(int days, SerialDate base) {
+        int serialDayNumber = base.toSerial() + days;
+        return SerialDate.createInstance(serialDayNumber);
+    }
+
+    /**
+     * Creates a new date by adding the specified number of months to the base
+     * date.
+     * <P>
+     * If the base date is close to the end of the month, the day on the result
+     * may be adjusted slightly:  31 May + 1 month = 30 June.
+     *
+     * @param months  the number of months to add (can be negative).
+     * @param base  the base date.
+     *
+     * @return a new date.
+     */
+    public static SerialDate addMonths(int months, SerialDate base) {
+        int yy = (12 * base.getYYYY() + base.getMonth() + months - 1) / 12;
+        if (yy < MINIMUM_YEAR_SUPPORTED || yy > MAXIMUM_YEAR_SUPPORTED) {
+            throw new IllegalArgumentException("Call to addMonths resulted in unsupported year");
+        }
+        int mm = (12 * base.getYYYY() + base.getMonth() + months - 1) % 12 + 1;
+        int dd = Math.min(base.getDayOfMonth(), SerialDate.lastDayOfMonth(mm, yy));
+        return SerialDate.createInstance(dd, mm, yy);
+    }
+
+    /**
+     * Creates a new date by adding the specified number of years to the base
+     * date.
+     *
+     * @param years  the number of years to add (can be negative).
+     * @param base  the base date.
+     *
+     * @return A new date.
+     */
+    public static SerialDate addYears(int years, SerialDate base) {
+        int baseY = base.getYYYY();
+        int baseM = base.getMonth();
+        int baseD = base.getDayOfMonth();
+        int targetY = baseY + years;
+        if (targetY < MINIMUM_YEAR_SUPPORTED || targetY > MAXIMUM_YEAR_SUPPORTED) {
+            throw new IllegalArgumentException("Call to addYears resulted in unsupported year");
+        }
+        int targetD = Math.min(baseD, SerialDate.lastDayOfMonth(baseM, targetY));
+        return SerialDate.createInstance(targetD, baseM, targetY);
+    }
+
+    /**
+     * Returns the latest date that falls on the specified day-of-the-week and
+     * is BEFORE the base date.
+     *
+     * @param targetWeekday  a code for the target day-of-the-week.
+     * @param base  the base date.
+     *
+     * @return the latest date that falls on the specified day-of-the-week and
+     *         is BEFORE the base date.
+     */
+    public static SerialDate getPreviousDayOfWeek(int targetWeekday, SerialDate base) {
+        // check arguments...
+        if (!SerialDate.isValidWeekdayCode(targetWeekday)) {
+            throw new IllegalArgumentException("Invalid day-of-the-week code.");
+        }
+        // find the date...
+        int adjust;
+        int baseDOW = base.getDayOfWeek();
+        if (baseDOW > targetWeekday) {
+            adjust = Math.min(0, targetWeekday - baseDOW);
+        } else {
+            adjust = -7 + Math.max(0, targetWeekday - baseDOW);
+        }
+        return SerialDate.addDays(adjust, base);
+    }
+
+    /**
+     * Returns the earliest date that falls on the specified day-of-the-week
+     * and is AFTER the base date.
+     *
+     * @param targetWeekday  a code for the target day-of-the-week.
+     * @param base  the base date.
+     *
+     * @return the earliest date that falls on the specified day-of-the-week
+     *         and is AFTER the base date.
+     */
+    public static SerialDate getFollowingDayOfWeek(int targetWeekday, SerialDate base) {
+        // check arguments...
+        if (!SerialDate.isValidWeekdayCode(targetWeekday)) {
+            throw new IllegalArgumentException("Invalid day-of-the-week code.");
+        }
+        // find the date...
+        int adjust;
+        int baseDOW = base.getDayOfWeek();
+        if (baseDOW > targetWeekday) {
+            adjust = 7 + Math.min(0, targetWeekday - baseDOW);
+        } else {
+            adjust = Math.max(0, targetWeekday - baseDOW);
+        }
+        return SerialDate.addDays(adjust, base);
+    }
+
+    /**
+     * Returns the date that falls on the specified day-of-the-week and is
+     * CLOSEST to the base date.
+     *
+     * @param targetDOW  a code for the target day-of-the-week.
+     * @param base  the base date.
+     *
+     * @return the date that falls on the specified day-of-the-week and is
+     *         CLOSEST to the base date.
+     */
+    public static SerialDate getNearestDayOfWeek(int targetDOW, SerialDate base) {
+        // check arguments...
+        if (!SerialDate.isValidWeekdayCode(targetDOW)) {
+            throw new IllegalArgumentException("Invalid day-of-the-week code.");
+        }
+        // find the date...
+        final int baseDOW = base.getDayOfWeek();
+        int adjust = -Math.abs(targetDOW - baseDOW);
+        if (adjust >= 4) {
+            adjust = 7 - adjust;
+        }
+        if (adjust <= -4) {
+            adjust = 7 + adjust;
+        }
+        return SerialDate.addDays(adjust, base);
+    }
+
+    /**
+     * Rolls the date forward to the last day of the month.
+     *
+     * @param base  the base date.
+     *
+     * @return a new serial date.
+     */
+    public SerialDate getEndOfCurrentMonth(SerialDate base) {
+        int last = SerialDate.lastDayOfMonth(base.getMonth(), base.getYYYY());
+        return SerialDate.createInstance(last, base.getMonth(), base.getYYYY());
+    }
+
+    /**
+     * Returns a string corresponding to the week-in-the-month code.
+     * <P>
+     * Need to find a better approach.
+     *
+     * @param count  an integer code representing the week-in-the-month.
+     *
+     * @return a string corresponding to the week-in-the-month code.
+     */
+    public static String weekInMonthToString(int count) {
+        switch(count) {
+            case SerialDate.FIRST_WEEK_IN_MONTH:
+                return "First";
+            case SerialDate.SECOND_WEEK_IN_MONTH:
+                return "Second";
+            case SerialDate.THIRD_WEEK_IN_MONTH:
+                return "Third";
+            case SerialDate.FOURTH_WEEK_IN_MONTH:
+                return "Fourth";
+            case SerialDate.LAST_WEEK_IN_MONTH:
+                return "Last";
+            default:
+                return "SerialDate.weekInMonthToString(): invalid code.";
+        }
+    }
+
+    /**
+     * Returns a string representing the supplied 'relative'.
+     * <P>
+     * Need to find a better approach.
+     *
+     * @param relative  a constant representing the 'relative'.
+     *
+     * @return a string representing the supplied 'relative'.
+     */
+    public static String relativeToString(int relative) {
+        switch(relative) {
+            case SerialDate.PRECEDING:
+                return "Preceding";
+            case SerialDate.NEAREST:
+                return "Nearest";
+            case SerialDate.FOLLOWING:
+                return "Following";
+            default:
+                return "ERROR : Relative To String";
+        }
+    }
+
+    /**
+     * Factory method that returns an instance of some concrete subclass of
+     * {@link SerialDate}.
+     *
+     * @param day  the day (1-31).
+     * @param month  the month (1-12).
+     * @param yyyy  the year (in the range 1900 to 9999).
+     *
+     * @return An instance of {@link SerialDate}.
+     */
+    public static SerialDate createInstance(int day, int month, int yyyy) {
+        return new SpreadsheetDate(day, month, yyyy);
+    }
+
+    /**
+     * Factory method that returns an instance of some concrete subclass of
+     * {@link SerialDate}.
+     *
+     * @param serial  the serial number for the day (1 January 1900 = 2).
+     *
+     * @return a instance of SerialDate.
+     */
+    public static SerialDate createInstance(int serial) {
+        return new SpreadsheetDate(serial);
+    }
+
+    /**
+     * Factory method that returns an instance of a subclass of SerialDate.
+     *
+     * @param date  A Java date object.
+     *
+     * @return a instance of SerialDate.
+     */
+    public static SerialDate createInstance(java.util.Date date) {
+        GregorianCalendar calendar = new GregorianCalendar();
+        calendar.setTime(date);
+        return new SpreadsheetDate(calendar.get(Calendar.DATE), calendar.get(Calendar.MONTH) + 1, calendar.get(Calendar.YEAR));
+    }
+
+    /**
+     * Returns the serial number for the date, where 1 January 1900 = 2 (this
+     * corresponds, almost, to the numbering system used in Microsoft Excel for
+     * Windows and Lotus 1-2-3).
+     *
+     * @return the serial number for the date.
+     */
+    public abstract int toSerial();
+
+    /**
+     * Returns a java.util.Date.  Since java.util.Date has more precision than
+     * SerialDate, we need to define a convention for the 'time of day'.
+     *
+     * @return this as {@code java.util.Date}.
+     */
+    public abstract java.util.Date toDate();
+
+    /**
+     * Returns the description that is attached to the date.  It is not
+     * required that a date have a description, but for some applications it
+     * is useful.
+     *
+     * @return The description (possibly {@code null}).
+     */
+    public String getDescription() {
+        return this.description;
+    }
+
+    /**
+     * Sets the description for the date.
+     *
+     * @param description  the description for this date ({@code null}
+     *                     permitted).
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * Converts the date to a string.
+     *
+     * @return  a string representation of the date.
      */
     @Override
-    public int getSeriesCount() {
-        return 1;
+    public String toString() {
+        return getDayOfMonth() + "-" + SerialDate.monthCodeToString(getMonth()) + "-" + getYYYY();
     }
 
     /**
-     * Returns the number of items in the specified series.
+     * Returns the year (assume a valid range of 1900 to 9999).
      *
-     * @param series  the index (zero-based) of the series.
-     *
-     * @return The number of items in the specified series.
+     * @return the year.
      */
-    @Override
-    public int getItemCount(int series) {
-        return this.date.length;
-    }
+    public abstract int getYYYY();
 
     /**
-     * Tests this dataset for equality with an arbitrary instance.
+     * Returns the month (January = 1, February = 2, March = 3).
      *
-     * @param obj  the object ({@code null} permitted).
+     * @return the month of the year.
+     */
+    public abstract int getMonth();
+
+    /**
+     * Returns the day of the month.
+     *
+     * @return the day of the month.
+     */
+    public abstract int getDayOfMonth();
+
+    /**
+     * Returns the day of the week.
+     *
+     * @return the day of the week.
+     */
+    public abstract int getDayOfWeek();
+
+    /**
+     * Returns the difference (in days) between this date and the specified
+     * 'other' date.
+     * <P>
+     * The result is positive if this date is after the 'other' date and
+     * negative if it is before the 'other' date.
+     *
+     * @param other  the date being compared to.
+     *
+     * @return the difference between this and the other date.
+     */
+    public abstract int compare(SerialDate other);
+
+    /**
+     * Returns true if this SerialDate represents the same date as the
+     * specified SerialDate.
+     *
+     * @param other  the date being compared to.
+     *
+     * @return {@code true} if this SerialDate represents the same date as
+     *         the specified SerialDate.
+     */
+    public abstract boolean isOn(SerialDate other);
+
+    /**
+     * Returns true if this SerialDate represents an earlier date compared to
+     * the specified SerialDate.
+     *
+     * @param other  The date being compared to.
+     *
+     * @return {@code true} if this SerialDate represents an earlier date
+     *         compared to the specified SerialDate.
+     */
+    public abstract boolean isBefore(SerialDate other);
+
+    /**
+     * Returns true if this SerialDate represents the same date as the
+     * specified SerialDate.
+     *
+     * @param other  the date being compared to.
+     *
+     * @return {@code true} if this SerialDate represents the same date
+     *         as the specified SerialDate.
+     */
+    public abstract boolean isOnOrBefore(SerialDate other);
+
+    /**
+     * Returns true if this SerialDate represents the same date as the
+     * specified SerialDate.
+     *
+     * @param other  the date being compared to.
+     *
+     * @return {@code true} if this SerialDate represents the same date
+     *         as the specified SerialDate.
+     */
+    public abstract boolean isAfter(SerialDate other);
+
+    /**
+     * Returns true if this SerialDate represents the same date as the
+     * specified SerialDate.
+     *
+     * @param other  the date being compared to.
+     *
+     * @return {@code true} if this SerialDate represents the same date
+     *         as the specified SerialDate.
+     */
+    public abstract boolean isOnOrAfter(SerialDate other);
+
+    /**
+     * Returns {@code true} if this {@link SerialDate} is within the
+     * specified range (INCLUSIVE).  The date order of d1 and d2 is not
+     * important.
+     *
+     * @param d1  a boundary date for the range.
+     * @param d2  the other boundary date for the range.
      *
      * @return A boolean.
      */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof DefaultHighLowDataset)) {
-            return false;
-        }
-        DefaultHighLowDataset that = (DefaultHighLowDataset) obj;
-        if (!this.seriesKey.equals(that.seriesKey)) {
-            return false;
-        }
-        if (!Arrays.equals(this.date, that.date)) {
-            return false;
-        }
-        if (!Arrays.equals(this.open, that.open)) {
-            return false;
-        }
-        if (!Arrays.equals(this.high, that.high)) {
-            return false;
-        }
-        if (!Arrays.equals(this.low, that.low)) {
-            return false;
-        }
-        if (!Arrays.equals(this.close, that.close)) {
-            return false;
-        }
-        if (!Arrays.equals(this.volume, that.volume)) {
-            return false;
-        }
-        return true;
+    public abstract boolean isInRange(SerialDate d1, SerialDate d2);
+
+    /**
+     * Returns {@code true} if this {@link SerialDate} is within the
+     * specified range (caller specifies whether the end-points are
+     * included).  The date order of d1 and d2 is not important.
+     *
+     * @param d1  a boundary date for the range.
+     * @param d2  the other boundary date for the range.
+     * @param include  a code that controls whether the start and end
+     *                 dates are included in the range.
+     *
+     * @return A boolean.
+     */
+    public abstract boolean isInRange(SerialDate d1, SerialDate d2, int include);
+
+    /**
+     * Returns the latest date that falls on the specified day-of-the-week and
+     * is BEFORE this date.
+     *
+     * @param targetDOW  a code for the target day-of-the-week.
+     *
+     * @return the latest date that falls on the specified day-of-the-week and
+     *         is BEFORE this date.
+     */
+    public SerialDate getPreviousDayOfWeek(int targetDOW) {
+        return getPreviousDayOfWeek(targetDOW, this);
     }
 
     /**
-     * Constructs an array of Number objects from an array of doubles.
+     * Returns the earliest date that falls on the specified day-of-the-week
+     * and is AFTER this date.
      *
-     * @param data  the double values to convert ({@code null} not
-     *     permitted).
+     * @param targetDOW  a code for the target day-of-the-week.
      *
-     * @return The data as an array of Number objects.
+     * @return the earliest date that falls on the specified day-of-the-week
+     *         and is AFTER this date.
      */
-    public static Number[] createNumberArray(double[] data) {
-        Number[] result = new Number[data.length];
-        for (int i = 0; i < data.length; i++) {
-            result[i] = data[i];
-        }
-        return result;
+    public SerialDate getFollowingDayOfWeek(int targetDOW) {
+        return getFollowingDayOfWeek(targetDOW, this);
+    }
+
+    /**
+     * Returns the nearest date that falls on the specified day-of-the-week.
+     *
+     * @param targetDOW  a code for the target day-of-the-week.
+     *
+     * @return the nearest date that falls on the specified day-of-the-week.
+     */
+    public SerialDate getNearestDayOfWeek(int targetDOW) {
+        return getNearestDayOfWeek(targetDOW, this);
     }
 }

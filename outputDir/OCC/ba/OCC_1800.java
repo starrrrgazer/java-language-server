@@ -25,906 +25,773 @@ package OCC.ba;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * --------------------------
- * BoxAndWhiskerRenderer.java
- * --------------------------
- * (C) Copyright 2003-present, by David Browning and Contributors.
+ * ----------------
+ * CompassPlot.java
+ * ----------------
+ * (C) Copyright 2002-2021, by the Australian Antarctic Division and
+ * Contributors.
  *
- * Original Author:  David Browning (for the Australian Institute of Marine
- *                   Science);
+ * Original Author:  Bryan Scott (for the Australian Antarctic Division);
  * Contributor(s):   David Gilbert;
- *                   Tim Bardzil;
- *                   Rob Van der Sanden (patches 1866446 and 1888422);
- *                   Peter Becker (patches 2868585 and 2868608);
- *                   Martin Krauskopf (patch 3421088);
+ *                   Arnaud Lelievre;
  *                   Martin Hoeller;
- *                   John Matthews;
  *
  */
 /**
- * A box-and-whisker renderer.  This renderer requires a
- * {@link BoxAndWhiskerCategoryDataset} and is for use with the
- * {@link CategoryPlot} class.  The example shown here is generated
- * by the {@code BoxAndWhiskerChartDemo1.java} program included in the
- * JFreeChart Demo Collection:
- * <br><br>
- * <img src="doc-files/BoxAndWhiskerRendererSample.png"
- * alt="BoxAndWhiskerRendererSample.png">
+ * A specialised plot that draws a compass to indicate a direction based on the
+ * value from a {@link ValueDataset}.
  */
-class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer implements Cloneable, PublicCloneable, Serializable {
+public class CompassPlot extends Plot implements Cloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 632027470694481177L;
+    private static final long serialVersionUID = 6924382802125527395L;
 
     /**
-     * The color used to paint the median line and average marker.
+     * The default label font.
      */
-    private transient Paint artifactPaint;
+    public static final Font DEFAULT_LABEL_FONT = new Font("SansSerif", Font.BOLD, 10);
 
     /**
-     * A flag that controls whether the box is filled.
+     * A constant for the label type.
      */
-    private boolean fillBox;
+    public static final int NO_LABELS = 0;
 
     /**
-     * The margin between items (boxes) within a category.
+     * A constant for the label type.
      */
-    private double itemMargin;
+    public static final int VALUE_LABELS = 1;
 
     /**
-     * The maximum bar width as percentage of the available space in the plot.
-     * Take care with the encoding - for example, 0.05 is five percent.
+     * The label type (NO_LABELS, VALUE_LABELS).
      */
-    private double maximumBarWidth;
+    private int labelType;
 
     /**
-     * A flag that controls whether the median indicator is drawn.
+     * The label font.
      */
-    private boolean medianVisible;
+    private Font labelFont;
 
     /**
-     * A flag that controls whether the mean indicator is drawn.
+     * A flag that controls whether a border is drawn.
      */
-    private boolean meanVisible;
+    private boolean drawBorder = false;
 
     /**
-     * A flag that controls whether the maxOutlier is visible.
+     * The rose highlight paint.
      */
-    private boolean maxOutlierVisible;
+    private transient Paint roseHighlightPaint = Color.BLACK;
 
     /**
-     * A flag that controls whether the minOutlier is visible.
+     * The rose paint.
      */
-    private boolean minOutlierVisible;
+    private transient Paint rosePaint = Color.YELLOW;
 
     /**
-     * A flag that, if {@code true}, causes the whiskers to be drawn
-     * using the outline paint for the series.  The default value is
-     * {@code false} and in that case the regular series paint is used.
+     * The rose center paint.
      */
-    private boolean useOutlinePaintForWhiskers;
+    private transient Paint roseCenterPaint = Color.WHITE;
 
     /**
-     * The width of the whiskers as fraction of the bar width.
+     * The compass font.
      */
-    private double whiskerWidth;
+    private Font compassFont = new Font("Arial", Font.PLAIN, 10);
+
+    /**
+     * A working shape.
+     */
+    private transient Ellipse2D circle1;
+
+    /**
+     * A working shape.
+     */
+    private transient Ellipse2D circle2;
+
+    /**
+     * A working area.
+     */
+    private transient Area a1;
+
+    /**
+     * A working area.
+     */
+    private transient Area a2;
+
+    /**
+     * A working shape.
+     */
+    private transient Rectangle2D rect1;
+
+    /**
+     * An array of value datasets.
+     */
+    private ValueDataset[] datasets = new ValueDataset[1];
+
+    /**
+     * An array of needles.
+     */
+    private MeterNeedle[] seriesNeedle = new MeterNeedle[1];
+
+    /**
+     * The resourceBundle for the localization.
+     */
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.plot.LocalizationBundle");
+
+    /**
+     * The count to complete one revolution.  Can be arbitrarily set
+     * For degrees (the default) it is 360, for radians this is 2*Pi, etc
+     */
+    protected double revolutionDistance = 360;
 
     /**
      * Default constructor.
      */
-    public BoxAndWhiskerRenderer() {
-        this.artifactPaint = Color.BLACK;
-        this.fillBox = true;
-        this.itemMargin = 0.20;
-        this.maximumBarWidth = 1.0;
-        this.medianVisible = true;
-        this.meanVisible = true;
-        this.minOutlierVisible = true;
-        this.maxOutlierVisible = true;
-        this.useOutlinePaintForWhiskers = false;
-        this.whiskerWidth = 1.0;
-        setDefaultLegendShape(new Rectangle2D.Double(-4.0, -4.0, 8.0, 8.0));
+    public CompassPlot() {
+        this(new DefaultValueDataset());
     }
 
     /**
-     * Returns the paint used to color the median and average markers.
+     * Constructs a new compass plot.
      *
-     * @return The paint used to draw the median and average markers (never
-     *     {@code null}).
-     *
-     * @see #setArtifactPaint(Paint)
+     * @param dataset  the dataset for the plot ({@code null} permitted).
      */
-    public Paint getArtifactPaint() {
-        return this.artifactPaint;
+    public CompassPlot(ValueDataset dataset) {
+        super();
+        if (dataset != null) {
+            this.datasets[0] = dataset;
+            dataset.addChangeListener(this);
+        }
+        this.circle1 = new Ellipse2D.Double();
+        this.circle2 = new Ellipse2D.Double();
+        this.rect1 = new Rectangle2D.Double();
+        setSeriesNeedle(0);
     }
 
     /**
-     * Sets the paint used to color the median and average markers and sends
-     * a {@link RendererChangeEvent} to all registered listeners.
+     * Returns the label type.  Defined by the constants: {@link #NO_LABELS}
+     * and {@link #VALUE_LABELS}.
+     *
+     * @return The label type.
+     *
+     * @see #setLabelType(int)
+     */
+    public int getLabelType() {
+        // FIXME: this attribute is never used - deprecate?
+        return this.labelType;
+    }
+
+    /**
+     * Sets the label type (either {@link #NO_LABELS} or {@link #VALUE_LABELS}.
+     *
+     * @param type  the type.
+     *
+     * @see #getLabelType()
+     */
+    public void setLabelType(int type) {
+        // FIXME: this attribute is never used - deprecate?
+        if ((type != NO_LABELS) && (type != VALUE_LABELS)) {
+            throw new IllegalArgumentException("MeterPlot.setLabelType(int): unrecognised type.");
+        }
+        if (this.labelType != type) {
+            this.labelType = type;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the label font.
+     *
+     * @return The label font.
+     *
+     * @see #setLabelFont(Font)
+     */
+    public Font getLabelFont() {
+        // FIXME: this attribute is not used - deprecate?
+        return this.labelFont;
+    }
+
+    /**
+     * Sets the label font and sends a {@link PlotChangeEvent} to all
+     * registered listeners.
+     *
+     * @param font  the new label font.
+     *
+     * @see #getLabelFont()
+     */
+    public void setLabelFont(Font font) {
+        // FIXME: this attribute is not used - deprecate?
+        Args.nullNotPermitted(font, "font");
+        this.labelFont = font;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint used to fill the outer circle of the compass.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setRosePaint(Paint)
+     */
+    public Paint getRosePaint() {
+        return this.rosePaint;
+    }
+
+    /**
+     * Sets the paint used to fill the outer circle of the compass,
+     * and sends a {@link PlotChangeEvent} to all registered listeners.
      *
      * @param paint  the paint ({@code null} not permitted).
      *
-     * @see #getArtifactPaint()
+     * @see #getRosePaint()
      */
-    public void setArtifactPaint(Paint paint) {
+    public void setRosePaint(Paint paint) {
         Args.nullNotPermitted(paint, "paint");
-        this.artifactPaint = paint;
+        this.rosePaint = paint;
         fireChangeEvent();
     }
 
     /**
-     * Returns the flag that controls whether the box is filled.
+     * Returns the paint used to fill the inner background area of the
+     * compass.
      *
-     * @return A boolean.
+     * @return The paint (never {@code null}).
      *
-     * @see #setFillBox(boolean)
+     * @see #setRoseCenterPaint(Paint)
      */
-    public boolean getFillBox() {
-        return this.fillBox;
+    public Paint getRoseCenterPaint() {
+        return this.roseCenterPaint;
     }
 
     /**
-     * Sets the flag that controls whether the box is filled and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the paint used to fill the inner background area of the compass,
+     * and sends a {@link PlotChangeEvent} to all registered listeners.
      *
-     * @param flag  the flag.
+     * @param paint  the paint ({@code null} not permitted).
      *
-     * @see #getFillBox()
+     * @see #getRoseCenterPaint()
      */
-    public void setFillBox(boolean flag) {
-        this.fillBox = flag;
+    public void setRoseCenterPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.roseCenterPaint = paint;
         fireChangeEvent();
     }
 
     /**
-     * Returns the item margin.  This is a percentage of the available space
-     * that is allocated to the space between items in the chart.
+     * Returns the paint used to draw the circles, symbols and labels on the
+     * compass.
      *
-     * @return The margin.
+     * @return The paint (never {@code null}).
      *
-     * @see #setItemMargin(double)
+     * @see #setRoseHighlightPaint(Paint)
      */
-    public double getItemMargin() {
-        return this.itemMargin;
+    public Paint getRoseHighlightPaint() {
+        return this.roseHighlightPaint;
     }
 
     /**
-     * Sets the item margin and sends a {@link RendererChangeEvent} to all
+     * Sets the paint used to draw the circles, symbols and labels of the
+     * compass, and sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getRoseHighlightPaint()
+     */
+    public void setRoseHighlightPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.roseHighlightPaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns a flag that controls whether a border is drawn.
+     *
+     * @return The flag.
+     *
+     * @see #setDrawBorder(boolean)
+     */
+    public boolean getDrawBorder() {
+        return this.drawBorder;
+    }
+
+    /**
+     * Sets a flag that controls whether a border is drawn.
+     *
+     * @param status  the flag status.
+     *
+     * @see #getDrawBorder()
+     */
+    public void setDrawBorder(boolean status) {
+        this.drawBorder = status;
+        fireChangeEvent();
+    }
+
+    /**
+     * Sets the series paint.
+     *
+     * @param series  the series index.
+     * @param paint  the paint.
+     *
+     * @see #setSeriesOutlinePaint(int, Paint)
+     */
+    public void setSeriesPaint(int series, Paint paint) {
+        // super.setSeriesPaint(series, paint);
+        if ((series >= 0) && (series < this.seriesNeedle.length)) {
+            this.seriesNeedle[series].setFillPaint(paint);
+        }
+    }
+
+    /**
+     * Sets the series outline paint.
+     *
+     * @param series  the series index.
+     * @param p  the paint.
+     *
+     * @see #setSeriesPaint(int, Paint)
+     */
+    public void setSeriesOutlinePaint(int series, Paint p) {
+        if ((series >= 0) && (series < this.seriesNeedle.length)) {
+            this.seriesNeedle[series].setOutlinePaint(p);
+        }
+    }
+
+    /**
+     * Sets the series outline stroke.
+     *
+     * @param series  the series index.
+     * @param stroke  the stroke.
+     *
+     * @see #setSeriesOutlinePaint(int, Paint)
+     */
+    public void setSeriesOutlineStroke(int series, Stroke stroke) {
+        if ((series >= 0) && (series < this.seriesNeedle.length)) {
+            this.seriesNeedle[series].setOutlineStroke(stroke);
+        }
+    }
+
+    /**
+     * Sets the needle type.
+     *
+     * @param type  the type.
+     *
+     * @see #setSeriesNeedle(int, int)
+     */
+    public void setSeriesNeedle(int type) {
+        setSeriesNeedle(0, type);
+    }
+
+    /**
+     * Sets the needle for a series.  The needle type is one of the following:
+     * <ul>
+     * <li>0 = {@link ArrowNeedle};</li>
+     * <li>1 = {@link LineNeedle};</li>
+     * <li>2 = {@link LongNeedle};</li>
+     * <li>3 = {@link PinNeedle};</li>
+     * <li>4 = {@link PlumNeedle};</li>
+     * <li>5 = {@link PointerNeedle};</li>
+     * <li>6 = {@link ShipNeedle};</li>
+     * <li>7 = {@link WindNeedle};</li>
+     * <li>8 = {@link ArrowNeedle};</li>
+     * <li>9 = {@link MiddlePinNeedle};</li>
+     * </ul>
+     * @param index  the series index.
+     * @param type  the needle type.
+     *
+     * @see #setSeriesNeedle(int)
+     */
+    public void setSeriesNeedle(int index, int type) {
+        switch(type) {
+            case 0:
+                setSeriesNeedle(index, new ArrowNeedle(true));
+                setSeriesPaint(index, Color.RED);
+                this.seriesNeedle[index].setHighlightPaint(Color.WHITE);
+                break;
+            case 1:
+                setSeriesNeedle(index, new LineNeedle());
+                break;
+            case 2:
+                MeterNeedle longNeedle = new LongNeedle();
+                longNeedle.setRotateY(0.5);
+                setSeriesNeedle(index, longNeedle);
+                break;
+            case 3:
+                setSeriesNeedle(index, new PinNeedle());
+                break;
+            case 4:
+                setSeriesNeedle(index, new PlumNeedle());
+                break;
+            case 5:
+                setSeriesNeedle(index, new PointerNeedle());
+                break;
+            case 6:
+                setSeriesPaint(index, null);
+                setSeriesOutlineStroke(index, new BasicStroke(3));
+                setSeriesNeedle(index, new ShipNeedle());
+                break;
+            case 7:
+                setSeriesPaint(index, Color.BLUE);
+                setSeriesNeedle(index, new WindNeedle());
+                break;
+            case 8:
+                setSeriesNeedle(index, new ArrowNeedle(true));
+                break;
+            case 9:
+                setSeriesNeedle(index, new MiddlePinNeedle());
+                break;
+            default:
+                throw new IllegalArgumentException("Unrecognised type.");
+        }
+    }
+
+    /**
+     * Sets the needle for a series and sends a {@link PlotChangeEvent} to all
      * registered listeners.
      *
-     * @param margin  the margin (a percentage).
-     *
-     * @see #getItemMargin()
+     * @param index  the series index.
+     * @param needle  the needle.
      */
-    public void setItemMargin(double margin) {
-        this.itemMargin = margin;
+    public void setSeriesNeedle(int index, MeterNeedle needle) {
+        if ((needle != null) && (index >= 0) && (index < this.seriesNeedle.length)) {
+            this.seriesNeedle[index] = needle;
+        }
         fireChangeEvent();
     }
 
     /**
-     * Returns the maximum bar width as a percentage of the available drawing
-     * space.  Take care with the encoding, for example 0.10 is ten percent.
+     * Returns an array of dataset references for the plot.
      *
-     * @return The maximum bar width.
+     * @return The dataset for the plot, cast as a ValueDataset.
      *
-     * @see #setMaximumBarWidth(double)
+     * @see #addDataset(ValueDataset)
      */
-    public double getMaximumBarWidth() {
-        return this.maximumBarWidth;
+    public ValueDataset[] getDatasets() {
+        return this.datasets;
     }
 
     /**
-     * Sets the maximum bar width, which is specified as a percentage of the
-     * available space for all bars, and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
+     * Adds a dataset to the compass.
      *
-     * @param percent  the maximum bar width (a percentage, where 0.10 is ten
-     *     percent).
+     * @param dataset  the new dataset ({@code null} ignored).
      *
-     * @see #getMaximumBarWidth()
+     * @see #addDataset(ValueDataset, MeterNeedle)
      */
-    public void setMaximumBarWidth(double percent) {
-        this.maximumBarWidth = percent;
-        fireChangeEvent();
+    public void addDataset(ValueDataset dataset) {
+        addDataset(dataset, null);
     }
 
     /**
-     * Returns the flag that controls whether the mean indicator is
-     * draw for each item.
+     * Adds a dataset to the compass.
      *
-     * @return A boolean.
-     *
-     * @see #setMeanVisible(boolean)
+     * @param dataset  the new dataset ({@code null} ignored).
+     * @param needle  the needle ({@code null} permitted).
      */
-    public boolean isMeanVisible() {
-        return this.meanVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether the mean indicator is drawn
-     * for each item, and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param visible  the new flag value.
-     *
-     * @see #isMeanVisible()
-     */
-    public void setMeanVisible(boolean visible) {
-        if (this.meanVisible == visible) {
-            return;
-        }
-        this.meanVisible = visible;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the flag that controls whether the median indicator is
-     * draw for each item.
-     *
-     * @return A boolean.
-     *
-     * @see #setMedianVisible(boolean)
-     */
-    public boolean isMedianVisible() {
-        return this.medianVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether the median indicator is drawn
-     * for each item, and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param visible  the new flag value.
-     *
-     * @see #isMedianVisible()
-     */
-    public void setMedianVisible(boolean visible) {
-        if (this.medianVisible == visible) {
-            return;
-        }
-        this.medianVisible = visible;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the flag that controls whether the minimum outlier is
-     * draw for each item.
-     *
-     * @return A boolean.
-     *
-     * @see #setMinOutlierVisible(boolean)
-     *
-     * @since 1.5.2
-     */
-    public boolean isMinOutlierVisible() {
-        return this.minOutlierVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether the minimum outlier is drawn
-     * for each item, and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param visible  the new flag value.
-     *
-     * @see #isMinOutlierVisible()
-     *
-     * @since 1.5.2
-     */
-    public void setMinOutlierVisible(boolean visible) {
-        if (this.minOutlierVisible == visible) {
-            return;
-        }
-        this.minOutlierVisible = visible;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the flag that controls whether the maximum outlier is
-     * draw for each item.
-     *
-     * @return A boolean.
-     *
-     * @see #setMaxOutlierVisible(boolean)
-     *
-     * @since 1.5.2
-     */
-    public boolean isMaxOutlierVisible() {
-        return this.maxOutlierVisible;
-    }
-
-    /**
-     * Sets the flag that controls whether the maximum outlier is drawn
-     * for each item, and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param visible  the new flag value.
-     *
-     * @see #isMaxOutlierVisible()
-     *
-     * @since 1.5.2
-     */
-    public void setMaxOutlierVisible(boolean visible) {
-        if (this.maxOutlierVisible == visible) {
-            return;
-        }
-        this.maxOutlierVisible = visible;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the flag that, if {@code true}, causes the whiskers to
-     * be drawn using the series outline paint.
-     *
-     * @return A boolean.
-     */
-    public boolean getUseOutlinePaintForWhiskers() {
-        return this.useOutlinePaintForWhiskers;
-    }
-
-    /**
-     * Sets the flag that, if {@code true}, causes the whiskers to
-     * be drawn using the series outline paint, and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param flag  the new flag value.
-     */
-    public void setUseOutlinePaintForWhiskers(boolean flag) {
-        if (this.useOutlinePaintForWhiskers == flag) {
-            return;
-        }
-        this.useOutlinePaintForWhiskers = flag;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the width of the whiskers as fraction of the bar width.
-     *
-     * @return The width of the whiskers.
-     *
-     * @see #setWhiskerWidth(double)
-     */
-    public double getWhiskerWidth() {
-        return this.whiskerWidth;
-    }
-
-    /**
-     * Sets the width of the whiskers as a fraction of the bar width and sends
-     * a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param width  a value between 0 and 1 indicating how wide the
-     *     whisker is supposed to be compared to the bar.
-     * @see #getWhiskerWidth()
-     * @see CategoryItemRendererState#getBarWidth()
-     */
-    public void setWhiskerWidth(double width) {
-        if (width < 0 || width > 1) {
-            throw new IllegalArgumentException("Value for whisker width out of range");
-        }
-        if (width == this.whiskerWidth) {
-            return;
-        }
-        this.whiskerWidth = width;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns a legend item for a series.
-     *
-     * @param datasetIndex  the dataset index (zero-based).
-     * @param series  the series index (zero-based).
-     *
-     * @return The legend item (possibly {@code null}).
-     */
-    @Override
-    public LegendItem getLegendItem(int datasetIndex, int series) {
-        CategoryPlot cp = getPlot();
-        if (cp == null) {
-            return null;
-        }
-        // check that a legend item needs to be displayed...
-        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
-            return null;
-        }
-        CategoryDataset dataset = cp.getDataset(datasetIndex);
-        String label = getLegendItemLabelGenerator().generateLabel(dataset, series);
-        String description = label;
-        String toolTipText = null;
-        if (getLegendItemToolTipGenerator() != null) {
-            toolTipText = getLegendItemToolTipGenerator().generateLabel(dataset, series);
-        }
-        String urlText = null;
-        if (getLegendItemURLGenerator() != null) {
-            urlText = getLegendItemURLGenerator().generateLabel(dataset, series);
-        }
-        Shape shape = lookupLegendShape(series);
-        Paint paint = lookupSeriesPaint(series);
-        Paint outlinePaint = lookupSeriesOutlinePaint(series);
-        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
-        LegendItem result = new LegendItem(label, description, toolTipText, urlText, shape, paint, outlineStroke, outlinePaint);
-        result.setLabelFont(lookupLegendTextFont(series));
-        Paint labelPaint = lookupLegendTextPaint(series);
-        if (labelPaint != null) {
-            result.setLabelPaint(labelPaint);
-        }
-        result.setDataset(dataset);
-        result.setDatasetIndex(datasetIndex);
-        result.setSeriesKey(dataset.getRowKey(series));
-        result.setSeriesIndex(series);
-        return result;
-    }
-
-    /**
-     * Returns the range of values from the specified dataset that the
-     * renderer will require to display all the data.
-     *
-     * @param dataset  the dataset.
-     *
-     * @return The range.
-     */
-    @Override
-    public Range findRangeBounds(CategoryDataset dataset) {
-        return super.findRangeBounds(dataset, true);
-    }
-
-    /**
-     * Initialises the renderer.  This method gets called once at the start of
-     * the process of drawing a chart.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area in which the data is to be plotted.
-     * @param plot  the plot.
-     * @param rendererIndex  the renderer index.
-     * @param info  collects chart rendering information for return to caller.
-     *
-     * @return The renderer state.
-     */
-    @Override
-    public CategoryItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, CategoryPlot plot, int rendererIndex, PlotRenderingInfo info) {
-        CategoryItemRendererState state = super.initialise(g2, dataArea, plot, rendererIndex, info);
-        // calculate the box width
-        CategoryAxis domainAxis = getDomainAxis(plot, rendererIndex);
-        CategoryDataset dataset = plot.getDataset(rendererIndex);
+    public void addDataset(ValueDataset dataset, MeterNeedle needle) {
         if (dataset != null) {
-            int columns = dataset.getColumnCount();
-            int rows = dataset.getRowCount();
-            double space = 0.0;
-            PlotOrientation orientation = plot.getOrientation();
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                space = dataArea.getHeight();
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                space = dataArea.getWidth();
+            int i = this.datasets.length + 1;
+            ValueDataset[] t = new ValueDataset[i];
+            MeterNeedle[] p = new MeterNeedle[i];
+            i = i - 2;
+            for (; i >= 0; --i) {
+                t[i] = this.datasets[i];
+                p[i] = this.seriesNeedle[i];
             }
-            double maxWidth = space * getMaximumBarWidth();
-            double categoryMargin = 0.0;
-            double currentItemMargin = 0.0;
-            if (columns > 1) {
-                categoryMargin = domainAxis.getCategoryMargin();
+            i = this.datasets.length;
+            t[i] = dataset;
+            p[i] = ((needle != null) ? needle : p[i - 1]);
+            ValueDataset[] a = this.datasets;
+            MeterNeedle[] b = this.seriesNeedle;
+            this.datasets = t;
+            this.seriesNeedle = p;
+            for (--i; i >= 0; --i) {
+                a[i] = null;
+                b[i] = null;
             }
-            if (rows > 1) {
-                currentItemMargin = getItemMargin();
-            }
-            double used = space * (1 - domainAxis.getLowerMargin() - domainAxis.getUpperMargin() - categoryMargin - currentItemMargin);
-            if ((rows * columns) > 0) {
-                state.setBarWidth(Math.min(used / (dataset.getColumnCount() * dataset.getRowCount()), maxWidth));
-            } else {
-                state.setBarWidth(Math.min(used, maxWidth));
-            }
+            dataset.addChangeListener(this);
         }
-        return state;
     }
 
     /**
-     * Draw a single data item.
+     * Receives a chart element visitor.  Many plot subclasses will override
+     * this method to handle their subcomponents.
      *
-     * @param g2  the graphics device.
-     * @param state  the renderer state.
-     * @param dataArea  the area in which the data is drawn.
-     * @param plot  the plot.
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param dataset  the data (must be an instance of
-     *                 {@link BoxAndWhiskerCategoryDataset}).
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     * @param pass  the pass index.
+     * @param visitor  the visitor ({@code null} not permitted).
      */
     @Override
-    public void drawItem(Graphics2D g2, CategoryItemRendererState state, Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis, ValueAxis rangeAxis, CategoryDataset dataset, int row, int column, int pass) {
-        // do nothing if item is not visible
-        if (!getItemVisible(row, column)) {
-            return;
-        }
-        if (!(dataset instanceof BoxAndWhiskerCategoryDataset)) {
-            throw new IllegalArgumentException("BoxAndWhiskerRenderer.drawItem() : the data should be " + "of type BoxAndWhiskerCategoryDataset only.");
-        }
-        PlotOrientation orientation = plot.getOrientation();
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            drawHorizontalItem(g2, state, dataArea, plot, domainAxis, rangeAxis, dataset, row, column);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            drawVerticalItem(g2, state, dataArea, plot, domainAxis, rangeAxis, dataset, row, column);
-        }
+    public void receive(ChartElementVisitor visitor) {
+        // FIXME : handle the needles
+        super.receive(visitor);
     }
 
     /**
-     * Draws the visual representation of a single data item when the plot has
-     * a horizontal orientation.
+     * Draws the plot on a Java 2D graphics device (such as the screen or a
+     * printer).
      *
      * @param g2  the graphics device.
-     * @param state  the renderer state.
-     * @param dataArea  the area within which the plot is being drawn.
-     * @param plot  the plot (can be used to obtain standard color
-     *              information etc).
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param dataset  the dataset (must be an instance of
-     *                 {@link BoxAndWhiskerCategoryDataset}).
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
+     * @param area  the area within which the plot should be drawn.
+     * @param anchor  the anchor point ({@code null} permitted).
+     * @param parentState  the state from the parent plot, if there is one.
+     * @param info  collects info about the drawing.
      */
-    public void drawHorizontalItem(Graphics2D g2, CategoryItemRendererState state, Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis, ValueAxis rangeAxis, CategoryDataset dataset, int row, int column) {
-        BoxAndWhiskerCategoryDataset bawDataset = (BoxAndWhiskerCategoryDataset) dataset;
-        double categoryEnd = domainAxis.getCategoryEnd(column, getColumnCount(), dataArea, plot.getDomainAxisEdge());
-        double categoryStart = domainAxis.getCategoryStart(column, getColumnCount(), dataArea, plot.getDomainAxisEdge());
-        double categoryWidth = Math.abs(categoryEnd - categoryStart);
-        double yy = categoryStart;
-        int seriesCount = getRowCount();
-        int categoryCount = getColumnCount();
-        if (seriesCount > 1) {
-            double seriesGap = dataArea.getHeight() * getItemMargin() / (categoryCount * (seriesCount - 1));
-            double usedWidth = (state.getBarWidth() * seriesCount) + (seriesGap * (seriesCount - 1));
-            // offset the start of the boxes if the total width used is smaller
-            // than the category width
-            double offset = (categoryWidth - usedWidth) / 2;
-            yy = yy + offset + (row * (state.getBarWidth() + seriesGap));
-        } else {
-            // offset the start of the box if the box width is smaller than
-            // the category width
-            double offset = (categoryWidth - state.getBarWidth()) / 2;
-            yy = yy + offset;
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
+        int outerRadius, innerRadius;
+        int x1, y1, x2, y2;
+        double a;
+        if (info != null) {
+            info.setPlotArea(area);
         }
-        g2.setPaint(getItemPaint(row, column));
-        Stroke s = getItemStroke(row, column);
-        g2.setStroke(s);
-        RectangleEdge location = plot.getRangeAxisEdge();
-        Number xQ1 = bawDataset.getQ1Value(row, column);
-        Number xQ3 = bawDataset.getQ3Value(row, column);
-        Number xMax = bawDataset.getMaxRegularValue(row, column);
-        Number xMin = bawDataset.getMinRegularValue(row, column);
-        Shape box = null;
-        if (xQ1 != null && xQ3 != null && xMax != null && xMin != null) {
-            double xxQ1 = rangeAxis.valueToJava2D(xQ1.doubleValue(), dataArea, location);
-            double xxQ3 = rangeAxis.valueToJava2D(xQ3.doubleValue(), dataArea, location);
-            double xxMax = rangeAxis.valueToJava2D(xMax.doubleValue(), dataArea, location);
-            double xxMin = rangeAxis.valueToJava2D(xMin.doubleValue(), dataArea, location);
-            double yymid = yy + state.getBarWidth() / 2.0;
-            double halfW = (state.getBarWidth() / 2.0) * this.whiskerWidth;
-            // draw the box...
-            box = new Rectangle2D.Double(Math.min(xxQ1, xxQ3), yy, Math.abs(xxQ1 - xxQ3), state.getBarWidth());
-            if (this.fillBox) {
-                g2.fill(box);
-            }
-            Paint outlinePaint = getItemOutlinePaint(row, column);
-            if (this.useOutlinePaintForWhiskers) {
-                g2.setPaint(outlinePaint);
-            }
-            // draw the upper shadow...
-            g2.draw(new Line2D.Double(xxMax, yymid, xxQ3, yymid));
-            g2.draw(new Line2D.Double(xxMax, yymid - halfW, xxMax, yymid + halfW));
-            // draw the lower shadow...
-            g2.draw(new Line2D.Double(xxMin, yymid, xxQ1, yymid));
-            g2.draw(new Line2D.Double(xxMin, yymid - halfW, xxMin, yymid + halfW));
-            g2.setStroke(getItemOutlineStroke(row, column));
-            g2.setPaint(outlinePaint);
-            g2.draw(box);
+        // adjust for insets...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+        // draw the background
+        if (this.drawBorder) {
+            drawBackground(g2, area);
         }
-        // draw mean - SPECIAL AIMS REQUIREMENT...
-        g2.setPaint(this.artifactPaint);
-        // average radius
-        double aRadius;
-        if (this.meanVisible) {
-            Number xMean = bawDataset.getMeanValue(row, column);
-            if (xMean != null) {
-                double xxMean = rangeAxis.valueToJava2D(xMean.doubleValue(), dataArea, location);
-                aRadius = state.getBarWidth() / 4;
-                // here we check that the average marker will in fact be
-                // visible before drawing it...
-                if ((xxMean > (dataArea.getMinX() - aRadius)) && (xxMean < (dataArea.getMaxX() + aRadius))) {
-                    Ellipse2D.Double avgEllipse = new Ellipse2D.Double(xxMean - aRadius, yy + aRadius, aRadius * 2, aRadius * 2);
-                    g2.fill(avgEllipse);
-                    g2.draw(avgEllipse);
-                }
+        int midX = (int) (area.getWidth() / 2);
+        int midY = (int) (area.getHeight() / 2);
+        int radius = midX;
+        if (midY < midX) {
+            radius = midY;
+        }
+        --radius;
+        int diameter = 2 * radius;
+        midX += (int) area.getMinX();
+        midY += (int) area.getMinY();
+        this.circle1.setFrame(midX - radius, midY - radius, diameter, diameter);
+        this.circle2.setFrame(midX - radius + 15, midY - radius + 15, diameter - 30, diameter - 30);
+        g2.setPaint(this.rosePaint);
+        this.a1 = new Area(this.circle1);
+        this.a2 = new Area(this.circle2);
+        this.a1.subtract(this.a2);
+        g2.fill(this.a1);
+        g2.setPaint(this.roseCenterPaint);
+        x1 = diameter - 30;
+        g2.fillOval(midX - radius + 15, midY - radius + 15, x1, x1);
+        g2.setPaint(this.roseHighlightPaint);
+        g2.drawOval(midX - radius, midY - radius, diameter, diameter);
+        x1 = diameter - 20;
+        g2.drawOval(midX - radius + 10, midY - radius + 10, x1, x1);
+        x1 = diameter - 30;
+        g2.drawOval(midX - radius + 15, midY - radius + 15, x1, x1);
+        x1 = diameter - 80;
+        g2.drawOval(midX - radius + 40, midY - radius + 40, x1, x1);
+        outerRadius = radius - 20;
+        innerRadius = radius - 32;
+        for (int w = 0; w < 360; w += 15) {
+            a = Math.toRadians(w);
+            x1 = midX - ((int) (Math.sin(a) * innerRadius));
+            x2 = midX - ((int) (Math.sin(a) * outerRadius));
+            y1 = midY - ((int) (Math.cos(a) * innerRadius));
+            y2 = midY - ((int) (Math.cos(a) * outerRadius));
+            g2.drawLine(x1, y1, x2, y2);
+        }
+        g2.setPaint(this.roseHighlightPaint);
+        innerRadius = radius - 26;
+        outerRadius = 7;
+        for (int w = 45; w < 360; w += 90) {
+            a = Math.toRadians(w);
+            x1 = midX - ((int) (Math.sin(a) * innerRadius));
+            y1 = midY - ((int) (Math.cos(a) * innerRadius));
+            g2.fillOval(x1 - outerRadius, y1 - outerRadius, 2 * outerRadius, 2 * outerRadius);
+        }
+        /// Squares
+        for (int w = 0; w < 360; w += 90) {
+            a = Math.toRadians(w);
+            x1 = midX - ((int) (Math.sin(a) * innerRadius));
+            y1 = midY - ((int) (Math.cos(a) * innerRadius));
+            Polygon p = new Polygon();
+            p.addPoint(x1 - outerRadius, y1);
+            p.addPoint(x1, y1 + outerRadius);
+            p.addPoint(x1 + outerRadius, y1);
+            p.addPoint(x1, y1 - outerRadius);
+            g2.fillPolygon(p);
+        }
+        /// Draw N, S, E, W
+        innerRadius = radius - 42;
+        Font f = getCompassFont(radius);
+        g2.setFont(f);
+        g2.drawString(localizationResources.getString("N"), midX - 5, midY - innerRadius + f.getSize());
+        g2.drawString(localizationResources.getString("S"), midX - 5, midY + innerRadius - 5);
+        g2.drawString(localizationResources.getString("W"), midX - innerRadius + 5, midY + 5);
+        g2.drawString(localizationResources.getString("E"), midX + innerRadius - f.getSize(), midY + 5);
+        // plot the data (unless the dataset is null)...
+        y1 = radius / 2;
+        x1 = radius / 6;
+        Rectangle2D needleArea = new Rectangle2D.Double((midX - x1), (midY - y1), (2 * x1), (2 * y1));
+        int x = this.seriesNeedle.length;
+        int current;
+        double value;
+        int i = (this.datasets.length - 1);
+        for (; i >= 0; --i) {
+            ValueDataset data = this.datasets[i];
+            if (data != null && data.getValue() != null) {
+                value = (data.getValue().doubleValue()) % this.revolutionDistance;
+                value = value / this.revolutionDistance * 360;
+                current = i % x;
+                this.seriesNeedle[current].draw(g2, needleArea, value);
             }
         }
-        // draw median...
-        if (this.medianVisible) {
-            Number xMedian = bawDataset.getMedianValue(row, column);
-            if (xMedian != null) {
-                double xxMedian = rangeAxis.valueToJava2D(xMedian.doubleValue(), dataArea, location);
-                g2.draw(new Line2D.Double(xxMedian, yy, xxMedian, yy + state.getBarWidth()));
-            }
-        }
-        // collect entity and tool tip information...
-        if (state.getInfo() != null && box != null) {
-            EntityCollection entities = state.getEntityCollection();
-            if (entities != null) {
-                addItemEntity(entities, dataset, row, column, box);
-            }
+        if (this.drawBorder) {
+            drawOutline(g2, area);
         }
     }
 
     /**
-     * Draws the visual representation of a single data item when the plot has
-     * a vertical orientation.
+     * Returns a short string describing the type of plot.
      *
-     * @param g2  the graphics device.
-     * @param state  the renderer state.
-     * @param dataArea  the area within which the plot is being drawn.
-     * @param plot  the plot (can be used to obtain standard color information
-     *              etc).
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param dataset  the dataset (must be an instance of
-     *                 {@link BoxAndWhiskerCategoryDataset}).
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
+     * @return A string describing the plot.
      */
-    public void drawVerticalItem(Graphics2D g2, CategoryItemRendererState state, Rectangle2D dataArea, CategoryPlot plot, CategoryAxis domainAxis, ValueAxis rangeAxis, CategoryDataset dataset, int row, int column) {
-        BoxAndWhiskerCategoryDataset bawDataset = (BoxAndWhiskerCategoryDataset) dataset;
-        double categoryEnd = domainAxis.getCategoryEnd(column, getColumnCount(), dataArea, plot.getDomainAxisEdge());
-        double categoryStart = domainAxis.getCategoryStart(column, getColumnCount(), dataArea, plot.getDomainAxisEdge());
-        double categoryWidth = categoryEnd - categoryStart;
-        double xx = categoryStart;
-        int seriesCount = getRowCount();
-        int categoryCount = getColumnCount();
-        if (seriesCount > 1) {
-            double seriesGap = dataArea.getWidth() * getItemMargin() / (categoryCount * (seriesCount - 1));
-            double usedWidth = (state.getBarWidth() * seriesCount) + (seriesGap * (seriesCount - 1));
-            // offset the start of the boxes if the total width used is smaller
-            // than the category width
-            double offset = (categoryWidth - usedWidth) / 2;
-            xx = xx + offset + (row * (state.getBarWidth() + seriesGap));
-        } else {
-            // offset the start of the box if the box width is smaller than the
-            // category width
-            double offset = (categoryWidth - state.getBarWidth()) / 2;
-            xx = xx + offset;
-        }
-        double yyAverage;
-        double yyOutlier;
-        Paint itemPaint = getItemPaint(row, column);
-        g2.setPaint(itemPaint);
-        Stroke s = getItemStroke(row, column);
-        g2.setStroke(s);
-        // average radius
-        double aRadius = 0;
-        RectangleEdge location = plot.getRangeAxisEdge();
-        Number yQ1 = bawDataset.getQ1Value(row, column);
-        Number yQ3 = bawDataset.getQ3Value(row, column);
-        Number yMax = bawDataset.getMaxRegularValue(row, column);
-        Number yMin = bawDataset.getMinRegularValue(row, column);
-        Shape box = null;
-        if (yQ1 != null && yQ3 != null && yMax != null && yMin != null) {
-            double yyQ1 = rangeAxis.valueToJava2D(yQ1.doubleValue(), dataArea, location);
-            double yyQ3 = rangeAxis.valueToJava2D(yQ3.doubleValue(), dataArea, location);
-            double yyMax = rangeAxis.valueToJava2D(yMax.doubleValue(), dataArea, location);
-            double yyMin = rangeAxis.valueToJava2D(yMin.doubleValue(), dataArea, location);
-            double xxmid = xx + state.getBarWidth() / 2.0;
-            double halfW = (state.getBarWidth() / 2.0) * this.whiskerWidth;
-            // draw the body...
-            box = new Rectangle2D.Double(xx, Math.min(yyQ1, yyQ3), state.getBarWidth(), Math.abs(yyQ1 - yyQ3));
-            if (this.fillBox) {
-                g2.fill(box);
-            }
-            Paint outlinePaint = getItemOutlinePaint(row, column);
-            if (this.useOutlinePaintForWhiskers) {
-                g2.setPaint(outlinePaint);
-            }
-            // draw the upper shadow...
-            g2.draw(new Line2D.Double(xxmid, yyMax, xxmid, yyQ3));
-            g2.draw(new Line2D.Double(xxmid - halfW, yyMax, xxmid + halfW, yyMax));
-            // draw the lower shadow...
-            g2.draw(new Line2D.Double(xxmid, yyMin, xxmid, yyQ1));
-            g2.draw(new Line2D.Double(xxmid - halfW, yyMin, xxmid + halfW, yyMin));
-            g2.setStroke(getItemOutlineStroke(row, column));
-            g2.setPaint(outlinePaint);
-            g2.draw(box);
-        }
-        g2.setPaint(this.artifactPaint);
-        // draw mean - SPECIAL AIMS REQUIREMENT...
-        if (this.meanVisible) {
-            Number yMean = bawDataset.getMeanValue(row, column);
-            if (yMean != null) {
-                yyAverage = rangeAxis.valueToJava2D(yMean.doubleValue(), dataArea, location);
-                aRadius = state.getBarWidth() / 4;
-                // here we check that the average marker will in fact be
-                // visible before drawing it...
-                if ((yyAverage > (dataArea.getMinY() - aRadius)) && (yyAverage < (dataArea.getMaxY() + aRadius))) {
-                    Ellipse2D.Double avgEllipse = new Ellipse2D.Double(xx + aRadius, yyAverage - aRadius, aRadius * 2, aRadius * 2);
-                    g2.fill(avgEllipse);
-                    g2.draw(avgEllipse);
-                }
-            }
-        }
-        // draw median...
-        if (this.medianVisible) {
-            Number yMedian = bawDataset.getMedianValue(row, column);
-            if (yMedian != null) {
-                double yyMedian = rangeAxis.valueToJava2D(yMedian.doubleValue(), dataArea, location);
-                g2.draw(new Line2D.Double(xx, yyMedian, xx + state.getBarWidth(), yyMedian));
-            }
-        }
-        // draw yOutliers...
-        double maxAxisValue = rangeAxis.valueToJava2D(rangeAxis.getUpperBound(), dataArea, location) + aRadius;
-        double minAxisValue = rangeAxis.valueToJava2D(rangeAxis.getLowerBound(), dataArea, location) - aRadius;
-        g2.setPaint(itemPaint);
-        // draw outliers
-        // outlier radius
-        double oRadius = state.getBarWidth() / 3;
-        List<Outlier> outliers = new ArrayList<>();
-        OutlierListCollection outlierListCollection = new OutlierListCollection();
-        // From outlier array sort out which are outliers and put these into a
-        // list If there are any farouts, set the flag on the
-        // OutlierListCollection
-        List<? extends Number> yOutliers = bawDataset.getOutliers(row, column);
-        if (yOutliers != null) {
-            for (Object yOutlier : yOutliers) {
-                double outlier = ((Number) yOutlier).doubleValue();
-                Number minOutlier = bawDataset.getMinOutlier(row, column);
-                Number maxOutlier = bawDataset.getMaxOutlier(row, column);
-                Number minRegular = bawDataset.getMinRegularValue(row, column);
-                Number maxRegular = bawDataset.getMaxRegularValue(row, column);
-                if (outlier > maxOutlier.doubleValue()) {
-                    outlierListCollection.setHighFarOut(true);
-                } else if (outlier < minOutlier.doubleValue()) {
-                    outlierListCollection.setLowFarOut(true);
-                } else if (outlier > maxRegular.doubleValue()) {
-                    yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea, location);
-                    outliers.add(new Outlier(xx + state.getBarWidth() / 2.0, yyOutlier, oRadius));
-                } else if (outlier < minRegular.doubleValue()) {
-                    yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea, location);
-                    outliers.add(new Outlier(xx + state.getBarWidth() / 2.0, yyOutlier, oRadius));
-                }
-                Collections.sort(outliers);
-            }
-            // Process outliers. Each outlier is either added to the
-            // appropriate outlier list or a new outlier list is made
-            for (Outlier outlier : outliers) {
-                outlierListCollection.add(outlier);
-            }
-            for (Iterator iterator = outlierListCollection.iterator(); iterator.hasNext(); ) {
-                OutlierList list = (OutlierList) iterator.next();
-                Outlier outlier = list.getAveragedOutlier();
-                Point2D point = outlier.getPoint();
-                if (list.isMultiple()) {
-                    drawMultipleEllipse(point, state.getBarWidth(), oRadius, g2);
-                } else {
-                    drawEllipse(point, oRadius, g2);
-                }
-            }
-            // draw farout indicators
-            if (isMaxOutlierVisible() && outlierListCollection.isHighFarOut()) {
-                drawHighFarOut(aRadius / 2.0, g2, xx + state.getBarWidth() / 2.0, maxAxisValue);
-            }
-            if (isMinOutlierVisible() && outlierListCollection.isLowFarOut()) {
-                drawLowFarOut(aRadius / 2.0, g2, xx + state.getBarWidth() / 2.0, minAxisValue);
-            }
-        }
-        // collect entity and tool tip information...
-        if (state.getInfo() != null && box != null) {
-            EntityCollection entities = state.getEntityCollection();
-            if (entities != null) {
-                addItemEntity(entities, dataset, row, column, box);
-            }
-        }
+    @Override
+    public String getPlotType() {
+        return localizationResources.getString("Compass_Plot");
     }
 
     /**
-     * Draws a dot to represent an outlier.
+     * Returns the legend items for the plot.  For now, no legend is available
+     * - this method returns null.
      *
-     * @param point  the location.
-     * @param oRadius  the radius.
-     * @param g2  the graphics device.
+     * @return The legend items.
      */
-    private void drawEllipse(Point2D point, double oRadius, Graphics2D g2) {
-        Ellipse2D dot = new Ellipse2D.Double(point.getX() + oRadius / 2, point.getY(), oRadius, oRadius);
-        g2.draw(dot);
+    @Override
+    public LegendItemCollection getLegendItems() {
+        return null;
     }
 
     /**
-     * Draws two dots to represent the average value of more than one outlier.
+     * No zooming is implemented for compass plot, so this method is empty.
      *
-     * @param point  the location
-     * @param boxWidth  the box width.
-     * @param oRadius  the radius.
-     * @param g2  the graphics device.
+     * @param percent  the zoom amount.
      */
-    private void drawMultipleEllipse(Point2D point, double boxWidth, double oRadius, Graphics2D g2) {
-        Ellipse2D dot1 = new Ellipse2D.Double(point.getX() - (boxWidth / 2) + oRadius, point.getY(), oRadius, oRadius);
-        Ellipse2D dot2 = new Ellipse2D.Double(point.getX() + (boxWidth / 2), point.getY(), oRadius, oRadius);
-        g2.draw(dot1);
-        g2.draw(dot2);
+    @Override
+    public void zoom(double percent) {
+        // no zooming possible
     }
 
     /**
-     * Draws a triangle to indicate the presence of far-out values.
+     * Returns the font for the compass, adjusted for the size of the plot.
      *
-     * @param aRadius  the radius.
-     * @param g2  the graphics device.
-     * @param xx  the x coordinate.
-     * @param m  the y coordinate.
-     */
-    private void drawHighFarOut(double aRadius, Graphics2D g2, double xx, double m) {
-        double side = aRadius * 2;
-        g2.draw(new Line2D.Double(xx - side, m + side, xx + side, m + side));
-        g2.draw(new Line2D.Double(xx - side, m + side, xx, m));
-        g2.draw(new Line2D.Double(xx + side, m + side, xx, m));
-    }
-
-    /**
-     * Draws a triangle to indicate the presence of far-out values.
+     * @param radius the radius.
      *
-     * @param aRadius  the radius.
-     * @param g2  the graphics device.
-     * @param xx  the x coordinate.
-     * @param m  the y coordinate.
+     * @return The font.
      */
-    private void drawLowFarOut(double aRadius, Graphics2D g2, double xx, double m) {
-        double side = aRadius * 2;
-        g2.draw(new Line2D.Double(xx - side, m - side, xx + side, m - side));
-        g2.draw(new Line2D.Double(xx - side, m - side, xx, m));
-        g2.draw(new Line2D.Double(xx + side, m - side, xx, m));
+    protected Font getCompassFont(int radius) {
+        float fontSize = radius / 10.0f;
+        if (fontSize < 8) {
+            fontSize = 8;
+        }
+        Font newFont = this.compassFont.deriveFont(fontSize);
+        return newFont;
     }
 
     /**
-     * Tests this renderer for equality with an arbitrary object.
+     * Tests an object for equality with this plot.
      *
      * @param obj  the object ({@code null} permitted).
      *
-     * @return {@code true} or {@code false}.
+     * @return A boolean.
      */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof BoxAndWhiskerRenderer)) {
+        if (!(obj instanceof CompassPlot)) {
             return false;
         }
-        BoxAndWhiskerRenderer that = (BoxAndWhiskerRenderer) obj;
-        if (this.fillBox != that.fillBox) {
+        if (!super.equals(obj)) {
             return false;
         }
-        if (this.itemMargin != that.itemMargin) {
+        CompassPlot that = (CompassPlot) obj;
+        if (this.labelType != that.labelType) {
             return false;
         }
-        if (this.maximumBarWidth != that.maximumBarWidth) {
+        if (!Objects.equals(this.labelFont, that.labelFont)) {
             return false;
         }
-        if (this.meanVisible != that.meanVisible) {
+        if (this.drawBorder != that.drawBorder) {
             return false;
         }
-        if (this.medianVisible != that.medianVisible) {
+        if (!PaintUtils.equal(this.roseHighlightPaint, that.roseHighlightPaint)) {
             return false;
         }
-        if (this.minOutlierVisible != that.minOutlierVisible) {
+        if (!PaintUtils.equal(this.rosePaint, that.rosePaint)) {
             return false;
         }
-        if (this.maxOutlierVisible != that.maxOutlierVisible) {
+        if (!PaintUtils.equal(this.roseCenterPaint, that.roseCenterPaint)) {
             return false;
         }
-        if (this.useOutlinePaintForWhiskers != that.useOutlinePaintForWhiskers) {
+        if (!Objects.equals(this.compassFont, that.compassFont)) {
             return false;
         }
-        if (this.whiskerWidth != that.whiskerWidth) {
+        if (!Arrays.equals(this.seriesNeedle, that.seriesNeedle)) {
             return false;
         }
-        if (!PaintUtils.equal(this.artifactPaint, that.artifactPaint)) {
+        if (getRevolutionDistance() != that.getRevolutionDistance()) {
             return false;
         }
-        return super.equals(obj);
+        return true;
+    }
+
+    /**
+     * Returns a clone of the plot.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException  this class will not throw this
+     *         exception, but subclasses (if any) might.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        CompassPlot clone = (CompassPlot) super.clone();
+        if (this.circle1 != null) {
+            clone.circle1 = (Ellipse2D) this.circle1.clone();
+        }
+        if (this.circle2 != null) {
+            clone.circle2 = (Ellipse2D) this.circle2.clone();
+        }
+        if (this.a1 != null) {
+            clone.a1 = (Area) this.a1.clone();
+        }
+        if (this.a2 != null) {
+            clone.a2 = (Area) this.a2.clone();
+        }
+        if (this.rect1 != null) {
+            clone.rect1 = (Rectangle2D) this.rect1.clone();
+        }
+        clone.datasets = (ValueDataset[]) this.datasets.clone();
+        clone.seriesNeedle = (MeterNeedle[]) this.seriesNeedle.clone();
+        // clone share data sets => add the clone as listener to the dataset
+        for (int i = 0; i < this.datasets.length; ++i) {
+            if (clone.datasets[i] != null) {
+                clone.datasets[i].addChangeListener(clone);
+            }
+        }
+        return clone;
+    }
+
+    /**
+     * Sets the count to complete one revolution.  Can be arbitrarily set
+     * For degrees (the default) it is 360, for radians this is 2*Pi, etc
+     *
+     * @param size the count to complete one revolution.
+     *
+     * @see #getRevolutionDistance()
+     */
+    public void setRevolutionDistance(double size) {
+        if (size > 0) {
+            this.revolutionDistance = size;
+        }
+    }
+
+    /**
+     * Gets the count to complete one revolution.
+     *
+     * @return The count to complete one revolution.
+     *
+     * @see #setRevolutionDistance(double)
+     */
+    public double getRevolutionDistance() {
+        return this.revolutionDistance;
     }
 
     /**
@@ -936,7 +803,9 @@ class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer implements Clon
      */
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
-        SerialUtils.writePaint(this.artifactPaint, stream);
+        SerialUtils.writePaint(this.rosePaint, stream);
+        SerialUtils.writePaint(this.roseCenterPaint, stream);
+        SerialUtils.writePaint(this.roseHighlightPaint, stream);
     }
 
     /**
@@ -949,7 +818,9 @@ class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer implements Clon
      */
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
-        this.artifactPaint = SerialUtils.readPaint(stream);
+        this.rosePaint = SerialUtils.readPaint(stream);
+        this.roseCenterPaint = SerialUtils.readPaint(stream);
+        this.roseHighlightPaint = SerialUtils.readPaint(stream);
     }
 }
 /* ======================================================
@@ -975,70 +846,639 @@ class BoxAndWhiskerRenderer extends AbstractCategoryItemRenderer implements Clon
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
  *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.]
  *
- * --------------------------------------------
- * DynamicDriveToolTipTagFragmentGenerator.java
- * --------------------------------------------
- * (C) Copyright 2003-2017, by Richard Atkinson and Contributors.
+ * -----------
+ * Marker.java
+ * -----------
+ * (C) Copyright 2002-present, by David Gilbert.
  *
- * Original Author:  Richard Atkinson;
- * Contributors:     David Gilbert;
- *                   Fawad Halim - bug 2690293;
- *
- * Changes
- * -------
- * 12-Aug-2003 : Version 1 (RA);
- * 04-Dec-2007 : Escape tool tip text to fix bug 1400917 (DG);
- * 19-Mar-2009 : Escape apostrophes - see bug 2690293 with fix by FH (DG);
- *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Nicolas Brodu;
  */
 /**
- * Generates tooltips using the Dynamic Drive DHTML Tip Message
- * library (http://www.dynamicdrive.com).
+ * The base class for markers that can be added to plots to highlight a value
+ * or range of values.
  */
-class DynamicDriveToolTipTagFragmentGenerator implements ToolTipTagFragmentGenerator {
+public abstract class Marker implements Cloneable, Serializable {
 
     /**
-     * The title, empty string not to display
+     * For serialization.
      */
-    protected String title = "";
+    private static final long serialVersionUID = -734389651405327166L;
 
     /**
-     * The style number
+     * The paint (null is not allowed).
      */
-    protected int style = 1;
+    private transient Paint paint;
 
     /**
-     * Blank constructor.
+     * The stroke (null is not allowed).
      */
-    public DynamicDriveToolTipTagFragmentGenerator() {
-        super();
+    private transient Stroke stroke;
+
+    /**
+     * The outline paint.
+     */
+    private transient Paint outlinePaint;
+
+    /**
+     * The outline stroke.
+     */
+    private transient Stroke outlineStroke;
+
+    /**
+     * The alpha transparency.
+     */
+    private float alpha;
+
+    /**
+     * The label.
+     */
+    private String label = null;
+
+    /**
+     * The label font.
+     */
+    private Font labelFont;
+
+    /**
+     * The label paint.
+     */
+    private transient Paint labelPaint;
+
+    /**
+     * The label background color.
+     */
+    private Color labelBackgroundColor;
+
+    /**
+     * The label position.
+     */
+    private RectangleAnchor labelAnchor;
+
+    /**
+     * The text anchor for the label.
+     */
+    private TextAnchor labelTextAnchor;
+
+    /**
+     * The label offset from the marker rectangle (see also labelOffsetType).
+     */
+    private RectangleInsets labelOffset;
+
+    /**
+     * The offset type for the label (see also labelOffset).
+     */
+    private LengthAdjustmentType labelOffsetType;
+
+    /**
+     * Storage for registered change listeners.
+     */
+    private transient EventListenerList listenerList;
+
+    /**
+     * Creates a new marker with default attributes.
+     */
+    protected Marker() {
+        this(Color.GRAY);
     }
 
     /**
-     * Creates a new generator with specific title and style settings.
+     * Constructs a new marker.
      *
-     * @param title  title for use in all tooltips, use empty String not to
-     *               display a title.
-     * @param style  style number, see http://www.dynamicdrive.com for more
-     *               information.
+     * @param paint  the paint ({@code null} not permitted).
      */
-    public DynamicDriveToolTipTagFragmentGenerator(String title, int style) {
-        this.title = title;
-        this.style = style;
+    protected Marker(Paint paint) {
+        this(paint, new BasicStroke(0.5f), Color.GRAY, new BasicStroke(0.5f), 0.80f);
     }
 
     /**
-     * Generates a tooltip string to go in an HTML image map.
+     * Constructs a new marker.
      *
-     * @param toolTipText  the tooltip.
+     * @param paint  the paint ({@code null} not permitted).
+     * @param stroke  the stroke ({@code null} not permitted).
+     * @param outlinePaint  the outline paint ({@code null} permitted).
+     * @param outlineStroke  the outline stroke ({@code null} permitted).
+     * @param alpha  the alpha transparency (must be in the range 0.0f to
+     *     1.0f).
      *
-     * @return The formatted HTML area tag attribute(s).
+     * @throws IllegalArgumentException if {@code paint} or
+     *     {@code stroke} is {@code null}, or {@code alpha} is
+     *     not in the specified range.
+     */
+    protected Marker(Paint paint, Stroke stroke, Paint outlinePaint, Stroke outlineStroke, float alpha) {
+        Args.nullNotPermitted(paint, "paint");
+        Args.nullNotPermitted(stroke, "stroke");
+        if (alpha < 0.0f || alpha > 1.0f) {
+            throw new IllegalArgumentException("The 'alpha' value must be in the range 0.0f to 1.0f");
+        }
+        this.paint = paint;
+        this.stroke = stroke;
+        this.outlinePaint = outlinePaint;
+        this.outlineStroke = outlineStroke;
+        this.alpha = alpha;
+        this.labelFont = new Font("SansSerif", Font.PLAIN, 9);
+        this.labelPaint = Color.BLACK;
+        this.labelBackgroundColor = new Color(100, 100, 100, 100);
+        this.labelAnchor = RectangleAnchor.TOP_LEFT;
+        this.labelOffset = new RectangleInsets(3.0, 3.0, 3.0, 3.0);
+        this.labelOffsetType = LengthAdjustmentType.CONTRACT;
+        this.labelTextAnchor = TextAnchor.CENTER;
+        this.listenerList = new EventListenerList();
+    }
+
+    /**
+     * Returns the paint.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setPaint(Paint)
+     */
+    public Paint getPaint() {
+        return this.paint;
+    }
+
+    /**
+     * Sets the paint and sends a {@link MarkerChangeEvent} to all registered
+     * listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getPaint()
+     */
+    public void setPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.paint = paint;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the stroke.
+     *
+     * @return The stroke (never {@code null}).
+     *
+     * @see #setStroke(Stroke)
+     */
+    public Stroke getStroke() {
+        return this.stroke;
+    }
+
+    /**
+     * Sets the stroke and sends a {@link MarkerChangeEvent} to all registered
+     * listeners.
+     *
+     * @param stroke  the stroke ({@code null}not permitted).
+     *
+     * @see #getStroke()
+     */
+    public void setStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.stroke = stroke;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the outline paint.
+     *
+     * @return The outline paint (possibly {@code null}).
+     *
+     * @see #setOutlinePaint(Paint)
+     */
+    public Paint getOutlinePaint() {
+        return this.outlinePaint;
+    }
+
+    /**
+     * Sets the outline paint and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getOutlinePaint()
+     */
+    public void setOutlinePaint(Paint paint) {
+        this.outlinePaint = paint;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the outline stroke.
+     *
+     * @return The outline stroke (possibly {@code null}).
+     *
+     * @see #setOutlineStroke(Stroke)
+     */
+    public Stroke getOutlineStroke() {
+        return this.outlineStroke;
+    }
+
+    /**
+     * Sets the outline stroke and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param stroke  the stroke ({@code null} permitted).
+     *
+     * @see #getOutlineStroke()
+     */
+    public void setOutlineStroke(Stroke stroke) {
+        this.outlineStroke = stroke;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the alpha transparency.
+     *
+     * @return The alpha transparency.
+     *
+     * @see #setAlpha(float)
+     */
+    public float getAlpha() {
+        return this.alpha;
+    }
+
+    /**
+     * Sets the alpha transparency that should be used when drawing the
+     * marker, and sends a {@link MarkerChangeEvent} to all registered
+     * listeners.  The alpha transparency is a value in the range 0.0f
+     * (completely transparent) to 1.0f (completely opaque).
+     *
+     * @param alpha  the alpha transparency (must be in the range 0.0f to
+     *     1.0f).
+     *
+     * @throws IllegalArgumentException if {@code alpha} is not in the
+     *     specified range.
+     *
+     * @see #getAlpha()
+     */
+    public void setAlpha(float alpha) {
+        if (alpha < 0.0f || alpha > 1.0f) {
+            throw new IllegalArgumentException("The 'alpha' value must be in the range 0.0f to 1.0f");
+        }
+        this.alpha = alpha;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label (if {@code null} no label is displayed).
+     *
+     * @return The label (possibly {@code null}).
+     *
+     * @see #setLabel(String)
+     */
+    public String getLabel() {
+        return this.label;
+    }
+
+    /**
+     * Sets the label (if {@code null} no label is displayed) and sends a
+     * {@link MarkerChangeEvent} to all registered listeners.
+     *
+     * @param label  the label ({@code null} permitted).
+     *
+     * @see #getLabel()
+     */
+    public void setLabel(String label) {
+        this.label = label;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label font.
+     *
+     * @return The label font (never {@code null}).
+     *
+     * @see #setLabelFont(Font)
+     */
+    public Font getLabelFont() {
+        return this.labelFont;
+    }
+
+    /**
+     * Sets the label font and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getLabelFont()
+     */
+    public void setLabelFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.labelFont = font;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label paint.
+     *
+     * @return The label paint (never {@code null}).
+     *
+     * @see #setLabelPaint(Paint)
+     */
+    public Paint getLabelPaint() {
+        return this.labelPaint;
+    }
+
+    /**
+     * Sets the label paint and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getLabelPaint()
+     */
+    public void setLabelPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.labelPaint = paint;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label background color.  The default value is
+     * {@code Color(100, 100, 100, 100)}..
+     *
+     * @return The label background color (never {@code null}).
+     */
+    public Color getLabelBackgroundColor() {
+        return this.labelBackgroundColor;
+    }
+
+    /**
+     * Sets the label background color.
+     *
+     * @param color  the color ({@code null} not permitted).
+     */
+    public void setLabelBackgroundColor(Color color) {
+        Args.nullNotPermitted(color, "color");
+        this.labelBackgroundColor = color;
+    }
+
+    /**
+     * Returns the label anchor.  This defines the position of the label
+     * anchor, relative to the bounds of the marker.
+     *
+     * @return The label anchor (never {@code null}).
+     *
+     * @see #setLabelAnchor(RectangleAnchor)
+     */
+    public RectangleAnchor getLabelAnchor() {
+        return this.labelAnchor;
+    }
+
+    /**
+     * Sets the label anchor and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.  The anchor defines the position of the label
+     * anchor, relative to the bounds of the marker.
+     *
+     * @param anchor  the anchor ({@code null} not permitted).
+     *
+     * @see #getLabelAnchor()
+     */
+    public void setLabelAnchor(RectangleAnchor anchor) {
+        Args.nullNotPermitted(anchor, "anchor");
+        this.labelAnchor = anchor;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label offset.
+     *
+     * @return The label offset (never {@code null}).
+     *
+     * @see #setLabelOffset(RectangleInsets)
+     */
+    public RectangleInsets getLabelOffset() {
+        return this.labelOffset;
+    }
+
+    /**
+     * Sets the label offset and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param offset  the label offset ({@code null} not permitted).
+     *
+     * @see #getLabelOffset()
+     */
+    public void setLabelOffset(RectangleInsets offset) {
+        Args.nullNotPermitted(offset, "offset");
+        this.labelOffset = offset;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label offset type.
+     *
+     * @return The type (never {@code null}).
+     *
+     * @see #setLabelOffsetType(LengthAdjustmentType)
+     */
+    public LengthAdjustmentType getLabelOffsetType() {
+        return this.labelOffsetType;
+    }
+
+    /**
+     * Sets the label offset type and sends a {@link MarkerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param adj  the type ({@code null} not permitted).
+     *
+     * @see #getLabelOffsetType()
+     */
+    public void setLabelOffsetType(LengthAdjustmentType adj) {
+        Args.nullNotPermitted(adj, "adj");
+        this.labelOffsetType = adj;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Returns the label text anchor.
+     *
+     * @return The label text anchor (never {@code null}).
+     *
+     * @see #setLabelTextAnchor(TextAnchor)
+     */
+    public TextAnchor getLabelTextAnchor() {
+        return this.labelTextAnchor;
+    }
+
+    /**
+     * Sets the label text anchor and sends a {@link MarkerChangeEvent} to
+     * all registered listeners.
+     *
+     * @param anchor  the label text anchor ({@code null} not permitted).
+     *
+     * @see #getLabelTextAnchor()
+     */
+    public void setLabelTextAnchor(TextAnchor anchor) {
+        Args.nullNotPermitted(anchor, "anchor");
+        this.labelTextAnchor = anchor;
+        notifyListeners(new MarkerChangeEvent(this));
+    }
+
+    /**
+     * Registers an object for notification of changes to the marker.
+     *
+     * @param listener  the object to be registered.
+     *
+     * @see #removeChangeListener(MarkerChangeListener)
+     */
+    public void addChangeListener(MarkerChangeListener listener) {
+        this.listenerList.add(MarkerChangeListener.class, listener);
+    }
+
+    /**
+     * Unregisters an object for notification of changes to the marker.
+     *
+     * @param listener  the object to be unregistered.
+     *
+     * @see #addChangeListener(MarkerChangeListener)
+     */
+    public void removeChangeListener(MarkerChangeListener listener) {
+        this.listenerList.remove(MarkerChangeListener.class, listener);
+    }
+
+    /**
+     * Notifies all registered listeners that the marker has been modified.
+     *
+     * @param event  information about the change event.
+     */
+    public void notifyListeners(MarkerChangeEvent event) {
+        Object[] listeners = this.listenerList.getListenerList();
+        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+            if (listeners[i] == MarkerChangeListener.class) {
+                ((MarkerChangeListener) listeners[i + 1]).markerChanged(event);
+            }
+        }
+    }
+
+    /**
+     * Returns an array containing all the listeners of the specified type.
+     *
+     * @param <T> the event listener type.
+     * @param listenerType  the listener type.
+     *
+     * @return The array of listeners.
+     */
+    public <T extends EventListener> T[] getListeners(Class<T> listenerType) {
+        return this.listenerList.getListeners(listenerType);
+    }
+
+    /**
+     * Tests the marker for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
      */
     @Override
-    public String generateToolTipFragment(String toolTipText) {
-        return " onMouseOver=\"return stm(['" + ImageMapUtils.javascriptEscape(this.title) + "','" + ImageMapUtils.javascriptEscape(toolTipText) + "'],Style[" + this.style + "]);\"" + " onMouseOut=\"return htm();\"";
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof Marker)) {
+            return false;
+        }
+        Marker that = (Marker) obj;
+        if (!PaintUtils.equal(this.paint, that.paint)) {
+            return false;
+        }
+        if (!Objects.equals(this.stroke, that.stroke)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.outlinePaint, that.outlinePaint)) {
+            return false;
+        }
+        if (!Objects.equals(this.outlineStroke, that.outlineStroke)) {
+            return false;
+        }
+        if (this.alpha != that.alpha) {
+            return false;
+        }
+        if (!Objects.equals(this.label, that.label)) {
+            return false;
+        }
+        if (!Objects.equals(this.labelFont, that.labelFont)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.labelPaint, that.labelPaint)) {
+            return false;
+        }
+        if (!this.labelBackgroundColor.equals(that.labelBackgroundColor)) {
+            return false;
+        }
+        if (this.labelAnchor != that.labelAnchor) {
+            return false;
+        }
+        if (this.labelTextAnchor != that.labelTextAnchor) {
+            return false;
+        }
+        if (!Objects.equals(this.labelOffset, that.labelOffset)) {
+            return false;
+        }
+        if (!this.labelOffsetType.equals(that.labelOffsetType)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this instance.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 29 * hash + Objects.hashCode(this.label);
+        hash = 29 * hash + Objects.hashCode(this.labelAnchor);
+        hash = 29 * hash + Objects.hashCode(this.labelTextAnchor);
+        return hash;
+    }
+
+    /**
+     * Creates a clone of the marker.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException never.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.paint, stream);
+        SerialUtils.writeStroke(this.stroke, stream);
+        SerialUtils.writePaint(this.outlinePaint, stream);
+        SerialUtils.writeStroke(this.outlineStroke, stream);
+        SerialUtils.writePaint(this.labelPaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.paint = SerialUtils.readPaint(stream);
+        this.stroke = SerialUtils.readStroke(stream);
+        this.outlinePaint = SerialUtils.readPaint(stream);
+        this.outlineStroke = SerialUtils.readStroke(stream);
+        this.labelPaint = SerialUtils.readPaint(stream);
+        this.listenerList = new EventListenerList();
     }
 }

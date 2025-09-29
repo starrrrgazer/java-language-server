@@ -27,282 +27,190 @@ package LOC.a;
  *
  */
 /**
- * A box containing a text block.
+ * A text item, with an associated font, that fits on a single line (see
+ * {@link TextLine}).  Instances of the class are immutable.
  */
-class TextBox implements Serializable {
+public class TextFragment implements Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 3360220213180203706L;
+    private static final long serialVersionUID = 4465945952903143262L;
 
     /**
-     * The outline paint.
+     * The default font.
      */
-    private transient Paint outlinePaint;
+    public static final Font DEFAULT_FONT = new Font("Serif", Font.PLAIN, 12);
 
     /**
-     * The outline stroke.
+     * The default text color.
      */
-    private transient Stroke outlineStroke;
+    public static final Paint DEFAULT_PAINT = Color.BLACK;
 
     /**
-     * The interior space.
+     * The text.
      */
-    private RectangleInsets interiorGap;
+    private String text;
 
     /**
-     * The background paint.
+     * The font.
      */
-    private transient Paint backgroundPaint;
+    private Font font;
 
     /**
-     * The shadow paint.
+     * The text color.
      */
-    private transient Paint shadowPaint;
+    private transient Paint paint;
 
     /**
-     * The shadow x-offset.
+     * The baseline offset (can be used to simulate subscripts and
+     * superscripts).
      */
-    private double shadowXOffset = 2.0;
+    private float baselineOffset;
 
     /**
-     * The shadow y-offset.
-     */
-    private double shadowYOffset = 2.0;
-
-    /**
-     * The text block.
-     */
-    private TextBlock textBlock;
-
-    /**
-     * Creates an empty text box.
-     */
-    public TextBox() {
-        this((TextBlock) null);
-    }
-
-    /**
-     * Creates a text box.
+     * Creates a new text fragment.
      *
-     * @param text  the text.
+     * @param text  the text ({@code null} not permitted).
      */
-    public TextBox(String text) {
-        this((TextBlock) null);
-        if (text != null) {
-            this.textBlock = new TextBlock();
-            this.textBlock.addLine(text, new Font("SansSerif", Font.PLAIN, 10), Color.BLACK);
-        }
+    public TextFragment(String text) {
+        this(text, DEFAULT_FONT, DEFAULT_PAINT);
     }
 
     /**
-     * Creates a new text box.
+     * Creates a new text fragment.
      *
-     * @param block  the text block.
+     * @param text  the text ({@code null} not permitted).
+     * @param font  the font ({@code null} not permitted).
      */
-    public TextBox(TextBlock block) {
-        this.outlinePaint = Color.BLACK;
-        this.outlineStroke = new BasicStroke(1.0f);
-        this.interiorGap = new RectangleInsets(1.0, 3.0, 1.0, 3.0);
-        this.backgroundPaint = new Color(255, 255, 192);
-        this.shadowPaint = Color.GRAY;
-        this.shadowXOffset = 2.0;
-        this.shadowYOffset = 2.0;
-        this.textBlock = block;
+    public TextFragment(String text, Font font) {
+        this(text, font, DEFAULT_PAINT);
     }
 
     /**
-     * Returns the outline paint.
+     * Creates a new text fragment.
      *
-     * @return The outline paint.
+     * @param text  the text ({@code null} not permitted).
+     * @param font  the font ({@code null} not permitted).
+     * @param paint  the text color ({@code null} not permitted).
      */
-    public Paint getOutlinePaint() {
-        return this.outlinePaint;
+    public TextFragment(String text, Font font, Paint paint) {
+        this(text, font, paint, 0.0f);
     }
 
     /**
-     * Sets the outline paint.
+     * Creates a new text fragment.
      *
-     * @param paint  the paint.
+     * @param text  the text ({@code null} not permitted).
+     * @param font  the font ({@code null} not permitted).
+     * @param paint  the text color ({@code null} not permitted).
+     * @param baselineOffset  the baseline offset.
      */
-    public void setOutlinePaint(Paint paint) {
-        this.outlinePaint = paint;
+    public TextFragment(String text, Font font, Paint paint, float baselineOffset) {
+        Args.nullNotPermitted(text, "text");
+        Args.nullNotPermitted(font, "font");
+        Args.nullNotPermitted(paint, "paint");
+        this.text = text;
+        this.font = font;
+        this.paint = paint;
+        this.baselineOffset = baselineOffset;
     }
 
     /**
-     * Returns the outline stroke.
+     * Returns the text.
      *
-     * @return The outline stroke.
+     * @return The text (possibly {@code null}).
      */
-    public Stroke getOutlineStroke() {
-        return this.outlineStroke;
+    public String getText() {
+        return this.text;
     }
 
     /**
-     * Sets the outline stroke.
+     * Returns the font.
      *
-     * @param stroke  the stroke.
+     * @return The font (never {@code null}).
      */
-    public void setOutlineStroke(Stroke stroke) {
-        this.outlineStroke = stroke;
+    public Font getFont() {
+        return this.font;
     }
 
     /**
-     * Returns the interior gap.
+     * Returns the text paint.
      *
-     * @return The interior gap.
+     * @return The text paint (never {@code null}).
      */
-    public RectangleInsets getInteriorGap() {
-        return this.interiorGap;
+    public Paint getPaint() {
+        return this.paint;
     }
 
     /**
-     * Sets the interior gap.
+     * Returns the baseline offset.
      *
-     * @param gap  the gap.
+     * @return The baseline offset.
      */
-    public void setInteriorGap(RectangleInsets gap) {
-        this.interiorGap = gap;
+    public float getBaselineOffset() {
+        return this.baselineOffset;
     }
 
     /**
-     * Returns the background paint.
-     *
-     * @return The background paint.
-     */
-    public Paint getBackgroundPaint() {
-        return this.backgroundPaint;
-    }
-
-    /**
-     * Sets the background paint.
-     *
-     * @param paint  the paint.
-     */
-    public void setBackgroundPaint(Paint paint) {
-        this.backgroundPaint = paint;
-    }
-
-    /**
-     * Returns the shadow paint.
-     *
-     * @return The shadow paint.
-     */
-    public Paint getShadowPaint() {
-        return this.shadowPaint;
-    }
-
-    /**
-     * Sets the shadow paint.
-     *
-     * @param paint  the paint.
-     */
-    public void setShadowPaint(Paint paint) {
-        this.shadowPaint = paint;
-    }
-
-    /**
-     * Returns the x-offset for the shadow effect.
-     *
-     * @return The offset.
-     */
-    public double getShadowXOffset() {
-        return this.shadowXOffset;
-    }
-
-    /**
-     * Sets the x-offset for the shadow effect.
-     *
-     * @param offset  the offset (in Java2D units).
-     */
-    public void setShadowXOffset(double offset) {
-        this.shadowXOffset = offset;
-    }
-
-    /**
-     * Returns the y-offset for the shadow effect.
-     *
-     * @return The offset.
-     */
-    public double getShadowYOffset() {
-        return this.shadowYOffset;
-    }
-
-    /**
-     * Sets the y-offset for the shadow effect.
-     *
-     * @param offset  the offset (in Java2D units).
-     */
-    public void setShadowYOffset(double offset) {
-        this.shadowYOffset = offset;
-    }
-
-    /**
-     * Returns the text block.
-     *
-     * @return The text block.
-     */
-    public TextBlock getTextBlock() {
-        return this.textBlock;
-    }
-
-    /**
-     * Sets the text block.
-     *
-     * @param block  the block.
-     */
-    public void setTextBlock(TextBlock block) {
-        this.textBlock = block;
-    }
-
-    /**
-     * Draws the text box.
+     * Draws the text fragment.
      *
      * @param g2  the graphics device.
-     * @param x  the x-coordinate.
-     * @param y  the y-coordinate.
-     * @param anchor  the anchor point.
+     * @param anchorX  the x-coordinate of the anchor point.
+     * @param anchorY  the y-coordinate of the anchor point.
+     * @param anchor  the location of the text that is aligned to the anchor
+     *                point.
+     * @param rotateX  the x-coordinate of the rotation point.
+     * @param rotateY  the y-coordinate of the rotation point.
+     * @param angle  the angle.
      */
-    public void draw(Graphics2D g2, float x, float y, RectangleAnchor anchor) {
-        final Size2D d1 = this.textBlock.calculateDimensions(g2);
-        final double w = this.interiorGap.extendWidth(d1.getWidth());
-        final double h = this.interiorGap.extendHeight(d1.getHeight());
-        final Size2D d2 = new Size2D(w, h);
-        final Rectangle2D bounds = RectangleAnchor.createRectangle(d2, x, y, anchor);
-        double xx = bounds.getX();
-        double yy = bounds.getY();
-        if (this.shadowPaint != null) {
-            final Rectangle2D shadow = new Rectangle2D.Double(xx + this.shadowXOffset, yy + this.shadowYOffset, bounds.getWidth(), bounds.getHeight());
-            g2.setPaint(this.shadowPaint);
-            g2.fill(shadow);
-        }
-        if (this.backgroundPaint != null) {
-            g2.setPaint(this.backgroundPaint);
-            g2.fill(bounds);
-        }
-        if (this.outlinePaint != null && this.outlineStroke != null) {
-            g2.setPaint(this.outlinePaint);
-            g2.setStroke(this.outlineStroke);
-            g2.draw(bounds);
-        }
-        this.textBlock.draw(g2, (float) (xx + this.interiorGap.calculateLeftInset(w)), (float) (yy + this.interiorGap.calculateTopInset(h)), TextBlockAnchor.TOP_LEFT);
+    public void draw(Graphics2D g2, float anchorX, float anchorY, TextAnchor anchor, float rotateX, float rotateY, double angle) {
+        g2.setFont(this.font);
+        g2.setPaint(this.paint);
+        TextUtils.drawRotatedString(this.text, g2, anchorX, anchorY + this.baselineOffset, anchor, angle, rotateX, rotateY);
     }
 
     /**
-     * Returns the height of the text box.
+     * Calculates the dimensions of the text fragment.
      *
      * @param g2  the graphics device.
      *
-     * @return The height (in Java2D units).
+     * @return The width and height of the text.
      */
-    public double getHeight(Graphics2D g2) {
-        final Size2D d = this.textBlock.calculateDimensions(g2);
-        return this.interiorGap.extendHeight(d.getHeight());
+    public Size2D calculateDimensions(Graphics2D g2) {
+        FontMetrics fm = g2.getFontMetrics(this.font);
+        Rectangle2D bounds = TextUtils.getTextBounds(this.text, g2, fm);
+        Size2D result = new Size2D(bounds.getWidth(), bounds.getHeight());
+        return result;
     }
 
     /**
-     * Tests this object for equality with an arbitrary object.
+     * Calculates the vertical offset between the baseline and the specified
+     * text anchor.
+     *
+     * @param g2  the graphics device.
+     * @param anchor  the anchor.
+     *
+     * @return the offset.
+     */
+    public float calculateBaselineOffset(Graphics2D g2, TextAnchor anchor) {
+        float result = 0.0f;
+        FontMetrics fm = g2.getFontMetrics(this.font);
+        LineMetrics lm = fm.getLineMetrics("ABCxyz", g2);
+        if (anchor.isTop()) {
+            result = lm.getAscent();
+        } else if (anchor.isHalfAscent()) {
+            result = lm.getAscent() / 2.0f;
+        } else if (anchor.isVerticalCenter()) {
+            result = lm.getAscent() / 2.0f - lm.getDescent() / 2.0f;
+        } else if (anchor.isBottom()) {
+            result = -lm.getDescent() - lm.getLeading();
+        }
+        return result;
+    }
+
+    /**
+     * Tests this instance for equality with an arbitrary object.
      *
      * @param obj  the object to test against ({@code null} permitted).
      *
@@ -310,38 +218,26 @@ class TextBox implements Serializable {
      */
     @Override
     public boolean equals(Object obj) {
+        if (obj == null) {
+            return false;
+        }
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof TextBox)) {
-            return false;
+        if (obj instanceof TextFragment) {
+            TextFragment tf = (TextFragment) obj;
+            if (!this.text.equals(tf.text)) {
+                return false;
+            }
+            if (!this.font.equals(tf.font)) {
+                return false;
+            }
+            if (!this.paint.equals(tf.paint)) {
+                return false;
+            }
+            return true;
         }
-        final TextBox that = (TextBox) obj;
-        if (!Objects.equals(this.outlinePaint, that.outlinePaint)) {
-            return false;
-        }
-        if (!Objects.equals(this.outlineStroke, that.outlineStroke)) {
-            return false;
-        }
-        if (!Objects.equals(this.interiorGap, that.interiorGap)) {
-            return false;
-        }
-        if (!Objects.equals(this.backgroundPaint, that.backgroundPaint)) {
-            return false;
-        }
-        if (!Objects.equals(this.shadowPaint, that.shadowPaint)) {
-            return false;
-        }
-        if (this.shadowXOffset != that.shadowXOffset) {
-            return false;
-        }
-        if (this.shadowYOffset != that.shadowYOffset) {
-            return false;
-        }
-        if (!Objects.equals(this.textBlock, that.textBlock)) {
-            return false;
-        }
-        return true;
+        return false;
     }
 
     /**
@@ -352,17 +248,9 @@ class TextBox implements Serializable {
     @Override
     public int hashCode() {
         int result;
-        long temp;
-        result = (this.outlinePaint != null ? this.outlinePaint.hashCode() : 0);
-        result = 29 * result + (this.outlineStroke != null ? this.outlineStroke.hashCode() : 0);
-        result = 29 * result + (this.interiorGap != null ? this.interiorGap.hashCode() : 0);
-        result = 29 * result + (this.backgroundPaint != null ? this.backgroundPaint.hashCode() : 0);
-        result = 29 * result + (this.shadowPaint != null ? this.shadowPaint.hashCode() : 0);
-        temp = this.shadowXOffset != +0.0d ? Double.doubleToLongBits(this.shadowXOffset) : 0L;
-        result = 29 * result + (int) (temp ^ (temp >>> 32));
-        temp = this.shadowYOffset != +0.0d ? Double.doubleToLongBits(this.shadowYOffset) : 0L;
-        result = 29 * result + (int) (temp ^ (temp >>> 32));
-        result = 29 * result + (this.textBlock != null ? this.textBlock.hashCode() : 0);
+        result = (this.text != null ? this.text.hashCode() : 0);
+        result = 29 * result + (this.font != null ? this.font.hashCode() : 0);
+        result = 29 * result + (this.paint != null ? this.paint.hashCode() : 0);
         return result;
     }
 
@@ -375,10 +263,7 @@ class TextBox implements Serializable {
      */
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
-        SerialUtils.writePaint(this.outlinePaint, stream);
-        SerialUtils.writeStroke(this.outlineStroke, stream);
-        SerialUtils.writePaint(this.backgroundPaint, stream);
-        SerialUtils.writePaint(this.shadowPaint, stream);
+        SerialUtils.writePaint(this.paint, stream);
     }
 
     /**
@@ -391,9 +276,82 @@ class TextBox implements Serializable {
      */
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
-        this.outlinePaint = SerialUtils.readPaint(stream);
-        this.outlineStroke = SerialUtils.readStroke(stream);
-        this.backgroundPaint = SerialUtils.readPaint(stream);
-        this.shadowPaint = SerialUtils.readPaint(stream);
+        this.paint = SerialUtils.readPaint(stream);
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ----------------
+ * BlockResult.java
+ * ----------------
+ * (C) Copyright 2005-present, by David Gilbert.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   -;
+ *
+ * Changes:
+ * --------
+ * 19-Apr-2005 : Version 1 (DG);
+ *
+ */
+/**
+ * Used to return results from the draw() method in the {@link Block}
+ * class.
+ */
+public class BlockResult implements EntityBlockResult {
+
+    /**
+     * The entities from the block.
+     */
+    private EntityCollection entities;
+
+    /**
+     * Creates a new result instance.
+     */
+    public BlockResult() {
+        this.entities = null;
+    }
+
+    /**
+     * Returns the collection of entities from the block.
+     *
+     * @return The entities.
+     */
+    @Override
+    public EntityCollection getEntityCollection() {
+        return this.entities;
+    }
+
+    /**
+     * Sets the entities for the block.
+     *
+     * @param entities  the entities.
+     */
+    public void setEntityCollection(EntityCollection entities) {
+        this.entities = entities;
     }
 }

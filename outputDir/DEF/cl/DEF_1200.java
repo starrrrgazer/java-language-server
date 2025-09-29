@@ -61,7 +61,7 @@ package DEF.cl;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5134,1099 +5134,217 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -----------------
- * CategoryAxis.java
- * -----------------
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ * ----------------------
+ * BoxAndWhiskerItem.java
+ * ----------------------
+ * (C) Copyright 2003-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Pady Srinivasan (patch 1217634);
- *                   Peter Kolb (patches 2497611 and 2603321);
+ * Contributor(s):   -;
  *
  */
 /**
- * An axis that displays categories.
+ * Represents one data item within a box-and-whisker dataset.  Instances of
+ * this class are immutable.
  */
-class CategoryAxis extends Axis implements Cloneable, Serializable {
+public class BoxAndWhiskerItem implements Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 5886554608114265863L;
+    private static final long serialVersionUID = 7329649623148167423L;
 
     /**
-     * The default margin for the axis (used for both lower and upper margins).
+     * The mean.
      */
-    public static final double DEFAULT_AXIS_MARGIN = 0.05;
+    private Number mean;
 
     /**
-     * The default margin between categories (a percentage of the overall axis
-     * length).
+     * The median.
      */
-    public static final double DEFAULT_CATEGORY_MARGIN = 0.20;
+    private Number median;
 
     /**
-     * The amount of space reserved at the start of the axis.
+     * The first quarter.
      */
-    private double lowerMargin;
+    private Number q1;
 
     /**
-     * The amount of space reserved at the end of the axis.
+     * The third quarter.
      */
-    private double upperMargin;
+    private Number q3;
 
     /**
-     * The amount of space reserved between categories.
+     * The minimum regular value.
      */
-    private double categoryMargin;
+    private Number minRegularValue;
 
     /**
-     * The maximum number of lines for category labels.
+     * The maximum regular value.
      */
-    private int maximumCategoryLabelLines;
+    private Number maxRegularValue;
 
     /**
-     * A ratio that is multiplied by the width of one category to determine the
-     * maximum label width.
+     * The minimum outlier.
      */
-    private float maximumCategoryLabelWidthRatio;
+    private Number minOutlier;
 
     /**
-     * The category label offset.
+     * The maximum outlier.
      */
-    private int categoryLabelPositionOffset;
+    private Number maxOutlier;
 
     /**
-     * A structure defining the category label positions for each axis
-     * location.
+     * The outliers.
      */
-    private CategoryLabelPositions categoryLabelPositions;
+    private List<? extends Number> outliers;
 
     /**
-     * Storage for tick label font overrides (if any).
+     * Creates a new box-and-whisker item.
+     *
+     * @param mean  the mean ({@code null} permitted).
+     * @param median  the median ({@code null} permitted).
+     * @param q1  the first quartile ({@code null} permitted).
+     * @param q3  the third quartile ({@code null} permitted).
+     * @param minRegularValue  the minimum regular value ({@code null}
+     *                         permitted).
+     * @param maxRegularValue  the maximum regular value ({@code null}
+     *                         permitted).
+     * @param minOutlier  the minimum outlier ({@code null} permitted).
+     * @param maxOutlier  the maximum outlier ({@code null} permitted).
+     * @param outliers  the outliers ({@code null} permitted).
      */
-    private Map<Comparable, Font> tickLabelFontMap;
-
-    /**
-     * Storage for tick label paint overrides (if any).
-     */
-    private transient Map<Comparable, Paint> tickLabelPaintMap;
-
-    /**
-     * Storage for the category label tooltips (if any).
-     */
-    private Map<Comparable, String> categoryLabelToolTips;
-
-    /**
-     * Storage for the category label URLs (if any).
-     */
-    private Map<Comparable, String> categoryLabelURLs;
-
-    /**
-     * Creates a new category axis with no label.
-     */
-    public CategoryAxis() {
-        this(null);
+    public BoxAndWhiskerItem(Number mean, Number median, Number q1, Number q3, Number minRegularValue, Number maxRegularValue, Number minOutlier, Number maxOutlier, List<? extends Number> outliers) {
+        this.mean = mean;
+        this.median = median;
+        this.q1 = q1;
+        this.q3 = q3;
+        this.minRegularValue = minRegularValue;
+        this.maxRegularValue = maxRegularValue;
+        this.minOutlier = minOutlier;
+        this.maxOutlier = maxOutlier;
+        this.outliers = outliers;
     }
 
     /**
-     * Constructs a category axis, using default values where necessary.
+     * Creates a new box-and-whisker item.
      *
-     * @param label  the axis label ({@code null} permitted).
+     * @param mean  the mean.
+     * @param median  the median
+     * @param q1  the first quartile.
+     * @param q3  the third quartile.
+     * @param minRegularValue  the minimum regular value.
+     * @param maxRegularValue  the maximum regular value.
+     * @param minOutlier  the minimum outlier value.
+     * @param maxOutlier  the maximum outlier value.
+     * @param outliers  a list of the outliers.
+     *
+     * @since 1.0.7
      */
-    public CategoryAxis(String label) {
-        super(label);
-        this.lowerMargin = DEFAULT_AXIS_MARGIN;
-        this.upperMargin = DEFAULT_AXIS_MARGIN;
-        this.categoryMargin = DEFAULT_CATEGORY_MARGIN;
-        this.maximumCategoryLabelLines = 1;
-        this.maximumCategoryLabelWidthRatio = 0.0f;
-        this.categoryLabelPositionOffset = 4;
-        this.categoryLabelPositions = CategoryLabelPositions.STANDARD;
-        this.tickLabelFontMap = new HashMap<>();
-        this.tickLabelPaintMap = new HashMap<>();
-        this.categoryLabelToolTips = new HashMap<>();
-        this.categoryLabelURLs = new HashMap<>();
+    public BoxAndWhiskerItem(double mean, double median, double q1, double q3, double minRegularValue, double maxRegularValue, double minOutlier, double maxOutlier, List<? extends Number> outliers) {
+        // pass values to other constructor
+        this(Double.valueOf(mean), Double.valueOf(median), Double.valueOf(q1), Double.valueOf(q3), Double.valueOf(minRegularValue), Double.valueOf(maxRegularValue), Double.valueOf(minOutlier), Double.valueOf(maxOutlier), outliers);
     }
 
     /**
-     * Returns the lower margin for the axis.
+     * Returns the mean.
      *
-     * @return The margin.
-     *
-     * @see #getUpperMargin()
-     * @see #setLowerMargin(double)
+     * @return The mean (possibly {@code null}).
      */
-    public double getLowerMargin() {
-        return this.lowerMargin;
+    public Number getMean() {
+        return this.mean;
     }
 
     /**
-     * Sets the lower margin for the axis and sends an {@link AxisChangeEvent}
-     * to all registered listeners.
+     * Returns the median.
      *
-     * @param margin  the margin as a percentage of the axis length (for
-     *                example, 0.05 is five percent).
-     *
-     * @see #getLowerMargin()
+     * @return The median (possibly {@code null}).
      */
-    public void setLowerMargin(double margin) {
-        this.lowerMargin = margin;
-        fireChangeEvent();
+    public Number getMedian() {
+        return this.median;
     }
 
     /**
-     * Returns the upper margin for the axis.
+     * Returns the first quartile.
      *
-     * @return The margin.
-     *
-     * @see #getLowerMargin()
-     * @see #setUpperMargin(double)
+     * @return The first quartile (possibly {@code null}).
      */
-    public double getUpperMargin() {
-        return this.upperMargin;
+    public Number getQ1() {
+        return this.q1;
     }
 
     /**
-     * Sets the upper margin for the axis and sends an {@link AxisChangeEvent}
-     * to all registered listeners.
+     * Returns the third quartile.
      *
-     * @param margin  the margin as a percentage of the axis length (for
-     *                example, 0.05 is five percent).
-     *
-     * @see #getUpperMargin()
+     * @return The third quartile (possibly {@code null}).
      */
-    public void setUpperMargin(double margin) {
-        this.upperMargin = margin;
-        fireChangeEvent();
+    public Number getQ3() {
+        return this.q3;
     }
 
     /**
-     * Returns the category margin.
+     * Returns the minimum regular value.
      *
-     * @return The margin.
-     *
-     * @see #setCategoryMargin(double)
+     * @return The minimum regular value (possibly {@code null}).
      */
-    public double getCategoryMargin() {
-        return this.categoryMargin;
+    public Number getMinRegularValue() {
+        return this.minRegularValue;
     }
 
     /**
-     * Sets the category margin and sends an {@link AxisChangeEvent} to all
-     * registered listeners.  The overall category margin is distributed over
-     * N-1 gaps, where N is the number of categories on the axis.
+     * Returns the maximum regular value.
      *
-     * @param margin  the margin as a percentage of the axis length (for
-     *                example, 0.05 is five percent).
-     *
-     * @see #getCategoryMargin()
+     * @return The maximum regular value (possibly {@code null}).
      */
-    public void setCategoryMargin(double margin) {
-        this.categoryMargin = margin;
-        fireChangeEvent();
+    public Number getMaxRegularValue() {
+        return this.maxRegularValue;
     }
 
     /**
-     * Returns the maximum number of lines to use for each category label.
+     * Returns the minimum outlier.
      *
-     * @return The maximum number of lines.
-     *
-     * @see #setMaximumCategoryLabelLines(int)
+     * @return The minimum outlier (possibly {@code null}).
      */
-    public int getMaximumCategoryLabelLines() {
-        return this.maximumCategoryLabelLines;
+    public Number getMinOutlier() {
+        return this.minOutlier;
     }
 
     /**
-     * Sets the maximum number of lines to use for each category label and
-     * sends an {@link AxisChangeEvent} to all registered listeners.
+     * Returns the maximum outlier.
      *
-     * @param lines  the maximum number of lines.
-     *
-     * @see #getMaximumCategoryLabelLines()
+     * @return The maximum outlier (possibly {@code null}).
      */
-    public void setMaximumCategoryLabelLines(int lines) {
-        this.maximumCategoryLabelLines = lines;
-        fireChangeEvent();
+    public Number getMaxOutlier() {
+        return this.maxOutlier;
     }
 
     /**
-     * Returns the category label width ratio.
+     * Returns a list of outliers.
      *
-     * @return The ratio.
-     *
-     * @see #setMaximumCategoryLabelWidthRatio(float)
+     * @return A list of outliers (possibly {@code null}).
      */
-    public float getMaximumCategoryLabelWidthRatio() {
-        return this.maximumCategoryLabelWidthRatio;
-    }
-
-    /**
-     * Sets the maximum category label width ratio and sends an
-     * {@link AxisChangeEvent} to all registered listeners.
-     *
-     * @param ratio  the ratio.
-     *
-     * @see #getMaximumCategoryLabelWidthRatio()
-     */
-    public void setMaximumCategoryLabelWidthRatio(float ratio) {
-        this.maximumCategoryLabelWidthRatio = ratio;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the offset between the axis and the category labels (before
-     * label positioning is taken into account).
-     *
-     * @return The offset (in Java2D units).
-     *
-     * @see #setCategoryLabelPositionOffset(int)
-     */
-    public int getCategoryLabelPositionOffset() {
-        return this.categoryLabelPositionOffset;
-    }
-
-    /**
-     * Sets the offset between the axis and the category labels (before label
-     * positioning is taken into account) and sends a change event to all
-     * registered listeners.
-     *
-     * @param offset  the offset (in Java2D units).
-     *
-     * @see #getCategoryLabelPositionOffset()
-     */
-    public void setCategoryLabelPositionOffset(int offset) {
-        this.categoryLabelPositionOffset = offset;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the category label position specification (this contains label
-     * positioning info for all four possible axis locations).
-     *
-     * @return The positions (never {@code null}).
-     *
-     * @see #setCategoryLabelPositions(CategoryLabelPositions)
-     */
-    public CategoryLabelPositions getCategoryLabelPositions() {
-        return this.categoryLabelPositions;
-    }
-
-    /**
-     * Sets the category label position specification for the axis and sends an
-     * {@link AxisChangeEvent} to all registered listeners.
-     *
-     * @param positions  the positions ({@code null} not permitted).
-     *
-     * @see #getCategoryLabelPositions()
-     */
-    public void setCategoryLabelPositions(CategoryLabelPositions positions) {
-        Args.nullNotPermitted(positions, "positions");
-        this.categoryLabelPositions = positions;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the font for the tick label for the given category.
-     *
-     * @param category  the category ({@code null} not permitted).
-     *
-     * @return The font (never {@code null}).
-     *
-     * @see #setTickLabelFont(Comparable, Font)
-     */
-    public Font getTickLabelFont(Comparable category) {
-        Args.nullNotPermitted(category, "category");
-        Font result = this.tickLabelFontMap.get(category);
-        // if there is no specific font, use the general one...
-        if (result == null) {
-            result = getTickLabelFont();
+    public List<? extends Number> getOutliers() {
+        if (this.outliers == null) {
+            return null;
         }
-        return result;
+        return Collections.unmodifiableList(this.outliers);
     }
 
     /**
-     * Sets the font for the tick label for the specified category and sends
-     * an {@link AxisChangeEvent} to all registered listeners.
+     * Returns a string representation of this instance, primarily for
+     * debugging purposes.
      *
-     * @param category  the category ({@code null} not permitted).
-     * @param font  the font ({@code null} permitted).
-     *
-     * @see #getTickLabelFont(Comparable)
-     */
-    public void setTickLabelFont(Comparable category, Font font) {
-        Args.nullNotPermitted(category, "category");
-        if (font == null) {
-            this.tickLabelFontMap.remove(category);
-        } else {
-            this.tickLabelFontMap.put(category, font);
-        }
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the paint for the tick label for the given category.
-     *
-     * @param category  the category ({@code null} not permitted).
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setTickLabelPaint(Paint)
-     */
-    public Paint getTickLabelPaint(Comparable category) {
-        Args.nullNotPermitted(category, "category");
-        Paint result = this.tickLabelPaintMap.get(category);
-        // if there is no specific paint, use the general one...
-        if (result == null) {
-            result = getTickLabelPaint();
-        }
-        return result;
-    }
-
-    /**
-     * Sets the paint for the tick label for the specified category and sends
-     * an {@link AxisChangeEvent} to all registered listeners.
-     *
-     * @param category  the category ({@code null} not permitted).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getTickLabelPaint(Comparable)
-     */
-    public void setTickLabelPaint(Comparable category, Paint paint) {
-        Args.nullNotPermitted(category, "category");
-        if (paint == null) {
-            this.tickLabelPaintMap.remove(category);
-        } else {
-            this.tickLabelPaintMap.put(category, paint);
-        }
-        fireChangeEvent();
-    }
-
-    /**
-     * Adds a tooltip to the specified category and sends an
-     * {@link AxisChangeEvent} to all registered listeners.
-     *
-     * @param category  the category ({@code null} not permitted).
-     * @param tooltip  the tooltip text ({@code null} permitted).
-     *
-     * @see #removeCategoryLabelToolTip(Comparable)
-     */
-    public void addCategoryLabelToolTip(Comparable category, String tooltip) {
-        Args.nullNotPermitted(category, "category");
-        this.categoryLabelToolTips.put(category, tooltip);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the tool tip text for the label belonging to the specified
-     * category.
-     *
-     * @param category  the category ({@code null} not permitted).
-     *
-     * @return The tool tip text (possibly {@code null}).
-     *
-     * @see #addCategoryLabelToolTip(Comparable, String)
-     * @see #removeCategoryLabelToolTip(Comparable)
-     */
-    public String getCategoryLabelToolTip(Comparable category) {
-        Args.nullNotPermitted(category, "category");
-        return this.categoryLabelToolTips.get(category);
-    }
-
-    /**
-     * Removes the tooltip for the specified category and, if there was a value
-     * associated with that category, sends an {@link AxisChangeEvent} to all
-     * registered listeners.
-     *
-     * @param category  the category ({@code null} not permitted).
-     *
-     * @see #addCategoryLabelToolTip(Comparable, String)
-     * @see #clearCategoryLabelToolTips()
-     */
-    public void removeCategoryLabelToolTip(Comparable category) {
-        Args.nullNotPermitted(category, "category");
-        if (this.categoryLabelToolTips.remove(category) != null) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Clears the category label tooltips and sends an {@link AxisChangeEvent}
-     * to all registered listeners.
-     *
-     * @see #addCategoryLabelToolTip(Comparable, String)
-     * @see #removeCategoryLabelToolTip(Comparable)
-     */
-    public void clearCategoryLabelToolTips() {
-        this.categoryLabelToolTips.clear();
-        fireChangeEvent();
-    }
-
-    /**
-     * Adds a URL (to be used in image maps) to the specified category and
-     * sends an {@link AxisChangeEvent} to all registered listeners.
-     *
-     * @param category  the category ({@code null} not permitted).
-     * @param url  the URL text ({@code null} permitted).
-     *
-     * @see #removeCategoryLabelURL(Comparable)
-     */
-    public void addCategoryLabelURL(Comparable category, String url) {
-        Args.nullNotPermitted(category, "category");
-        this.categoryLabelURLs.put(category, url);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the URL for the label belonging to the specified category.
-     *
-     * @param category  the category ({@code null} not permitted).
-     *
-     * @return The URL text (possibly {@code null}).
-     *
-     * @see #addCategoryLabelURL(Comparable, String)
-     * @see #removeCategoryLabelURL(Comparable)
-     */
-    public String getCategoryLabelURL(Comparable category) {
-        Args.nullNotPermitted(category, "category");
-        return this.categoryLabelURLs.get(category);
-    }
-
-    /**
-     * Removes the URL for the specified category and, if there was a URL
-     * associated with that category, sends an {@link AxisChangeEvent} to all
-     * registered listeners.
-     *
-     * @param category  the category ({@code null} not permitted).
-     *
-     * @see #addCategoryLabelURL(Comparable, String)
-     * @see #clearCategoryLabelURLs()
-     */
-    public void removeCategoryLabelURL(Comparable category) {
-        Args.nullNotPermitted(category, "category");
-        if (this.categoryLabelURLs.remove(category) != null) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Clears the category label URLs and sends an {@link AxisChangeEvent}
-     * to all registered listeners.
-     *
-     * @see #addCategoryLabelURL(Comparable, String)
-     * @see #removeCategoryLabelURL(Comparable)
-     */
-    public void clearCategoryLabelURLs() {
-        this.categoryLabelURLs.clear();
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the Java 2D coordinate for a category.
-     *
-     * @param anchor  the anchor point ({@code null} not permitted).
-     * @param category  the category index.
-     * @param categoryCount  the category count.
-     * @param area  the data area.
-     * @param edge  the location of the axis.
-     *
-     * @return The coordinate.
-     */
-    public double getCategoryJava2DCoordinate(CategoryAnchor anchor, int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
-        Args.nullNotPermitted(anchor, "anchor");
-        double result = 0.0;
-        switch(anchor) {
-            case START:
-                result = getCategoryStart(category, categoryCount, area, edge);
-                break;
-            case MIDDLE:
-                result = getCategoryMiddle(category, categoryCount, area, edge);
-                break;
-            case END:
-                result = getCategoryEnd(category, categoryCount, area, edge);
-                break;
-            default:
-                throw new IllegalStateException("Unexpected anchor value.");
-        }
-        return result;
-    }
-
-    /**
-     * Returns the starting coordinate for the specified category.
-     *
-     * @param category  the category.
-     * @param categoryCount  the number of categories.
-     * @param area  the data area.
-     * @param edge  the axis location.
-     *
-     * @return The coordinate.
-     *
-     * @see #getCategoryMiddle(int, int, Rectangle2D, RectangleEdge)
-     * @see #getCategoryEnd(int, int, Rectangle2D, RectangleEdge)
-     */
-    public double getCategoryStart(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
-        double result = 0.0;
-        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
-            result = area.getX() + area.getWidth() * getLowerMargin();
-        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
-            result = area.getMinY() + area.getHeight() * getLowerMargin();
-        }
-        double categorySize = calculateCategorySize(categoryCount, area, edge);
-        double categoryGapWidth = calculateCategoryGapSize(categoryCount, area, edge);
-        result = result + category * (categorySize + categoryGapWidth);
-        return result;
-    }
-
-    /**
-     * Returns the middle coordinate for the specified category.
-     *
-     * @param category  the category.
-     * @param categoryCount  the number of categories.
-     * @param area  the data area.
-     * @param edge  the axis location.
-     *
-     * @return The coordinate.
-     *
-     * @see #getCategoryStart(int, int, Rectangle2D, RectangleEdge)
-     * @see #getCategoryEnd(int, int, Rectangle2D, RectangleEdge)
-     */
-    public double getCategoryMiddle(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
-        if (category < 0 || category >= categoryCount) {
-            throw new IllegalArgumentException("Invalid category index: " + category);
-        }
-        return getCategoryStart(category, categoryCount, area, edge) + calculateCategorySize(categoryCount, area, edge) / 2;
-    }
-
-    /**
-     * Returns the end coordinate for the specified category.
-     *
-     * @param category  the category.
-     * @param categoryCount  the number of categories.
-     * @param area  the data area.
-     * @param edge  the axis location.
-     *
-     * @return The coordinate.
-     *
-     * @see #getCategoryStart(int, int, Rectangle2D, RectangleEdge)
-     * @see #getCategoryMiddle(int, int, Rectangle2D, RectangleEdge)
-     */
-    public double getCategoryEnd(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
-        return getCategoryStart(category, categoryCount, area, edge) + calculateCategorySize(categoryCount, area, edge);
-    }
-
-    /**
-     * A convenience method that returns the axis coordinate for the centre of
-     * a category.
-     *
-     * @param category  the category key ({@code null} not permitted).
-     * @param categories  the categories ({@code null} not permitted).
-     * @param area  the data area ({@code null} not permitted).
-     * @param edge  the edge along which the axis lies ({@code null} not
-     *     permitted).
-     *
-     * @return The centre coordinate.
-     *
-     * @see #getCategorySeriesMiddle(Comparable, Comparable, CategoryDataset,
-     *     double, Rectangle2D, RectangleEdge)
-     */
-    public double getCategoryMiddle(Comparable category, List categories, Rectangle2D area, RectangleEdge edge) {
-        Args.nullNotPermitted(categories, "categories");
-        int categoryIndex = categories.indexOf(category);
-        int categoryCount = categories.size();
-        return getCategoryMiddle(categoryIndex, categoryCount, area, edge);
-    }
-
-    /**
-     * Returns the middle coordinate (in Java2D space) for a series within a
-     * category.
-     *
-     * @param category  the category ({@code null} not permitted).
-     * @param seriesKey  the series key ({@code null} not permitted).
-     * @param dataset  the dataset ({@code null} not permitted).
-     * @param itemMargin  the item margin (0.0 &lt;= itemMargin &lt; 1.0);
-     * @param area  the area ({@code null} not permitted).
-     * @param edge  the edge ({@code null} not permitted).
-     *
-     * @return The coordinate in Java2D space.
-     */
-    public double getCategorySeriesMiddle(Comparable category, Comparable seriesKey, CategoryDataset dataset, double itemMargin, Rectangle2D area, RectangleEdge edge) {
-        int categoryIndex = dataset.getColumnIndex(category);
-        int categoryCount = dataset.getColumnCount();
-        int seriesIndex = dataset.getRowIndex(seriesKey);
-        int seriesCount = dataset.getRowCount();
-        double start = getCategoryStart(categoryIndex, categoryCount, area, edge);
-        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
-        double width = end - start;
-        if (seriesCount == 1) {
-            return start + width / 2.0;
-        } else {
-            double gap = (width * itemMargin) / (seriesCount - 1);
-            double ww = (width * (1 - itemMargin)) / seriesCount;
-            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
-        }
-    }
-
-    /**
-     * Returns the middle coordinate (in Java2D space) for a series within a
-     * category.
-     *
-     * @param categoryIndex  the category index.
-     * @param categoryCount  the category count.
-     * @param seriesIndex the series index.
-     * @param seriesCount the series count.
-     * @param itemMargin  the item margin (0.0 &lt;= itemMargin &lt; 1.0);
-     * @param area  the area ({@code null} not permitted).
-     * @param edge  the edge ({@code null} not permitted).
-     *
-     * @return The coordinate in Java2D space.
-     */
-    public double getCategorySeriesMiddle(int categoryIndex, int categoryCount, int seriesIndex, int seriesCount, double itemMargin, Rectangle2D area, RectangleEdge edge) {
-        double start = getCategoryStart(categoryIndex, categoryCount, area, edge);
-        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
-        double width = end - start;
-        if (seriesCount == 1) {
-            return start + width / 2.0;
-        } else {
-            double gap = (width * itemMargin) / (seriesCount - 1);
-            double ww = (width * (1 - itemMargin)) / seriesCount;
-            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
-        }
-    }
-
-    /**
-     * Calculates the size (width or height, depending on the location of the
-     * axis) of a category.
-     *
-     * @param categoryCount  the number of categories.
-     * @param area  the area within which the categories will be drawn.
-     * @param edge  the axis location.
-     *
-     * @return The category size.
-     */
-    protected double calculateCategorySize(int categoryCount, Rectangle2D area, RectangleEdge edge) {
-        double result;
-        double available = 0.0;
-        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
-            available = area.getWidth();
-        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
-            available = area.getHeight();
-        }
-        if (categoryCount > 1) {
-            result = available * (1 - getLowerMargin() - getUpperMargin() - getCategoryMargin());
-            result = result / categoryCount;
-        } else {
-            result = available * (1 - getLowerMargin() - getUpperMargin());
-        }
-        return result;
-    }
-
-    /**
-     * Calculates the size (width or height, depending on the location of the
-     * axis) of a category gap.
-     *
-     * @param categoryCount  the number of categories.
-     * @param area  the area within which the categories will be drawn.
-     * @param edge  the axis location.
-     *
-     * @return The category gap width.
-     */
-    protected double calculateCategoryGapSize(int categoryCount, Rectangle2D area, RectangleEdge edge) {
-        double result = 0.0;
-        double available = 0.0;
-        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
-            available = area.getWidth();
-        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
-            available = area.getHeight();
-        }
-        if (categoryCount > 1) {
-            result = available * getCategoryMargin() / (categoryCount - 1);
-        }
-        return result;
-    }
-
-    /**
-     * Estimates the space required for the axis, given a specific drawing area.
-     *
-     * @param g2  the graphics device (used to obtain font information).
-     * @param plot  the plot that the axis belongs to.
-     * @param plotArea  the area within which the axis should be drawn.
-     * @param edge  the axis location ({@code null} not permitted).
-     * @param space  the space already reserved.
-     *
-     * @return The space required to draw the axis.
+     * @return A string representation of this instance.
      */
     @Override
-    public AxisSpace reserveSpace(Graphics2D g2, Plot plot, Rectangle2D plotArea, RectangleEdge edge, AxisSpace space) {
-        // create a new space object if one wasn't supplied...
-        if (space == null) {
-            space = new AxisSpace();
-        }
-        // if the axis is not visible, no additional space is required...
-        if (!isVisible()) {
-            return space;
-        }
-        // calculate the max size of the tick labels (if visible)...
-        double tickLabelHeight = 0.0;
-        double tickLabelWidth = 0.0;
-        if (isTickLabelsVisible()) {
-            g2.setFont(getTickLabelFont());
-            AxisState state = new AxisState();
-            // we call refresh ticks just to get the maximum width or height
-            refreshTicks(g2, state, plotArea, edge);
-            switch(edge) {
-                case TOP:
-                    tickLabelHeight = state.getMax();
-                    break;
-                case BOTTOM:
-                    tickLabelHeight = state.getMax();
-                    break;
-                case LEFT:
-                    tickLabelWidth = state.getMax();
-                    break;
-                case RIGHT:
-                    tickLabelWidth = state.getMax();
-                    break;
-                default:
-                    throw new IllegalStateException("Unexpected RectangleEdge value.");
-            }
-        }
-        // get the axis label size and update the space object...
-        Rectangle2D labelEnclosure = getLabelEnclosure(g2, edge);
-        double labelHeight, labelWidth;
-        if (RectangleEdge.isTopOrBottom(edge)) {
-            labelHeight = labelEnclosure.getHeight();
-            space.add(labelHeight + tickLabelHeight + this.categoryLabelPositionOffset, edge);
-        } else if (RectangleEdge.isLeftOrRight(edge)) {
-            labelWidth = labelEnclosure.getWidth();
-            space.add(labelWidth + tickLabelWidth + this.categoryLabelPositionOffset, edge);
-        }
-        return space;
+    public String toString() {
+        return super.toString() + "[mean=" + this.mean + ",median=" + this.median + ",q1=" + this.q1 + ",q3=" + this.q3 + "]";
     }
 
     /**
-     * Configures the axis against the current plot.
-     */
-    @Override
-    public void configure() {
-        // nothing required
-    }
-
-    /**
-     * Draws the axis on a Java 2D graphics device (such as the screen or a
-     * printer).
+     * Tests this object for equality with an arbitrary object.
      *
-     * @param g2  the graphics device ({@code null} not permitted).
-     * @param cursor  the cursor location.
-     * @param plotArea  the area within which the axis should be drawn
-     *                  ({@code null} not permitted).
-     * @param dataArea  the area within which the plot is being drawn
-     *                  ({@code null} not permitted).
-     * @param edge  the location of the axis ({@code null} not permitted).
-     * @param plotState  collects information about the plot
-     *                   ({@code null} permitted).
-     *
-     * @return The axis state (never {@code null}).
-     */
-    @Override
-    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, PlotRenderingInfo plotState) {
-        // if the axis is not visible, don't draw it...
-        if (!isVisible()) {
-            return new AxisState(cursor);
-        }
-        if (isAxisLineVisible()) {
-            drawAxisLine(g2, cursor, dataArea, edge);
-        }
-        AxisState state = new AxisState(cursor);
-        if (isTickMarksVisible()) {
-            drawTickMarks(g2, cursor, dataArea, edge, state);
-        }
-        createAndAddEntity(cursor, state, dataArea, edge, plotState);
-        // draw the category labels and axis label
-        state = drawCategoryLabels(g2, plotArea, dataArea, edge, state, plotState);
-        if (getAttributedLabel() != null) {
-            state = drawAttributedLabel(getAttributedLabel(), g2, plotArea, dataArea, edge, state);
-        } else {
-            state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
-        }
-        return state;
-    }
-
-    /**
-     * Draws the category labels and returns the updated axis state.
-     *
-     * @param g2  the graphics device ({@code null} not permitted).
-     * @param plotArea  the plot area ({@code null} not permitted).
-     * @param dataArea  the area inside the axes ({@code null} not
-     *                  permitted).
-     * @param edge  the axis location ({@code null} not permitted).
-     * @param state  the axis state ({@code null} not permitted).
-     * @param plotState  collects information about the plot ({@code null}
-     *                   permitted).
-     *
-     * @return The updated axis state (never {@code null}).
-     */
-    protected AxisState drawCategoryLabels(Graphics2D g2, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, AxisState state, PlotRenderingInfo plotState) {
-        Args.nullNotPermitted(state, "state");
-        if (!isTickLabelsVisible()) {
-            return state;
-        }
-        List ticks = refreshTicks(g2, state, plotArea, edge);
-        state.setTicks(ticks);
-        int categoryIndex = 0;
-        for (Object o : ticks) {
-            CategoryTick tick = (CategoryTick) o;
-            g2.setFont(getTickLabelFont(tick.getCategory()));
-            g2.setPaint(getTickLabelPaint(tick.getCategory()));
-            CategoryLabelPosition position = this.categoryLabelPositions.getLabelPosition(edge);
-            double x0 = 0.0;
-            double x1 = 0.0;
-            double y0 = 0.0;
-            double y1 = 0.0;
-            if (edge == RectangleEdge.TOP) {
-                x0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
-                x1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
-                y1 = state.getCursor() - this.categoryLabelPositionOffset;
-                y0 = y1 - state.getMax();
-            } else if (edge == RectangleEdge.BOTTOM) {
-                x0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
-                x1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
-                y0 = state.getCursor() + this.categoryLabelPositionOffset;
-                y1 = y0 + state.getMax();
-            } else if (edge == RectangleEdge.LEFT) {
-                y0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
-                y1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
-                x1 = state.getCursor() - this.categoryLabelPositionOffset;
-                x0 = x1 - state.getMax();
-            } else if (edge == RectangleEdge.RIGHT) {
-                y0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
-                y1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
-                x0 = state.getCursor() + this.categoryLabelPositionOffset;
-                x1 = x0 - state.getMax();
-            }
-            Rectangle2D area = new Rectangle2D.Double(x0, y0, (x1 - x0), (y1 - y0));
-            Point2D anchorPoint = position.getCategoryAnchor().getAnchorPoint(area);
-            TextBlock block = tick.getLabel();
-            block.draw(g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getLabelAnchor(), (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getAngle());
-            Shape bounds = block.calculateBounds(g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getLabelAnchor(), (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getAngle());
-            if (plotState != null && plotState.getOwner() != null) {
-                EntityCollection entities = plotState.getOwner().getEntityCollection();
-                if (entities != null) {
-                    String tooltip = getCategoryLabelToolTip(tick.getCategory());
-                    String url = getCategoryLabelURL(tick.getCategory());
-                    entities.add(new CategoryLabelEntity(tick.getCategory(), bounds, tooltip, url));
-                }
-            }
-            categoryIndex++;
-        }
-        if (edge.equals(RectangleEdge.TOP)) {
-            double h = state.getMax() + this.categoryLabelPositionOffset;
-            state.cursorUp(h);
-        } else if (edge.equals(RectangleEdge.BOTTOM)) {
-            double h = state.getMax() + this.categoryLabelPositionOffset;
-            state.cursorDown(h);
-        } else if (edge == RectangleEdge.LEFT) {
-            double w = state.getMax() + this.categoryLabelPositionOffset;
-            state.cursorLeft(w);
-        } else if (edge == RectangleEdge.RIGHT) {
-            double w = state.getMax() + this.categoryLabelPositionOffset;
-            state.cursorRight(w);
-        }
-        return state;
-    }
-
-    /**
-     * Creates a temporary list of ticks that can be used when drawing the axis.
-     *
-     * @param g2  the graphics device (used to get font measurements).
-     * @param state  the axis state.
-     * @param dataArea  the area inside the axes.
-     * @param edge  the location of the axis.
-     *
-     * @return A list of ticks.
-     */
-    @Override
-    public List refreshTicks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
-        // FIXME generics
-        List ticks = new java.util.ArrayList();
-        // sanity check for data area...
-        if (dataArea.getHeight() <= 0.0 || dataArea.getWidth() < 0.0) {
-            return ticks;
-        }
-        CategoryPlot plot = (CategoryPlot) getPlot();
-        List categories = plot.getCategoriesForAxis(this);
-        double max = 0.0;
-        if (categories != null) {
-            CategoryLabelPosition position = this.categoryLabelPositions.getLabelPosition(edge);
-            float r = this.maximumCategoryLabelWidthRatio;
-            if (r <= 0.0) {
-                r = position.getWidthRatio();
-            }
-            float l;
-            if (position.getWidthType() == CategoryLabelWidthType.CATEGORY) {
-                l = (float) calculateCategorySize(categories.size(), dataArea, edge);
-            } else {
-                if (RectangleEdge.isLeftOrRight(edge)) {
-                    l = (float) dataArea.getWidth();
-                } else {
-                    l = (float) dataArea.getHeight();
-                }
-            }
-            int categoryIndex = 0;
-            for (Object o : categories) {
-                Comparable category = (Comparable) o;
-                g2.setFont(getTickLabelFont(category));
-                TextBlock label = createLabel(category, l * r, edge, g2);
-                if (edge == RectangleEdge.TOP || edge == RectangleEdge.BOTTOM) {
-                    max = Math.max(max, calculateCategoryLabelHeight(label, position, getTickLabelInsets(), g2));
-                } else if (edge == RectangleEdge.LEFT || edge == RectangleEdge.RIGHT) {
-                    max = Math.max(max, calculateCategoryLabelWidth(label, position, getTickLabelInsets(), g2));
-                }
-                Tick tick = new CategoryTick(category, label, position.getLabelAnchor(), position.getRotationAnchor(), position.getAngle());
-                ticks.add(tick);
-                categoryIndex = categoryIndex + 1;
-            }
-        }
-        state.setMax(max);
-        return ticks;
-    }
-
-    /**
-     * Draws the tick marks.
-     *
-     * @param g2  the graphics target.
-     * @param cursor  the cursor position (an offset when drawing multiple axes)
-     * @param dataArea  the area for plotting the data.
-     * @param edge  the location of the axis.
-     * @param state  the axis state.
-     */
-    public void drawTickMarks(Graphics2D g2, double cursor, Rectangle2D dataArea, RectangleEdge edge, AxisState state) {
-        Plot p = getPlot();
-        if (p == null) {
-            return;
-        }
-        CategoryPlot plot = (CategoryPlot) p;
-        double il = getTickMarkInsideLength();
-        double ol = getTickMarkOutsideLength();
-        Line2D line = new Line2D.Double();
-        List<Comparable> categories = plot.getCategoriesForAxis(this);
-        g2.setPaint(getTickMarkPaint());
-        g2.setStroke(getTickMarkStroke());
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        if (edge.equals(RectangleEdge.TOP)) {
-            for (Comparable category : categories) {
-                double x = getCategoryMiddle(category, categories, dataArea, edge);
-                line.setLine(x, cursor, x, cursor + il);
-                g2.draw(line);
-                line.setLine(x, cursor, x, cursor - ol);
-                g2.draw(line);
-            }
-            state.cursorUp(ol);
-        } else if (edge.equals(RectangleEdge.BOTTOM)) {
-            for (Comparable category : categories) {
-                double x = getCategoryMiddle(category, categories, dataArea, edge);
-                line.setLine(x, cursor, x, cursor - il);
-                g2.draw(line);
-                line.setLine(x, cursor, x, cursor + ol);
-                g2.draw(line);
-            }
-            state.cursorDown(ol);
-        } else if (edge.equals(RectangleEdge.LEFT)) {
-            for (Comparable category : categories) {
-                double y = getCategoryMiddle(category, categories, dataArea, edge);
-                line.setLine(cursor, y, cursor + il, y);
-                g2.draw(line);
-                line.setLine(cursor, y, cursor - ol, y);
-                g2.draw(line);
-            }
-            state.cursorLeft(ol);
-        } else if (edge.equals(RectangleEdge.RIGHT)) {
-            for (Comparable category : categories) {
-                double y = getCategoryMiddle(category, categories, dataArea, edge);
-                line.setLine(cursor, y, cursor - il, y);
-                g2.draw(line);
-                line.setLine(cursor, y, cursor + ol, y);
-                g2.draw(line);
-            }
-            state.cursorRight(ol);
-        }
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
-    }
-
-    /**
-     * Creates a label.
-     *
-     * @param category  the category.
-     * @param width  the available width.
-     * @param edge  the edge on which the axis appears.
-     * @param g2  the graphics device.
-     *
-     * @return A label.
-     */
-    protected TextBlock createLabel(Comparable category, float width, RectangleEdge edge, Graphics2D g2) {
-        TextBlock label = TextUtils.createTextBlock(category.toString(), getTickLabelFont(category), getTickLabelPaint(category), width, this.maximumCategoryLabelLines, new G2TextMeasurer(g2));
-        return label;
-    }
-
-    /**
-     * Calculates the width of a category label when rendered.
-     *
-     * @param label  the text block ({@code null} not permitted).
-     * @param position  the position.
-     * @param insets  the label insets.
-     * @param g2  the graphics device.
-     *
-     * @return The width.
-     */
-    protected double calculateCategoryLabelWidth(TextBlock label, CategoryLabelPosition position, RectangleInsets insets, Graphics2D g2) {
-        Size2D size = label.calculateDimensions(g2);
-        Rectangle2D box = new Rectangle2D.Double(0.0, 0.0, size.getWidth(), size.getHeight());
-        Shape rotatedBox = ShapeUtils.rotateShape(box, position.getAngle(), 0.0f, 0.0f);
-        double w = rotatedBox.getBounds2D().getWidth() + insets.getLeft() + insets.getRight();
-        return w;
-    }
-
-    /**
-     * Calculates the height of a category label when rendered.
-     *
-     * @param block  the text block ({@code null} not permitted).
-     * @param position  the label position ({@code null} not permitted).
-     * @param insets  the label insets ({@code null} not permitted).
-     * @param g2  the graphics device ({@code null} not permitted).
-     *
-     * @return The height.
-     */
-    protected double calculateCategoryLabelHeight(TextBlock block, CategoryLabelPosition position, RectangleInsets insets, Graphics2D g2) {
-        Size2D size = block.calculateDimensions(g2);
-        Rectangle2D box = new Rectangle2D.Double(0.0, 0.0, size.getWidth(), size.getHeight());
-        Shape rotatedBox = ShapeUtils.rotateShape(box, position.getAngle(), 0.0f, 0.0f);
-        double h = rotatedBox.getBounds2D().getHeight() + insets.getTop() + insets.getBottom();
-        return h;
-    }
-
-    /**
-     * Creates a clone of the axis.
-     *
-     * @return A clone.
-     *
-     * @throws CloneNotSupportedException if some component of the axis does
-     *         not support cloning.
-     */
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        CategoryAxis clone = (CategoryAxis) super.clone();
-        clone.tickLabelFontMap = new HashMap<>(this.tickLabelFontMap);
-        clone.tickLabelPaintMap = new HashMap<>(this.tickLabelPaintMap);
-        clone.categoryLabelToolTips = new HashMap<>(this.categoryLabelToolTips);
-        clone.categoryLabelURLs = new HashMap<>(this.categoryLabelToolTips);
-        return clone;
-    }
-
-    /**
-     * Tests this axis for equality with an arbitrary object.
-     *
-     * @param obj  the object ({@code null} permitted).
+     * @param obj  the object to test against ({@code null} permitted).
      *
      * @return A boolean.
      */
@@ -6235,134 +5353,53 @@ class CategoryAxis extends Axis implements Cloneable, Serializable {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof CategoryAxis)) {
+        if (!(obj instanceof BoxAndWhiskerItem)) {
             return false;
         }
-        if (!super.equals(obj)) {
+        BoxAndWhiskerItem that = (BoxAndWhiskerItem) obj;
+        if (!Objects.equals(this.mean, that.mean)) {
             return false;
         }
-        CategoryAxis that = (CategoryAxis) obj;
-        if (that.lowerMargin != this.lowerMargin) {
+        if (!Objects.equals(this.median, that.median)) {
             return false;
         }
-        if (that.upperMargin != this.upperMargin) {
+        if (!Objects.equals(this.q1, that.q1)) {
             return false;
         }
-        if (that.categoryMargin != this.categoryMargin) {
+        if (!Objects.equals(this.q3, that.q3)) {
             return false;
         }
-        if (that.maximumCategoryLabelWidthRatio != this.maximumCategoryLabelWidthRatio) {
+        if (!Objects.equals(this.minRegularValue, that.minRegularValue)) {
             return false;
         }
-        if (that.categoryLabelPositionOffset != this.categoryLabelPositionOffset) {
+        if (!Objects.equals(this.maxRegularValue, that.maxRegularValue)) {
             return false;
         }
-        if (!Objects.equals(that.categoryLabelPositions, this.categoryLabelPositions)) {
+        if (!Objects.equals(this.minOutlier, that.minOutlier)) {
             return false;
         }
-        if (!Objects.equals(that.categoryLabelToolTips, this.categoryLabelToolTips)) {
+        if (!Objects.equals(this.maxOutlier, that.maxOutlier)) {
             return false;
         }
-        if (!Objects.equals(this.categoryLabelURLs, that.categoryLabelURLs)) {
-            return false;
-        }
-        if (!Objects.equals(this.tickLabelFontMap, that.tickLabelFontMap)) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.tickLabelPaintMap, that.tickLabelPaintMap)) {
+        if (!Objects.equals(this.outliers, that.outliers)) {
             return false;
         }
         return true;
     }
 
-    /**
-     * Returns a hash code for this object.
-     *
-     * @return A hash code.
-     */
     @Override
     public int hashCode() {
-        return super.hashCode();
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the output stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     */
-    private void writeObject(ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
-        writePaintMap(this.tickLabelPaintMap, stream);
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the input stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
-     */
-    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-        this.tickLabelPaintMap = readPaintMap(stream);
-    }
-
-    /**
-     * Reads a {@code Map} of ({@code Comparable}, {@code Paint})
-     * elements from a stream.
-     *
-     * @param in  the input stream.
-     *
-     * @return The map.
-     *
-     * @throws IOException
-     * @throws ClassNotFoundException
-     *
-     * @see #writePaintMap(Map, ObjectOutputStream)
-     */
-    private Map readPaintMap(ObjectInputStream in) throws IOException, ClassNotFoundException {
-        boolean isNull = in.readBoolean();
-        if (isNull) {
-            return null;
-        }
-        Map result = new HashMap();
-        int count = in.readInt();
-        for (int i = 0; i < count; i++) {
-            Comparable category = (Comparable) in.readObject();
-            Paint paint = SerialUtils.readPaint(in);
-            result.put(category, paint);
-        }
-        return result;
-    }
-
-    /**
-     * Writes a map of ({@code Comparable}, {@code Paint})
-     * elements to a stream.
-     *
-     * @param map  the map ({@code null} permitted).
-     *
-     * @param out
-     * @throws IOException
-     *
-     * @see #readPaintMap(ObjectInputStream)
-     */
-    private void writePaintMap(Map map, ObjectOutputStream out) throws IOException {
-        if (map == null) {
-            out.writeBoolean(true);
-        } else {
-            out.writeBoolean(false);
-            Set keys = map.keySet();
-            int count = keys.size();
-            out.writeInt(count);
-            for (Object o : keys) {
-                Comparable key = (Comparable) o;
-                out.writeObject(key);
-                SerialUtils.writePaint((Paint) map.get(key), out);
-            }
-        }
+        int hash = 3;
+        hash = 67 * hash + Objects.hashCode(this.mean);
+        hash = 67 * hash + Objects.hashCode(this.median);
+        hash = 67 * hash + Objects.hashCode(this.q1);
+        hash = 67 * hash + Objects.hashCode(this.q3);
+        hash = 67 * hash + Objects.hashCode(this.minRegularValue);
+        hash = 67 * hash + Objects.hashCode(this.maxRegularValue);
+        hash = 67 * hash + Objects.hashCode(this.minOutlier);
+        hash = 67 * hash + Objects.hashCode(this.maxOutlier);
+        hash = 67 * hash + Objects.hashCode(this.outliers);
+        return hash;
     }
 }
 /* ======================================================
@@ -6391,80 +5428,1696 @@ class CategoryAxis extends Axis implements Cloneable, Serializable {
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * --------------------
- * AbstractOverlay.java
- * --------------------
- * (C) Copyright 2009-present, by David Gilbert.
+ * -----------------------
+ * StandardChartTheme.java
+ * -----------------------
+ * (C) Copyright 2008-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
  *
  */
 /**
- * A base class for implementing overlays for a {@link ChartPanel}.
- *
- * @since 1.0.13
+ * A default implementation of the {@link ChartTheme} interface.  This
+ * implementation just collects a whole bunch of chart attributes and mimics
+ * the manual process of applying each attribute to the right sub-object
+ * within the JFreeChart instance.  It's not elegant code, but it works.
  */
-class AbstractOverlay {
+public class StandardChartTheme implements ChartTheme, Cloneable, PublicCloneable, Serializable {
 
     /**
-     * Storage for registered change listeners.
+     * The name of this theme.
      */
-    private final transient EventListenerList changeListeners;
+    private final String name;
 
     /**
-     * Default constructor.
+     * The largest font size.  Use for the main chart title.
      */
-    public AbstractOverlay() {
-        this.changeListeners = new EventListenerList();
+    private Font extraLargeFont;
+
+    /**
+     * A large font.  Used for subtitles.
+     */
+    private Font largeFont;
+
+    /**
+     * The regular font size.  Used for axis tick labels, legend items etc.
+     */
+    private Font regularFont;
+
+    /**
+     * The small font size.
+     */
+    private Font smallFont;
+
+    /**
+     * The paint used to display the main chart title.
+     */
+    private transient Paint titlePaint;
+
+    /**
+     * The paint used to display subtitles.
+     */
+    private transient Paint subtitlePaint;
+
+    /**
+     * The background paint for the chart.
+     */
+    private transient Paint chartBackgroundPaint;
+
+    /**
+     * The legend background paint.
+     */
+    private transient Paint legendBackgroundPaint;
+
+    /**
+     * The legend item paint.
+     */
+    private transient Paint legendItemPaint;
+
+    /**
+     * The drawing supplier.
+     */
+    private DrawingSupplier drawingSupplier;
+
+    /**
+     * The background paint for the plot.
+     */
+    private transient Paint plotBackgroundPaint;
+
+    /**
+     * The plot outline paint.
+     */
+    private transient Paint plotOutlinePaint;
+
+    /**
+     * The label link style for pie charts.
+     */
+    private PieLabelLinkStyle labelLinkStyle;
+
+    /**
+     * The label link paint for pie charts.
+     */
+    private transient Paint labelLinkPaint;
+
+    /**
+     * The domain grid line paint.
+     */
+    private transient Paint domainGridlinePaint;
+
+    /**
+     * The range grid line paint.
+     */
+    private transient Paint rangeGridlinePaint;
+
+    /**
+     * The baseline paint (used for domain and range zero baselines)
+     */
+    private transient Paint baselinePaint;
+
+    /**
+     * The crosshair paint.
+     */
+    private transient Paint crosshairPaint;
+
+    /**
+     * The axis offsets.
+     */
+    private RectangleInsets axisOffset;
+
+    /**
+     * The axis label paint.
+     */
+    private transient Paint axisLabelPaint;
+
+    /**
+     * The tick label paint.
+     */
+    private transient Paint tickLabelPaint;
+
+    /**
+     * The item label paint.
+     */
+    private transient Paint itemLabelPaint;
+
+    /**
+     * A flag that controls whether shadows are visible (for example,
+     * in a bar renderer).
+     */
+    private boolean shadowVisible;
+
+    /**
+     * The shadow paint.
+     */
+    private transient Paint shadowPaint;
+
+    /**
+     * The bar painter.
+     */
+    private BarPainter barPainter;
+
+    /**
+     * The XY bar painter.
+     */
+    private XYBarPainter xyBarPainter;
+
+    /**
+     * The thermometer paint.
+     */
+    private transient Paint thermometerPaint;
+
+    /**
+     * The error indicator paint for the {@link StatisticalBarRenderer}.
+     */
+    private transient Paint errorIndicatorPaint;
+
+    /**
+     * The grid band paint for a {@link SymbolAxis}.
+     */
+    private transient Paint gridBandPaint = SymbolAxis.DEFAULT_GRID_BAND_PAINT;
+
+    /**
+     * The grid band alternate paint for a {@link SymbolAxis}.
+     */
+    private transient Paint gridBandAlternatePaint = SymbolAxis.DEFAULT_GRID_BAND_ALTERNATE_PAINT;
+
+    /**
+     * The shadow generator (can be null).
+     */
+    private ShadowGenerator shadowGenerator;
+
+    /**
+     * Creates and returns the default 'JFree' chart theme.
+     *
+     * @return A chart theme.
+     */
+    public static ChartTheme createJFreeTheme() {
+        return new StandardChartTheme("JFree");
     }
 
     /**
-     * Registers an object for notification of changes to the overlay.
+     * Creates and returns a theme called "Darkness".  In this theme, the
+     * charts have a black background.
      *
-     * @param listener  the listener ({@code null} not permitted).
-     *
-     * @see #removeChangeListener(OverlayChangeListener)
+     * @return The "Darkness" theme.
      */
-    public void addChangeListener(OverlayChangeListener listener) {
-        Args.nullNotPermitted(listener, "listener");
-        this.changeListeners.add(OverlayChangeListener.class, listener);
+    public static ChartTheme createDarknessTheme() {
+        StandardChartTheme theme = new StandardChartTheme("Darkness");
+        theme.titlePaint = Color.WHITE;
+        theme.subtitlePaint = Color.WHITE;
+        theme.legendBackgroundPaint = Color.BLACK;
+        theme.legendItemPaint = Color.WHITE;
+        theme.chartBackgroundPaint = Color.BLACK;
+        theme.plotBackgroundPaint = Color.BLACK;
+        theme.plotOutlinePaint = Color.YELLOW;
+        theme.baselinePaint = Color.WHITE;
+        theme.crosshairPaint = Color.RED;
+        theme.labelLinkPaint = Color.LIGHT_GRAY;
+        theme.tickLabelPaint = Color.WHITE;
+        theme.axisLabelPaint = Color.WHITE;
+        theme.shadowPaint = Color.DARK_GRAY;
+        theme.itemLabelPaint = Color.WHITE;
+        theme.drawingSupplier = new DefaultDrawingSupplier(new Paint[] { Color.decode("0xFFFF00"), Color.decode("0x0036CC"), Color.decode("0xFF0000"), Color.decode("0xFFFF7F"), Color.decode("0x6681CC"), Color.decode("0xFF7F7F"), Color.decode("0xFFFFBF"), Color.decode("0x99A6CC"), Color.decode("0xFFBFBF"), Color.decode("0xA9A938"), Color.decode("0x2D4587") }, new Paint[] { Color.decode("0xFFFF00"), Color.decode("0x0036CC") }, new Stroke[] { new BasicStroke(2.0f) }, new Stroke[] { new BasicStroke(0.5f) }, DefaultDrawingSupplier.DEFAULT_SHAPE_SEQUENCE);
+        theme.errorIndicatorPaint = Color.LIGHT_GRAY;
+        theme.gridBandPaint = new Color(255, 255, 255, 20);
+        theme.gridBandAlternatePaint = new Color(255, 255, 255, 40);
+        theme.shadowGenerator = null;
+        return theme;
     }
 
     /**
-     * Deregisters an object for notification of changes to the overlay.
+     * Creates and returns a {@link ChartTheme} that doesn't apply any changes
+     * to the JFreeChart defaults.  This produces the "legacy" look for
+     * JFreeChart.
      *
-     * @param listener  the listener ({@code null} not permitted)
-     *
-     * @see #addChangeListener(OverlayChangeListener)
+     * @return A legacy theme.
      */
-    public void removeChangeListener(OverlayChangeListener listener) {
-        Args.nullNotPermitted(listener, "listener");
-        this.changeListeners.remove(OverlayChangeListener.class, listener);
+    public static ChartTheme createLegacyTheme() {
+        StandardChartTheme theme = new StandardChartTheme("Legacy") {
+
+            @Override
+            public void apply(JFreeChart chart) {
+                // do nothing at all
+            }
+        };
+        return theme;
     }
 
     /**
-     * Sends a default {@link ChartChangeEvent} to all registered listeners.
-     * <P>
-     * This method is for convenience only.
+     * Creates a new default instance.
+     *
+     * @param name  the name of the theme ({@code null} not permitted).
      */
-    public void fireOverlayChanged() {
-        OverlayChangeEvent event = new OverlayChangeEvent(this);
-        notifyListeners(event);
+    public StandardChartTheme(String name) {
+        this(name, false);
     }
 
     /**
-     * Sends a {@link ChartChangeEvent} to all registered listeners.
+     * Creates a new default instance.
      *
-     * @param event  information about the event that triggered the
-     *               notification.
+     * @param name  the name of the theme ({@code null} not permitted).
+     * @param shadow  a flag that controls whether a shadow generator is
+     *                included.
      */
-    protected void notifyListeners(OverlayChangeEvent event) {
-        Object[] listeners = this.changeListeners.getListenerList();
-        for (int i = listeners.length - 2; i >= 0; i -= 2) {
-            if (listeners[i] == OverlayChangeListener.class) {
-                ((OverlayChangeListener) listeners[i + 1]).overlayChanged(event);
+    public StandardChartTheme(String name, boolean shadow) {
+        Args.nullNotPermitted(name, "name");
+        this.name = name;
+        this.extraLargeFont = new Font("Tahoma", Font.BOLD, 20);
+        this.largeFont = new Font("Tahoma", Font.BOLD, 14);
+        this.regularFont = new Font("Tahoma", Font.PLAIN, 12);
+        this.smallFont = new Font("Tahoma", Font.PLAIN, 10);
+        this.titlePaint = Color.BLACK;
+        this.subtitlePaint = Color.BLACK;
+        this.legendBackgroundPaint = Color.WHITE;
+        this.legendItemPaint = Color.DARK_GRAY;
+        this.chartBackgroundPaint = Color.WHITE;
+        this.drawingSupplier = new DefaultDrawingSupplier();
+        this.plotBackgroundPaint = Color.LIGHT_GRAY;
+        this.plotOutlinePaint = Color.BLACK;
+        this.labelLinkPaint = Color.BLACK;
+        this.labelLinkStyle = PieLabelLinkStyle.CUBIC_CURVE;
+        this.axisOffset = new RectangleInsets(4, 4, 4, 4);
+        this.domainGridlinePaint = Color.WHITE;
+        this.rangeGridlinePaint = Color.WHITE;
+        this.baselinePaint = Color.BLACK;
+        this.crosshairPaint = Color.BLUE;
+        this.axisLabelPaint = Color.DARK_GRAY;
+        this.tickLabelPaint = Color.DARK_GRAY;
+        this.barPainter = new StandardBarPainter();
+        this.xyBarPainter = new StandardXYBarPainter();
+        this.shadowVisible = false;
+        this.shadowPaint = Color.GRAY;
+        this.itemLabelPaint = Color.BLACK;
+        this.thermometerPaint = Color.WHITE;
+        this.errorIndicatorPaint = Color.BLACK;
+        this.shadowGenerator = shadow ? new DefaultShadowGenerator() : null;
+    }
+
+    /**
+     * Returns the largest font for this theme.
+     *
+     * @return The largest font for this theme.
+     *
+     * @see #setExtraLargeFont(Font)
+     */
+    public Font getExtraLargeFont() {
+        return this.extraLargeFont;
+    }
+
+    /**
+     * Sets the largest font for this theme.
+     *
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getExtraLargeFont()
+     */
+    public void setExtraLargeFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.extraLargeFont = font;
+    }
+
+    /**
+     * Returns the large font for this theme.
+     *
+     * @return The large font (never {@code null}).
+     *
+     * @see #setLargeFont(Font)
+     */
+    public Font getLargeFont() {
+        return this.largeFont;
+    }
+
+    /**
+     * Sets the large font for this theme.
+     *
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getLargeFont()
+     */
+    public void setLargeFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.largeFont = font;
+    }
+
+    /**
+     * Returns the regular font.
+     *
+     * @return The regular font (never {@code null}).
+     *
+     * @see #setRegularFont(Font)
+     */
+    public Font getRegularFont() {
+        return this.regularFont;
+    }
+
+    /**
+     * Sets the regular font for this theme.
+     *
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getRegularFont()
+     */
+    public void setRegularFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.regularFont = font;
+    }
+
+    /**
+     * Returns the small font.
+     *
+     * @return The small font (never {@code null}).
+     *
+     * @see #setSmallFont(Font)
+     */
+    public Font getSmallFont() {
+        return this.smallFont;
+    }
+
+    /**
+     * Sets the small font for this theme.
+     *
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getSmallFont()
+     */
+    public void setSmallFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.smallFont = font;
+    }
+
+    /**
+     * Returns the title paint.
+     *
+     * @return The title paint (never {@code null}).
+     *
+     * @see #setTitlePaint(Paint)
+     */
+    public Paint getTitlePaint() {
+        return this.titlePaint;
+    }
+
+    /**
+     * Sets the title paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getTitlePaint()
+     */
+    public void setTitlePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.titlePaint = paint;
+    }
+
+    /**
+     * Returns the subtitle paint.
+     *
+     * @return The subtitle paint (never {@code null}).
+     *
+     * @see #setSubtitlePaint(Paint)
+     */
+    public Paint getSubtitlePaint() {
+        return this.subtitlePaint;
+    }
+
+    /**
+     * Sets the subtitle paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getSubtitlePaint()
+     */
+    public void setSubtitlePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.subtitlePaint = paint;
+    }
+
+    /**
+     * Returns the chart background paint.
+     *
+     * @return The chart background paint (never {@code null}).
+     *
+     * @see #setChartBackgroundPaint(Paint)
+     */
+    public Paint getChartBackgroundPaint() {
+        return this.chartBackgroundPaint;
+    }
+
+    /**
+     * Sets the chart background paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getChartBackgroundPaint()
+     */
+    public void setChartBackgroundPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.chartBackgroundPaint = paint;
+    }
+
+    /**
+     * Returns the legend background paint.
+     *
+     * @return The legend background paint (never {@code null}).
+     *
+     * @see #setLegendBackgroundPaint(Paint)
+     */
+    public Paint getLegendBackgroundPaint() {
+        return this.legendBackgroundPaint;
+    }
+
+    /**
+     * Sets the legend background paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getLegendBackgroundPaint()
+     */
+    public void setLegendBackgroundPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.legendBackgroundPaint = paint;
+    }
+
+    /**
+     * Returns the legend item paint.
+     *
+     * @return The legend item paint (never {@code null}).
+     *
+     * @see #setLegendItemPaint(Paint)
+     */
+    public Paint getLegendItemPaint() {
+        return this.legendItemPaint;
+    }
+
+    /**
+     * Sets the legend item paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getLegendItemPaint()
+     */
+    public void setLegendItemPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.legendItemPaint = paint;
+    }
+
+    /**
+     * Returns the plot background paint.
+     *
+     * @return The plot background paint (never {@code null}).
+     *
+     * @see #setPlotBackgroundPaint(Paint)
+     */
+    public Paint getPlotBackgroundPaint() {
+        return this.plotBackgroundPaint;
+    }
+
+    /**
+     * Sets the plot background paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getPlotBackgroundPaint()
+     */
+    public void setPlotBackgroundPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.plotBackgroundPaint = paint;
+    }
+
+    /**
+     * Returns the plot outline paint.
+     *
+     * @return The plot outline paint (never {@code null}).
+     *
+     * @see #setPlotOutlinePaint(Paint)
+     */
+    public Paint getPlotOutlinePaint() {
+        return this.plotOutlinePaint;
+    }
+
+    /**
+     * Sets the plot outline paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getPlotOutlinePaint()
+     */
+    public void setPlotOutlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.plotOutlinePaint = paint;
+    }
+
+    /**
+     * Returns the label link style for pie charts.
+     *
+     * @return The label link style (never {@code null}).
+     *
+     * @see #setLabelLinkStyle(PieLabelLinkStyle)
+     */
+    public PieLabelLinkStyle getLabelLinkStyle() {
+        return this.labelLinkStyle;
+    }
+
+    /**
+     * Sets the label link style for pie charts.
+     *
+     * @param style  the style ({@code null} not permitted).
+     *
+     * @see #getLabelLinkStyle()
+     */
+    public void setLabelLinkStyle(PieLabelLinkStyle style) {
+        Args.nullNotPermitted(style, "style");
+        this.labelLinkStyle = style;
+    }
+
+    /**
+     * Returns the label link paint for pie charts.
+     *
+     * @return The label link paint (never {@code null}).
+     *
+     * @see #setLabelLinkPaint(Paint)
+     */
+    public Paint getLabelLinkPaint() {
+        return this.labelLinkPaint;
+    }
+
+    /**
+     * Sets the label link paint for pie charts.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getLabelLinkPaint()
+     */
+    public void setLabelLinkPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.labelLinkPaint = paint;
+    }
+
+    /**
+     * Returns the domain grid line paint.
+     *
+     * @return The domain grid line paint (never {@code null}).
+     *
+     * @see #setDomainGridlinePaint(Paint)
+     */
+    public Paint getDomainGridlinePaint() {
+        return this.domainGridlinePaint;
+    }
+
+    /**
+     * Sets the domain grid line paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getDomainGridlinePaint()
+     */
+    public void setDomainGridlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.domainGridlinePaint = paint;
+    }
+
+    /**
+     * Returns the range grid line paint.
+     *
+     * @return The range grid line paint (never {@code null}).
+     *
+     * @see #setRangeGridlinePaint(Paint)
+     */
+    public Paint getRangeGridlinePaint() {
+        return this.rangeGridlinePaint;
+    }
+
+    /**
+     * Sets the range grid line paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getRangeGridlinePaint()
+     */
+    public void setRangeGridlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.rangeGridlinePaint = paint;
+    }
+
+    /**
+     * Returns the baseline paint.
+     *
+     * @return The baseline paint.
+     */
+    public Paint getBaselinePaint() {
+        return this.baselinePaint;
+    }
+
+    /**
+     * Sets the baseline paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     */
+    public void setBaselinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.baselinePaint = paint;
+    }
+
+    /**
+     * Returns the crosshair paint.
+     *
+     * @return The crosshair paint.
+     */
+    public Paint getCrosshairPaint() {
+        return this.crosshairPaint;
+    }
+
+    /**
+     * Sets the crosshair paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     */
+    public void setCrosshairPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.crosshairPaint = paint;
+    }
+
+    /**
+     * Returns the axis offsets.
+     *
+     * @return The axis offsets (never {@code null}).
+     *
+     * @see #setAxisOffset(RectangleInsets)
+     */
+    public RectangleInsets getAxisOffset() {
+        return this.axisOffset;
+    }
+
+    /**
+     * Sets the axis offset.
+     *
+     * @param offset  the offset ({@code null} not permitted).
+     *
+     * @see #getAxisOffset()
+     */
+    public void setAxisOffset(RectangleInsets offset) {
+        Args.nullNotPermitted(offset, "offset");
+        this.axisOffset = offset;
+    }
+
+    /**
+     * Returns the axis label paint.
+     *
+     * @return The axis label paint (never {@code null}).
+     *
+     * @see #setAxisLabelPaint(Paint)
+     */
+    public Paint getAxisLabelPaint() {
+        return this.axisLabelPaint;
+    }
+
+    /**
+     * Sets the axis label paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getAxisLabelPaint()
+     */
+    public void setAxisLabelPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.axisLabelPaint = paint;
+    }
+
+    /**
+     * Returns the tick label paint.
+     *
+     * @return The tick label paint (never {@code null}).
+     *
+     * @see #setTickLabelPaint(Paint)
+     */
+    public Paint getTickLabelPaint() {
+        return this.tickLabelPaint;
+    }
+
+    /**
+     * Sets the tick label paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getTickLabelPaint()
+     */
+    public void setTickLabelPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.tickLabelPaint = paint;
+    }
+
+    /**
+     * Returns the item label paint.
+     *
+     * @return The item label paint (never {@code null}).
+     *
+     * @see #setItemLabelPaint(Paint)
+     */
+    public Paint getItemLabelPaint() {
+        return this.itemLabelPaint;
+    }
+
+    /**
+     * Sets the item label paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getItemLabelPaint()
+     */
+    public void setItemLabelPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.itemLabelPaint = paint;
+    }
+
+    /**
+     * Returns the shadow visibility flag.
+     *
+     * @return The shadow visibility flag.
+     *
+     * @see #setShadowVisible(boolean)
+     */
+    public boolean isShadowVisible() {
+        return this.shadowVisible;
+    }
+
+    /**
+     * Sets the shadow visibility flag.
+     *
+     * @param visible  the flag.
+     *
+     * @see #isShadowVisible()
+     */
+    public void setShadowVisible(boolean visible) {
+        this.shadowVisible = visible;
+    }
+
+    /**
+     * Returns the shadow paint.
+     *
+     * @return The shadow paint (never {@code null}).
+     *
+     * @see #setShadowPaint(Paint)
+     */
+    public Paint getShadowPaint() {
+        return this.shadowPaint;
+    }
+
+    /**
+     * Sets the shadow paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getShadowPaint()
+     */
+    public void setShadowPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.shadowPaint = paint;
+    }
+
+    /**
+     * Returns the bar painter.
+     *
+     * @return The bar painter (never {@code null}).
+     *
+     * @see #setBarPainter(BarPainter)
+     */
+    public BarPainter getBarPainter() {
+        return this.barPainter;
+    }
+
+    /**
+     * Sets the bar painter.
+     *
+     * @param painter  the painter ({@code null} not permitted).
+     *
+     * @see #getBarPainter()
+     */
+    public void setBarPainter(BarPainter painter) {
+        Args.nullNotPermitted(painter, "painter");
+        this.barPainter = painter;
+    }
+
+    /**
+     * Returns the XY bar painter.
+     *
+     * @return The XY bar painter (never {@code null}).
+     *
+     * @see #setXYBarPainter(XYBarPainter)
+     */
+    public XYBarPainter getXYBarPainter() {
+        return this.xyBarPainter;
+    }
+
+    /**
+     * Sets the XY bar painter.
+     *
+     * @param painter  the painter ({@code null} not permitted).
+     *
+     * @see #getXYBarPainter()
+     */
+    public void setXYBarPainter(XYBarPainter painter) {
+        Args.nullNotPermitted(painter, "painter");
+        this.xyBarPainter = painter;
+    }
+
+    /**
+     * Returns the thermometer paint.
+     *
+     * @return The thermometer paint (never {@code null}).
+     *
+     * @see #setThermometerPaint(Paint)
+     */
+    public Paint getThermometerPaint() {
+        return this.thermometerPaint;
+    }
+
+    /**
+     * Sets the thermometer paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getThermometerPaint()
+     */
+    public void setThermometerPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.thermometerPaint = paint;
+    }
+
+    /**
+     * Returns the error indicator paint.
+     *
+     * @return The error indicator paint (never {@code null}).
+     *
+     * @see #setErrorIndicatorPaint(Paint)
+     */
+    public Paint getErrorIndicatorPaint() {
+        return this.errorIndicatorPaint;
+    }
+
+    /**
+     * Sets the error indicator paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getErrorIndicatorPaint()
+     */
+    public void setErrorIndicatorPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.errorIndicatorPaint = paint;
+    }
+
+    /**
+     * Returns the grid band paint.
+     *
+     * @return The grid band paint (never {@code null}).
+     *
+     * @see #setGridBandPaint(Paint)
+     */
+    public Paint getGridBandPaint() {
+        return this.gridBandPaint;
+    }
+
+    /**
+     * Sets the grid band paint.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getGridBandPaint()
+     */
+    public void setGridBandPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.gridBandPaint = paint;
+    }
+
+    /**
+     * Returns the grid band alternate paint (used for a {@link SymbolAxis}).
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setGridBandAlternatePaint(Paint)
+     */
+    public Paint getGridBandAlternatePaint() {
+        return this.gridBandAlternatePaint;
+    }
+
+    /**
+     * Sets the grid band alternate paint (used for a {@link SymbolAxis}).
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getGridBandAlternatePaint()
+     */
+    public void setGridBandAlternatePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.gridBandAlternatePaint = paint;
+    }
+
+    /**
+     * Returns the name of this theme.
+     *
+     * @return The name of this theme.
+     */
+    public String getName() {
+        return this.name;
+    }
+
+    /**
+     * Returns a clone of the drawing supplier for this theme.
+     *
+     * @return A clone of the drawing supplier.
+     */
+    public DrawingSupplier getDrawingSupplier() {
+        DrawingSupplier result = null;
+        if (this.drawingSupplier instanceof PublicCloneable) {
+            PublicCloneable pc = (PublicCloneable) this.drawingSupplier;
+            try {
+                result = (DrawingSupplier) pc.clone();
+            } catch (CloneNotSupportedException e) {
+                throw new RuntimeException(e);
             }
         }
+        return result;
+    }
+
+    /**
+     * Sets the drawing supplier for this theme.
+     *
+     * @param supplier  the supplier ({@code null} not permitted).
+     *
+     * @see #getDrawingSupplier()
+     */
+    public void setDrawingSupplier(DrawingSupplier supplier) {
+        Args.nullNotPermitted(supplier, "supplier");
+        this.drawingSupplier = supplier;
+    }
+
+    /**
+     * Applies this theme to the supplied chart.
+     *
+     * @param chart  the chart ({@code null} not permitted).
+     */
+    @Override
+    public void apply(JFreeChart chart) {
+        Args.nullNotPermitted(chart, "chart");
+        TextTitle title = chart.getTitle();
+        if (title != null) {
+            title.setFont(this.extraLargeFont);
+            title.setPaint(this.titlePaint);
+        }
+        int subtitleCount = chart.getSubtitleCount();
+        for (int i = 0; i < subtitleCount; i++) {
+            applyToTitle(chart.getSubtitle(i));
+        }
+        chart.setBackgroundPaint(this.chartBackgroundPaint);
+        // now process the plot if there is one
+        Plot plot = chart.getPlot();
+        if (plot != null) {
+            applyToPlot(plot);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to the specified title.
+     *
+     * @param title  the title.
+     */
+    protected void applyToTitle(Title title) {
+        if (title instanceof TextTitle) {
+            TextTitle tt = (TextTitle) title;
+            tt.setFont(this.largeFont);
+            tt.setPaint(this.subtitlePaint);
+        } else if (title instanceof LegendTitle) {
+            LegendTitle lt = (LegendTitle) title;
+            if (lt.getBackgroundPaint() != null) {
+                lt.setBackgroundPaint(this.legendBackgroundPaint);
+            }
+            lt.setItemFont(this.regularFont);
+            lt.setItemPaint(this.legendItemPaint);
+            if (lt.getWrapper() != null) {
+                applyToBlockContainer(lt.getWrapper());
+            }
+        } else if (title instanceof PaintScaleLegend) {
+            PaintScaleLegend psl = (PaintScaleLegend) title;
+            psl.setBackgroundPaint(this.legendBackgroundPaint);
+            ValueAxis axis = psl.getAxis();
+            if (axis != null) {
+                applyToValueAxis(axis);
+            }
+        } else if (title instanceof CompositeTitle) {
+            CompositeTitle ct = (CompositeTitle) title;
+            BlockContainer bc = ct.getContainer();
+            for (Block b : bc.getBlocks()) {
+                if (b instanceof Title) {
+                    applyToTitle((Title) b);
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to the specified container.
+     *
+     * @param bc  a block container ({@code null} not permitted).
+     */
+    protected void applyToBlockContainer(BlockContainer bc) {
+        for (Block b : bc.getBlocks()) {
+            applyToBlock(b);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to the specified block.
+     *
+     * @param b  the block.
+     */
+    protected void applyToBlock(Block b) {
+        if (b instanceof Title) {
+            applyToTitle((Title) b);
+        } else if (b instanceof LabelBlock) {
+            LabelBlock lb = (LabelBlock) b;
+            lb.setFont(this.regularFont);
+            lb.setPaint(this.legendItemPaint);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a plot.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToPlot(Plot plot) {
+        Args.nullNotPermitted(plot, "plot");
+        if (plot.getDrawingSupplier() != null) {
+            plot.setDrawingSupplier(getDrawingSupplier());
+        }
+        if (plot.getBackgroundPaint() != null) {
+            plot.setBackgroundPaint(this.plotBackgroundPaint);
+        }
+        plot.setOutlinePaint(this.plotOutlinePaint);
+        // now handle specific plot types (and yes, I know this is some
+        // really ugly code that has to be manually updated any time a new
+        // plot type is added - I should have written something much cooler,
+        // but I didn't and neither did anyone else).
+        if (plot instanceof PiePlot) {
+            applyToPiePlot((PiePlot) plot);
+        } else if (plot instanceof MultiplePiePlot) {
+            applyToMultiplePiePlot((MultiplePiePlot) plot);
+        } else if (plot instanceof CategoryPlot) {
+            applyToCategoryPlot((CategoryPlot) plot);
+        } else if (plot instanceof XYPlot) {
+            applyToXYPlot((XYPlot) plot);
+        } else if (plot instanceof FastScatterPlot) {
+            applyToFastScatterPlot((FastScatterPlot) plot);
+        } else if (plot instanceof MeterPlot) {
+            applyToMeterPlot((MeterPlot) plot);
+        } else if (plot instanceof ThermometerPlot) {
+            applyToThermometerPlot((ThermometerPlot) plot);
+        } else if (plot instanceof SpiderWebPlot) {
+            applyToSpiderWebPlot((SpiderWebPlot) plot);
+        } else if (plot instanceof PolarPlot) {
+            applyToPolarPlot((PolarPlot) plot);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link PiePlot} instance.
+     * This method also clears any set values for the section paint, outline
+     * etc, so that the theme's {@link DrawingSupplier} will be used.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToPiePlot(PiePlot plot) {
+        plot.setLabelLinkPaint(this.labelLinkPaint);
+        plot.setLabelLinkStyle(this.labelLinkStyle);
+        plot.setLabelFont(this.regularFont);
+        plot.setShadowGenerator(this.shadowGenerator);
+        // clear the section attributes so that the theme's DrawingSupplier
+        // will be used
+        if (plot.getAutoPopulateSectionPaint()) {
+            plot.clearSectionPaints(false);
+        }
+        if (plot.getAutoPopulateSectionOutlinePaint()) {
+            plot.clearSectionOutlinePaints(false);
+        }
+        if (plot.getAutoPopulateSectionOutlineStroke()) {
+            plot.clearSectionOutlineStrokes(false);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link MultiplePiePlot}.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToMultiplePiePlot(MultiplePiePlot plot) {
+        apply(plot.getPieChart());
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link CategoryPlot}.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToCategoryPlot(CategoryPlot plot) {
+        plot.setAxisOffset(this.axisOffset);
+        plot.setDomainGridlinePaint(this.domainGridlinePaint);
+        plot.setRangeGridlinePaint(this.rangeGridlinePaint);
+        plot.setRangeZeroBaselinePaint(this.baselinePaint);
+        plot.setShadowGenerator(this.shadowGenerator);
+        // process all domain axes
+        int domainAxisCount = plot.getDomainAxisCount();
+        for (int i = 0; i < domainAxisCount; i++) {
+            CategoryAxis axis = plot.getDomainAxis(i);
+            if (axis != null) {
+                applyToCategoryAxis(axis);
+            }
+        }
+        // process all range axes
+        int rangeAxisCount = plot.getRangeAxisCount();
+        for (int i = 0; i < rangeAxisCount; i++) {
+            ValueAxis axis = plot.getRangeAxis(i);
+            if (axis != null) {
+                applyToValueAxis(axis);
+            }
+        }
+        // process all renderers
+        int rendererCount = plot.getRendererCount();
+        for (int i = 0; i < rendererCount; i++) {
+            CategoryItemRenderer r = plot.getRenderer(i);
+            if (r != null) {
+                applyToCategoryItemRenderer(r);
+            }
+        }
+        if (plot instanceof CombinedDomainCategoryPlot) {
+            CombinedDomainCategoryPlot cp = (CombinedDomainCategoryPlot) plot;
+            for (CategoryPlot subplot : cp.getSubplots()) {
+                if (subplot != null) {
+                    applyToPlot(subplot);
+                }
+            }
+        }
+        if (plot instanceof CombinedRangeCategoryPlot) {
+            CombinedRangeCategoryPlot cp = (CombinedRangeCategoryPlot) plot;
+            for (CategoryPlot subplot : cp.getSubplots()) {
+                if (subplot != null) {
+                    applyToPlot(subplot);
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link XYPlot}.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     *
+     * @param <S> the type for the series keys.
+     */
+    protected <S extends Comparable<S>> void applyToXYPlot(XYPlot<S> plot) {
+        plot.setAxisOffset(this.axisOffset);
+        plot.setDomainZeroBaselinePaint(this.baselinePaint);
+        plot.setRangeZeroBaselinePaint(this.baselinePaint);
+        plot.setDomainGridlinePaint(this.domainGridlinePaint);
+        plot.setRangeGridlinePaint(this.rangeGridlinePaint);
+        plot.setDomainCrosshairPaint(this.crosshairPaint);
+        plot.setRangeCrosshairPaint(this.crosshairPaint);
+        plot.setShadowGenerator(this.shadowGenerator);
+        // process all domain axes
+        int domainAxisCount = plot.getDomainAxisCount();
+        for (int i = 0; i < domainAxisCount; i++) {
+            ValueAxis axis = plot.getDomainAxis(i);
+            if (axis != null) {
+                applyToValueAxis(axis);
+            }
+        }
+        // process all range axes
+        int rangeAxisCount = plot.getRangeAxisCount();
+        for (int i = 0; i < rangeAxisCount; i++) {
+            ValueAxis axis = plot.getRangeAxis(i);
+            if (axis != null) {
+                applyToValueAxis(axis);
+            }
+        }
+        // process all renderers
+        int rendererCount = plot.getRendererCount();
+        for (int i = 0; i < rendererCount; i++) {
+            XYItemRenderer r = plot.getRenderer(i);
+            if (r != null) {
+                applyToXYItemRenderer(r);
+            }
+        }
+        // process all annotations
+        for (XYAnnotation a : plot.getAnnotations()) {
+            applyToXYAnnotation(a);
+        }
+        if (plot instanceof CombinedDomainXYPlot) {
+            CombinedDomainXYPlot<S> cp = (CombinedDomainXYPlot) plot;
+            for (XYPlot<S> subplot : cp.getSubplots()) {
+                if (subplot != null) {
+                    applyToPlot(subplot);
+                }
+            }
+        }
+        if (plot instanceof CombinedRangeXYPlot) {
+            CombinedRangeXYPlot<S> cp = (CombinedRangeXYPlot) plot;
+            for (XYPlot subplot : cp.getSubplots()) {
+                if (subplot != null) {
+                    applyToPlot(subplot);
+                }
+            }
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link FastScatterPlot}.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToFastScatterPlot(FastScatterPlot plot) {
+        plot.setDomainGridlinePaint(this.domainGridlinePaint);
+        plot.setRangeGridlinePaint(this.rangeGridlinePaint);
+        ValueAxis xAxis = plot.getDomainAxis();
+        if (xAxis != null) {
+            applyToValueAxis(xAxis);
+        }
+        ValueAxis yAxis = plot.getRangeAxis();
+        if (yAxis != null) {
+            applyToValueAxis(yAxis);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link PolarPlot}.  This
+     * method is called from the {@link #applyToPlot(Plot)} method.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToPolarPlot(PolarPlot plot) {
+        plot.setAngleLabelFont(this.regularFont);
+        plot.setAngleLabelPaint(this.tickLabelPaint);
+        plot.setAngleGridlinePaint(this.domainGridlinePaint);
+        plot.setRadiusGridlinePaint(this.rangeGridlinePaint);
+        ValueAxis axis = plot.getAxis();
+        if (axis != null) {
+            applyToValueAxis(axis);
+        }
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link SpiderWebPlot}.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToSpiderWebPlot(SpiderWebPlot plot) {
+        plot.setLabelFont(this.regularFont);
+        plot.setLabelPaint(this.axisLabelPaint);
+        plot.setAxisLinePaint(this.axisLabelPaint);
+    }
+
+    /**
+     * Applies the attributes of this theme to a {@link MeterPlot}.
+     *
+     * @param plot  the plot ({@code null} not permitted).
+     */
+    protected void applyToMeterPlot(MeterPlot plot) {
+        plot.setDialBackgroundPaint(this.plotBackgroundPaint);
+        plot.setValueFont(this.largeFont);
+        plot.setValuePaint(this.axisLabelPaint);
+        plot.setDialOutlinePaint(this.plotOutlinePaint);
+        plot.setNeedlePaint(this.thermometerPaint);
+        plot.setTickLabelFont(this.regularFont);
+        plot.setTickLabelPaint(this.tickLabelPaint);
+    }
+
+    /**
+     * Applies the attributes for this theme to a {@link ThermometerPlot}.
+     * This method is called from the {@link #applyToPlot(Plot)} method.
+     *
+     * @param plot  the plot.
+     */
+    protected void applyToThermometerPlot(ThermometerPlot plot) {
+        plot.setValueFont(this.largeFont);
+        plot.setThermometerPaint(this.thermometerPaint);
+        ValueAxis axis = plot.getRangeAxis();
+        if (axis != null) {
+            applyToValueAxis(axis);
+        }
+    }
+
+    /**
+     * Applies the attributes for this theme to a {@link CategoryAxis}.
+     *
+     * @param axis  the axis ({@code null} not permitted).
+     */
+    protected void applyToCategoryAxis(CategoryAxis axis) {
+        axis.setLabelFont(this.largeFont);
+        axis.setLabelPaint(this.axisLabelPaint);
+        axis.setTickLabelFont(this.regularFont);
+        axis.setTickLabelPaint(this.tickLabelPaint);
+        if (axis instanceof SubCategoryAxis) {
+            SubCategoryAxis sca = (SubCategoryAxis) axis;
+            sca.setSubLabelFont(this.regularFont);
+            sca.setSubLabelPaint(this.tickLabelPaint);
+        }
+    }
+
+    /**
+     * Applies the attributes for this theme to a {@link ValueAxis}.
+     *
+     * @param axis  the axis ({@code null} not permitted).
+     */
+    protected void applyToValueAxis(ValueAxis axis) {
+        axis.setLabelFont(this.largeFont);
+        axis.setLabelPaint(this.axisLabelPaint);
+        axis.setTickLabelFont(this.regularFont);
+        axis.setTickLabelPaint(this.tickLabelPaint);
+        if (axis instanceof SymbolAxis) {
+            applyToSymbolAxis((SymbolAxis) axis);
+        }
+        if (axis instanceof PeriodAxis) {
+            applyToPeriodAxis((PeriodAxis) axis);
+        }
+    }
+
+    /**
+     * Applies the attributes for this theme to a {@link SymbolAxis}.
+     *
+     * @param axis  the axis ({@code null} not permitted).
+     */
+    protected void applyToSymbolAxis(SymbolAxis axis) {
+        axis.setGridBandPaint(this.gridBandPaint);
+        axis.setGridBandAlternatePaint(this.gridBandAlternatePaint);
+    }
+
+    /**
+     * Applies the attributes for this theme to a {@link PeriodAxis}.
+     *
+     * @param axis  the axis ({@code null} not permitted).
+     */
+    protected void applyToPeriodAxis(PeriodAxis axis) {
+        PeriodAxisLabelInfo[] info = axis.getLabelInfo();
+        for (int i = 0; i < info.length; i++) {
+            PeriodAxisLabelInfo e = info[i];
+            PeriodAxisLabelInfo n = new PeriodAxisLabelInfo(e.getPeriodClass(), e.getDateFormat(), e.getPadding(), this.regularFont, this.tickLabelPaint, e.getDrawDividers(), e.getDividerStroke(), e.getDividerPaint());
+            info[i] = n;
+        }
+        axis.setLabelInfo(info);
+    }
+
+    /**
+     * Applies the attributes for this theme to an {@link AbstractRenderer}.
+     *
+     * @param renderer  the renderer ({@code null} not permitted).
+     */
+    protected void applyToAbstractRenderer(AbstractRenderer renderer) {
+        if (renderer.getAutoPopulateSeriesPaint()) {
+            renderer.clearSeriesPaints(false);
+        }
+        if (renderer.getAutoPopulateSeriesStroke()) {
+            renderer.clearSeriesStrokes(false);
+        }
+    }
+
+    /**
+     * Applies the settings of this theme to the specified renderer.
+     *
+     * @param renderer  the renderer ({@code null} not permitted).
+     */
+    protected void applyToCategoryItemRenderer(CategoryItemRenderer renderer) {
+        Args.nullNotPermitted(renderer, "renderer");
+        if (renderer instanceof AbstractRenderer) {
+            applyToAbstractRenderer((AbstractRenderer) renderer);
+        }
+        renderer.setDefaultItemLabelFont(this.regularFont);
+        renderer.setDefaultItemLabelPaint(this.itemLabelPaint);
+        // now we handle some special cases - yes, UGLY code alert!
+        // BarRenderer
+        if (renderer instanceof BarRenderer) {
+            BarRenderer br = (BarRenderer) renderer;
+            br.setBarPainter(this.barPainter);
+            br.setShadowVisible(this.shadowVisible);
+            br.setShadowPaint(this.shadowPaint);
+        }
+        //  StatisticalBarRenderer
+        if (renderer instanceof StatisticalBarRenderer) {
+            StatisticalBarRenderer sbr = (StatisticalBarRenderer) renderer;
+            sbr.setErrorIndicatorPaint(this.errorIndicatorPaint);
+        }
+        // MinMaxCategoryRenderer
+        if (renderer instanceof MinMaxCategoryRenderer) {
+            MinMaxCategoryRenderer mmcr = (MinMaxCategoryRenderer) renderer;
+            mmcr.setGroupPaint(this.errorIndicatorPaint);
+        }
+    }
+
+    /**
+     * Applies the settings of this theme to the specified renderer.
+     *
+     * @param renderer  the renderer ({@code null} not permitted).
+     */
+    protected void applyToXYItemRenderer(XYItemRenderer renderer) {
+        Args.nullNotPermitted(renderer, "renderer");
+        if (renderer instanceof AbstractRenderer) {
+            applyToAbstractRenderer((AbstractRenderer) renderer);
+        }
+        renderer.setDefaultItemLabelFont(this.regularFont);
+        renderer.setDefaultItemLabelPaint(this.itemLabelPaint);
+        if (renderer instanceof XYBarRenderer) {
+            XYBarRenderer br = (XYBarRenderer) renderer;
+            br.setBarPainter(this.xyBarPainter);
+            br.setShadowVisible(this.shadowVisible);
+        }
+    }
+
+    /**
+     * Applies the settings of this theme to the specified annotation.
+     *
+     * @param annotation  the annotation.
+     */
+    protected void applyToXYAnnotation(XYAnnotation annotation) {
+        Args.nullNotPermitted(annotation, "annotation");
+        if (annotation instanceof XYTextAnnotation) {
+            XYTextAnnotation xyta = (XYTextAnnotation) annotation;
+            xyta.setFont(this.smallFont);
+            xyta.setPaint(this.itemLabelPaint);
+        }
+    }
+
+    /**
+     * Tests this theme for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof StandardChartTheme)) {
+            return false;
+        }
+        StandardChartTheme that = (StandardChartTheme) obj;
+        if (!this.name.equals(that.name)) {
+            return false;
+        }
+        if (!this.extraLargeFont.equals(that.extraLargeFont)) {
+            return false;
+        }
+        if (!this.largeFont.equals(that.largeFont)) {
+            return false;
+        }
+        if (!this.regularFont.equals(that.regularFont)) {
+            return false;
+        }
+        if (!this.smallFont.equals(that.smallFont)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.titlePaint, that.titlePaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.subtitlePaint, that.subtitlePaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.chartBackgroundPaint, that.chartBackgroundPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.legendBackgroundPaint, that.legendBackgroundPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.legendItemPaint, that.legendItemPaint)) {
+            return false;
+        }
+        if (!this.drawingSupplier.equals(that.drawingSupplier)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.plotBackgroundPaint, that.plotBackgroundPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.plotOutlinePaint, that.plotOutlinePaint)) {
+            return false;
+        }
+        if (!this.labelLinkStyle.equals(that.labelLinkStyle)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.labelLinkPaint, that.labelLinkPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.domainGridlinePaint, that.domainGridlinePaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.rangeGridlinePaint, that.rangeGridlinePaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.crosshairPaint, that.crosshairPaint)) {
+            return false;
+        }
+        if (!this.axisOffset.equals(that.axisOffset)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.axisLabelPaint, that.axisLabelPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.tickLabelPaint, that.tickLabelPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.itemLabelPaint, that.itemLabelPaint)) {
+            return false;
+        }
+        if (this.shadowVisible != that.shadowVisible) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.shadowPaint, that.shadowPaint)) {
+            return false;
+        }
+        if (!this.barPainter.equals(that.barPainter)) {
+            return false;
+        }
+        if (!this.xyBarPainter.equals(that.xyBarPainter)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.thermometerPaint, that.thermometerPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.errorIndicatorPaint, that.errorIndicatorPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.gridBandPaint, that.gridBandPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.gridBandAlternatePaint, that.gridBandAlternatePaint)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 71 * hash + Objects.hashCode(this.name);
+        hash = 71 * hash + Objects.hashCode(this.extraLargeFont);
+        hash = 71 * hash + Objects.hashCode(this.largeFont);
+        hash = 71 * hash + Objects.hashCode(this.regularFont);
+        hash = 71 * hash + Objects.hashCode(this.smallFont);
+        hash = 71 * hash + Objects.hashCode(this.titlePaint);
+        hash = 71 * hash + Objects.hashCode(this.subtitlePaint);
+        hash = 71 * hash + Objects.hashCode(this.chartBackgroundPaint);
+        hash = 71 * hash + Objects.hashCode(this.legendBackgroundPaint);
+        hash = 71 * hash + Objects.hashCode(this.legendItemPaint);
+        hash = 71 * hash + Objects.hashCode(this.plotBackgroundPaint);
+        hash = 71 * hash + Objects.hashCode(this.plotOutlinePaint);
+        hash = 71 * hash + Objects.hashCode(this.labelLinkStyle);
+        hash = 71 * hash + Objects.hashCode(this.labelLinkPaint);
+        hash = 71 * hash + Objects.hashCode(this.domainGridlinePaint);
+        hash = 71 * hash + Objects.hashCode(this.rangeGridlinePaint);
+        hash = 71 * hash + Objects.hashCode(this.crosshairPaint);
+        hash = 71 * hash + Objects.hashCode(this.axisOffset);
+        hash = 71 * hash + Objects.hashCode(this.axisLabelPaint);
+        hash = 71 * hash + Objects.hashCode(this.tickLabelPaint);
+        hash = 71 * hash + Objects.hashCode(this.itemLabelPaint);
+        hash = 71 * hash + (this.shadowVisible ? 1 : 0);
+        hash = 71 * hash + Objects.hashCode(this.shadowPaint);
+        hash = 71 * hash + Objects.hashCode(this.barPainter);
+        hash = 71 * hash + Objects.hashCode(this.xyBarPainter);
+        hash = 71 * hash + Objects.hashCode(this.thermometerPaint);
+        hash = 71 * hash + Objects.hashCode(this.errorIndicatorPaint);
+        hash = 71 * hash + Objects.hashCode(this.gridBandPaint);
+        hash = 71 * hash + Objects.hashCode(this.gridBandAlternatePaint);
+        return hash;
+    }
+
+    /**
+     * Returns a clone of this theme.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if the theme cannot be cloned.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream ({@code null} not permitted).
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.titlePaint, stream);
+        SerialUtils.writePaint(this.subtitlePaint, stream);
+        SerialUtils.writePaint(this.chartBackgroundPaint, stream);
+        SerialUtils.writePaint(this.legendBackgroundPaint, stream);
+        SerialUtils.writePaint(this.legendItemPaint, stream);
+        SerialUtils.writePaint(this.plotBackgroundPaint, stream);
+        SerialUtils.writePaint(this.plotOutlinePaint, stream);
+        SerialUtils.writePaint(this.labelLinkPaint, stream);
+        SerialUtils.writePaint(this.baselinePaint, stream);
+        SerialUtils.writePaint(this.domainGridlinePaint, stream);
+        SerialUtils.writePaint(this.rangeGridlinePaint, stream);
+        SerialUtils.writePaint(this.crosshairPaint, stream);
+        SerialUtils.writePaint(this.axisLabelPaint, stream);
+        SerialUtils.writePaint(this.tickLabelPaint, stream);
+        SerialUtils.writePaint(this.itemLabelPaint, stream);
+        SerialUtils.writePaint(this.shadowPaint, stream);
+        SerialUtils.writePaint(this.thermometerPaint, stream);
+        SerialUtils.writePaint(this.errorIndicatorPaint, stream);
+        SerialUtils.writePaint(this.gridBandPaint, stream);
+        SerialUtils.writePaint(this.gridBandAlternatePaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream ({@code null} not permitted).
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.titlePaint = SerialUtils.readPaint(stream);
+        this.subtitlePaint = SerialUtils.readPaint(stream);
+        this.chartBackgroundPaint = SerialUtils.readPaint(stream);
+        this.legendBackgroundPaint = SerialUtils.readPaint(stream);
+        this.legendItemPaint = SerialUtils.readPaint(stream);
+        this.plotBackgroundPaint = SerialUtils.readPaint(stream);
+        this.plotOutlinePaint = SerialUtils.readPaint(stream);
+        this.labelLinkPaint = SerialUtils.readPaint(stream);
+        this.baselinePaint = SerialUtils.readPaint(stream);
+        this.domainGridlinePaint = SerialUtils.readPaint(stream);
+        this.rangeGridlinePaint = SerialUtils.readPaint(stream);
+        this.crosshairPaint = SerialUtils.readPaint(stream);
+        this.axisLabelPaint = SerialUtils.readPaint(stream);
+        this.tickLabelPaint = SerialUtils.readPaint(stream);
+        this.itemLabelPaint = SerialUtils.readPaint(stream);
+        this.shadowPaint = SerialUtils.readPaint(stream);
+        this.thermometerPaint = SerialUtils.readPaint(stream);
+        this.errorIndicatorPaint = SerialUtils.readPaint(stream);
+        this.gridBandPaint = SerialUtils.readPaint(stream);
+        this.gridBandAlternatePaint = SerialUtils.readPaint(stream);
     }
 }

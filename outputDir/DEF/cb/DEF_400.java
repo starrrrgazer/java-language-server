@@ -25,1520 +25,1553 @@ package DEF.cb;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -------------------------
- * CategoryItemRenderer.java
- * -------------------------
- *
- * (C) Copyright 2001-present, by David Gilbert and Contributors.
+ * -------------
+ * DateAxis.java
+ * -------------
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Mark Watson (www.markwatson.com);
+ * Contributor(s):   Jonathan Nash;
+ *                   David Li;
+ *                   Michael Rauch;
+ *                   Bill Kelemen;
+ *                   Pawel Pabis;
+ *                   Chris Boek;
+ *                   Peter Kolb (patches 1934255 and 2603321);
+ *                   Andrew Mickish (patch 1870189);
+ *                   Fawad Halim (bug 2201869);
  *
  */
 /**
- * A plug-in object that is used by the {@link CategoryPlot} class to display
- * individual data items from a {@link CategoryDataset}.
- * <p>
- * This interface defines the methods that must be provided by all renderers.
- * If you are implementing a custom renderer, you should consider extending the
- * {@link AbstractCategoryItemRenderer} class.
- * <p>
- * Most renderer attributes are defined using a two layer approach.  When
- * looking up an attribute (for example, the outline paint) the renderer first
- * checks to see if there is a setting that applies to a specific series
- * that the renderer draws.  If there is, that setting is used, but if it is
- * {@code null} the renderer looks up the default setting.  Some attributes
- * allow the base setting to be {@code null}, while other attributes enforce
- * non-{@code null} values.
+ * The base class for axes that display dates.  You will find it easier to
+ * understand how this axis works if you bear in mind that it really
+ * displays/measures integer (or long) data, where the integers are
+ * milliseconds since midnight, 1-Jan-1970.  When displaying tick labels, the
+ * millisecond values are converted back to dates using a {@code DateFormat}
+ * instance.
+ * <P>
+ * You can also create a {@link org.jfree.chart.axis.Timeline} and supply in
+ * the constructor to create an axis that only contains certain domain values.
+ * For example, this allows you to create a date axis that only contains
+ * working days.
  */
-interface CategoryItemRenderer extends ChartElement, LegendItemSource {
+public class DateAxis extends ValueAxis implements Cloneable, Serializable {
 
     /**
-     * Returns the number of passes through the dataset required by the
-     * renderer.  Usually this will be one, but some renderers may use
-     * a second or third pass to overlay items on top of things that were
-     * drawn in an earlier pass.
-     *
-     * @return The pass count.
+     * For serialization.
      */
-    int getPassCount();
+    private static final long serialVersionUID = -1013460999649007604L;
 
     /**
-     * Returns the plot that the renderer has been assigned to (where
-     * {@code null} indicates that the renderer is not currently assigned
-     * to a plot).
-     *
-     * @return The plot (possibly {@code null}).
-     *
-     * @see #setPlot(CategoryPlot)
+     * The default axis range.
      */
-    CategoryPlot<?, ?> getPlot();
+    public static final DateRange DEFAULT_DATE_RANGE = new DateRange();
 
     /**
-     * Sets the plot that the renderer has been assigned to.  This method is
-     * usually called by the {@link CategoryPlot}, in normal usage you
-     * shouldn't need to call this method directly.
-     *
-     * @param plot  the plot ({@code null} not permitted).
-     *
-     * @see #getPlot()
+     * The default minimum auto range size.
      */
-    void setPlot(CategoryPlot<?, ?> plot);
+    public static final double DEFAULT_AUTO_RANGE_MINIMUM_SIZE_IN_MILLISECONDS = 2.0;
 
     /**
-     * Adds a change listener.
-     *
-     * @param listener  the listener.
-     *
-     * @see #removeChangeListener(RendererChangeListener)
+     * The default anchor date.
      */
-    void addChangeListener(RendererChangeListener listener);
+    public static final Date DEFAULT_ANCHOR_DATE = new Date();
 
     /**
-     * Removes a change listener.
-     *
-     * @param listener  the listener.
-     *
-     * @see #addChangeListener(RendererChangeListener)
+     * The current tick unit.
      */
-    void removeChangeListener(RendererChangeListener listener);
+    private DateTickUnit tickUnit;
 
     /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range (or {@code null} if the dataset is
-     *         {@code null} or empty).
+     * The override date format.
      */
-    Range findRangeBounds(CategoryDataset<?, ?> dataset);
+    private DateFormat dateFormatOverride;
 
     /**
-     * Initialises the renderer.  This method will be called before the first
-     * item is rendered, giving the renderer an opportunity to initialise any
-     * state information it wants to maintain. The renderer can do nothing if
-     * it chooses.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area inside the axes.
-     * @param plot  the plot.
-     * @param rendererIndex  the renderer index.
-     * @param info  collects chart rendering information for return to caller.
-     *
-     * @return A state object (maintains state information relevant to one
-     *         chart drawing).
+     * Tick marks can be displayed at the start or the middle of the time
+     * period.
      */
-    CategoryItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, CategoryPlot<?, ?> plot, int rendererIndex, PlotRenderingInfo info);
+    private DateTickMarkPosition tickMarkPosition = DateTickMarkPosition.START;
 
     /**
-     * Returns a boolean that indicates whether the specified item
-     * should be drawn (this is typically used to hide an entire series).
-     *
-     * @param series  the series index.
-     * @param item  the item index.
-     *
-     * @return A boolean.
+     * A timeline that includes all milliseconds (as defined by
+     * {@code java.util.Date}) in the real time line.
      */
-    boolean getItemVisible(int series, int item);
+    private static class DefaultTimeline implements Timeline, Serializable {
+
+        /**
+         * Converts a millisecond into a timeline value.
+         *
+         * @param millisecond  the millisecond.
+         *
+         * @return The timeline value.
+         */
+        @Override
+        public long toTimelineValue(long millisecond) {
+            return millisecond;
+        }
+
+        /**
+         * Converts a date into a timeline value.
+         *
+         * @param date  the domain value.
+         *
+         * @return The timeline value.
+         */
+        @Override
+        public long toTimelineValue(Date date) {
+            return date.getTime();
+        }
+
+        /**
+         * Converts a timeline value into a millisecond (as encoded by
+         * {@code java.util.Date}).
+         *
+         * @param value  the value.
+         *
+         * @return The millisecond.
+         */
+        @Override
+        public long toMillisecond(long value) {
+            return value;
+        }
+
+        /**
+         * Returns {@code true} if the timeline includes the specified
+         * domain value.
+         *
+         * @param millisecond  the millisecond.
+         *
+         * @return {@code true}.
+         */
+        @Override
+        public boolean containsDomainValue(long millisecond) {
+            return true;
+        }
+
+        /**
+         * Returns {@code true} if the timeline includes the specified
+         * domain value.
+         *
+         * @param date  the date.
+         *
+         * @return {@code true}.
+         */
+        @Override
+        public boolean containsDomainValue(Date date) {
+            return true;
+        }
+
+        /**
+         * Returns {@code true} if the timeline includes the specified
+         * domain value range.
+         *
+         * @param from  the start value.
+         * @param to  the end value.
+         *
+         * @return {@code true}.
+         */
+        @Override
+        public boolean containsDomainRange(long from, long to) {
+            return true;
+        }
+
+        /**
+         * Returns {@code true} if the timeline includes the specified
+         * domain value range.
+         *
+         * @param from  the start date.
+         * @param to  the end date.
+         *
+         * @return {@code true}.
+         */
+        @Override
+        public boolean containsDomainRange(Date from, Date to) {
+            return true;
+        }
+
+        /**
+         * Tests an object for equality with this instance.
+         *
+         * @param object  the object.
+         *
+         * @return A boolean.
+         */
+        @Override
+        public boolean equals(Object object) {
+            if (object == null) {
+                return false;
+            }
+            if (object == this) {
+                return true;
+            }
+            if (object instanceof DefaultTimeline) {
+                return true;
+            }
+            return false;
+        }
+    }
 
     /**
-     * Returns a boolean that indicates whether the specified series
-     * should be drawn (this is typically used to hide an entire series).
-     *
-     * @param series  the series index.
-     *
-     * @return A boolean.
+     * A static default timeline shared by all standard DateAxis
      */
-    boolean isSeriesVisible(int series);
+    private static final Timeline DEFAULT_TIMELINE = new DefaultTimeline();
 
     /**
-     * Returns the flag that controls whether a series is visible.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The flag (possibly {@code null}).
-     *
-     * @see #setSeriesVisible(int, Boolean)
+     * The time zone for the axis.
      */
-    Boolean getSeriesVisible(int series);
+    private TimeZone timeZone;
 
     /**
-     * Sets the flag that controls whether a series is visible and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag ({@code null} permitted).
-     *
-     * @see #getSeriesVisible(int)
+     * The locale for the axis ({@code null} is not permitted).
      */
-    void setSeriesVisible(int series, Boolean visible);
+    private Locale locale;
 
     /**
-     * Sets the flag that controls whether a series is visible and, if
-     * requested, sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index.
-     * @param visible  the flag ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getSeriesVisible(int)
+     * Our underlying timeline.
      */
-    void setSeriesVisible(int series, Boolean visible, boolean notify);
+    private Timeline timeline;
 
     /**
-     * Returns the default visibility for all series.
-     *
-     * @return The default visibility.
-     *
-     * @see #setDefaultSeriesVisible(boolean)
+     * Creates a date axis with no label.
      */
-    boolean getDefaultSeriesVisible();
+    public DateAxis() {
+        this(null);
+    }
 
     /**
-     * Sets the default visibility and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
+     * Creates a date axis with the specified label.
      *
-     * @param visible  the flag.
-     *
-     * @see #getDefaultSeriesVisible()
+     * @param label  the axis label ({@code null} permitted).
      */
-    void setDefaultSeriesVisible(boolean visible);
+    public DateAxis(String label) {
+        this(label, TimeZone.getDefault(), Locale.getDefault());
+    }
 
     /**
-     * Sets the default visibility and, if requested, sends
-     * a {@link RendererChangeEvent} to all registered listeners.
+     * Creates a date axis.
      *
-     * @param visible  the visibility.
-     * @param notify  notify listeners?
-     *
-     * @see #getDefaultSeriesVisible()
+     * @param label  the axis label ({@code null} permitted).
+     * @param zone  the time zone.
+     * @param locale  the locale ({@code null} not permitted).
      */
-    void setDefaultSeriesVisible(boolean visible, boolean notify);
+    public DateAxis(String label, TimeZone zone, Locale locale) {
+        super(label, DateAxis.createStandardDateTickUnits(zone, locale));
+        this.tickUnit = new DateTickUnit(DateTickUnitType.DAY, 1, new SimpleDateFormat());
+        setAutoRangeMinimumSize(DEFAULT_AUTO_RANGE_MINIMUM_SIZE_IN_MILLISECONDS);
+        setRange(DEFAULT_DATE_RANGE, false, false);
+        this.dateFormatOverride = null;
+        this.timeZone = zone;
+        this.locale = locale;
+        this.timeline = DEFAULT_TIMELINE;
+    }
 
-    // SERIES VISIBLE IN LEGEND (not yet respected by all renderers)
     /**
-     * Returns {@code true} if the series should be shown in the legend,
-     * and {@code false} otherwise.
+     * Returns the time zone for the axis.
      *
-     * @param series  the series index.
+     * @return The time zone (never {@code null}).
      *
-     * @return A boolean.
+     * @see #setTimeZone(TimeZone)
      */
-    boolean isSeriesVisibleInLegend(int series);
+    public TimeZone getTimeZone() {
+        return this.timeZone;
+    }
 
     /**
-     * Returns the flag that controls whether a series is visible in the
-     * legend.  This method returns only the "per series" settings - to
-     * incorporate the override and base settings as well, you need to use the
-     * {@link #isSeriesVisibleInLegend(int)} method.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The flag (possibly {@code null}).
-     *
-     * @see #setSeriesVisibleInLegend(int, Boolean)
-     */
-    Boolean getSeriesVisibleInLegend(int series);
-
-    /**
-     * Sets the flag that controls whether a series is visible in the legend
-     * and sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag ({@code null} permitted).
-     *
-     * @see #getSeriesVisibleInLegend(int)
-     */
-    void setSeriesVisibleInLegend(int series, Boolean visible);
-
-    /**
-     * Sets the flag that controls whether a series is visible in the legend
-     * and, if requested, sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index.
-     * @param visible  the flag ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getSeriesVisibleInLegend(int)
-     */
-    void setSeriesVisibleInLegend(int series, Boolean visible, boolean notify);
-
-    /**
-     * Returns the default visibility in the legend for all series.
-     *
-     * @return The default visibility.
-     *
-     * @see #setDefaultSeriesVisibleInLegend(boolean)
-     */
-    boolean getDefaultSeriesVisibleInLegend();
-
-    /**
-     * Sets the default visibility in the legend and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the flag.
-     *
-     * @see #getDefaultSeriesVisibleInLegend()
-     */
-    void setDefaultSeriesVisibleInLegend(boolean visible);
-
-    /**
-     * Sets the default visibility in the legend and, if requested, sends
-     * a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the visibility.
-     * @param notify  notify listeners?
-     *
-     * @see #getDefaultSeriesVisibleInLegend()
-     */
-    void setDefaultSeriesVisibleInLegend(boolean visible, boolean notify);
-
-    //// PAINT /////////////////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to fill data items as they are drawn.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemPaint(int row, int column);
-
-    /**
-     * Returns the paint used to fill an item drawn by the renderer.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesPaint(int, Paint)
-     */
-    Paint getSeriesPaint(int series);
-
-    /**
-     * Sets the paint used for a series and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesPaint(int)
-     */
-    void setSeriesPaint(int series, Paint paint);
-
-    /**
-     * Sets the paint used for a series and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesPaint(int)
-     */
-    void setSeriesPaint(int series, Paint paint, boolean notify);
-
-    /**
-     * Returns the default paint.  During rendering, a renderer will first look
-     * up the series paint and, if this is {@code null}, it will use the
-     * default paint.
-     *
-     * @return The default paint (never {@code null}).
-     *
-     * @see #setDefaultPaint(Paint)
-     */
-    Paint getDefaultPaint();
-
-    /**
-     * Sets the default paint and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultPaint()
-     */
-    void setDefaultPaint(Paint paint);
-
-    /**
-     * Sets the default paint and sends a {@link RendererChangeEvent} to all
-     * registered listeners if requested.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultPaint()
-     */
-    void setDefaultPaint(Paint paint, boolean notify);
-
-    //// FILL PAINT /////////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to fill data items as they are drawn.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemFillPaint(int row, int column);
-
-    /**
-     * Returns the paint used to fill an item drawn by the renderer.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesFillPaint(int, Paint)
-     */
-    Paint getSeriesFillPaint(int series);
-
-    /**
-     * Sets the paint used for a series outline and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesFillPaint(int)
-     */
-    void setSeriesFillPaint(int series, Paint paint);
-
-    /**
-     * Returns the default outline paint.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDefaultFillPaint(Paint)
-     */
-    Paint getDefaultFillPaint();
-
-    /**
-     * Sets the default outline paint and sends a {@link RendererChangeEvent} to
+     * Sets the time zone for the axis and sends an {@link AxisChangeEvent} to
      * all registered listeners.
      *
-     * @param paint  the paint ({@code null} not permitted).
+     * @param zone  the time zone ({@code null} not permitted).
      *
-     * @see #getDefaultFillPaint()
+     * @see #getTimeZone()
      */
-    void setDefaultFillPaint(Paint paint);
-
-    //// OUTLINE PAINT /////////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to outline data items as they are drawn.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemOutlinePaint(int row, int column);
+    public void setTimeZone(TimeZone zone) {
+        Args.nullNotPermitted(zone, "zone");
+        this.timeZone = zone;
+        setStandardTickUnits(createStandardDateTickUnits(zone, this.locale));
+        fireChangeEvent();
+    }
 
     /**
-     * Returns the paint used to outline an item drawn by the renderer.
+     * Returns the locale for this axis.
      *
-     * @param series  the series (zero-based index).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesOutlinePaint(int, Paint)
+     * @return The locale (never {@code null}).
      */
-    Paint getSeriesOutlinePaint(int series);
+    public Locale getLocale() {
+        return this.locale;
+    }
 
     /**
-     * Sets the paint used for a series outline and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the locale for the axis and sends a change event to all registered
+     * listeners.
      *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesOutlinePaint(int)
+     * @param locale  the new locale ({@code null} not permitted).
      */
-    void setSeriesOutlinePaint(int series, Paint paint);
+    public void setLocale(Locale locale) {
+        Args.nullNotPermitted(locale, "locale");
+        this.locale = locale;
+        setStandardTickUnits(createStandardDateTickUnits(this.timeZone, this.locale));
+        fireChangeEvent();
+    }
 
     /**
-     * Sets the paint used for a series outline and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
+     * Returns the underlying timeline used by this axis.
      *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesOutlinePaint(int)
+     * @return The timeline.
      */
-    void setSeriesOutlinePaint(int series, Paint paint, boolean notify);
+    public Timeline getTimeline() {
+        return this.timeline;
+    }
 
     /**
-     * Returns the default outline paint.  During rendering, the renderer
-     * will look up the series outline paint and, if this is {@code null}, it
-     * will use the default outline paint.
+     * Sets the underlying timeline to use for this axis.  If the timeline is
+     * changed, an {@link AxisChangeEvent} is sent to all registered listeners.
      *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDefaultOutlinePaint(Paint)
+     * @param timeline  the timeline.
      */
-    Paint getDefaultOutlinePaint();
+    public void setTimeline(Timeline timeline) {
+        if (this.timeline != timeline) {
+            this.timeline = timeline;
+            fireChangeEvent();
+        }
+    }
 
     /**
-     * Sets the default outline paint and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultOutlinePaint()
-     */
-    void setDefaultOutlinePaint(Paint paint);
-
-    /**
-     * Sets the default outline paint and sends a {@link RendererChangeEvent} to
-     * all registered listeners if requested.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     * @param notify  send a change event?
-     *
-     * @see #getDefaultOutlinePaint()
-     */
-    void setDefaultOutlinePaint(Paint paint, boolean notify);
-
-    //// STROKE ////////////////////////////////////////////////////////////////
-    /**
-     * Returns the stroke used to draw data items.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The stroke (never {@code null}).
-     */
-    Stroke getItemStroke(int row, int column);
-
-    /**
-     * Returns the stroke used to draw the items in a series.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setSeriesStroke(int, Stroke)
-     */
-    Stroke getSeriesStroke(int series);
-
-    /**
-     * Sets the stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
-     *
-     * @see #getSeriesStroke(int)
-     */
-    void setSeriesStroke(int series, Stroke stroke);
-
-    /**
-     * Sets the stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesStroke(int)
-     */
-    void setSeriesStroke(int series, Stroke stroke, boolean notify);
-
-    /**
-     * Returns the default stroke.
-     *
-     * @return The default stroke (never {@code null}).
-     *
-     * @see #setDefaultStroke(Stroke)
-     */
-    Stroke getDefaultStroke();
-
-    /**
-     * Sets the default stroke and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getDefaultStroke()
-     */
-    void setDefaultStroke(Stroke stroke);
-
-    /**
-     * Sets the default stroke and sends a {@link RendererChangeEvent} to all
-     * registered listeners if requested.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultStroke()
-     */
-    void setDefaultStroke(Stroke stroke, boolean notify);
-
-    //// OUTLINE STROKE ////////////////////////////////////////////////////////
-    /**
-     * Returns the stroke used to outline data items.
+     * Returns the tick unit for the axis.
      * <p>
-     * The default implementation passes control to the
-     * lookupSeriesOutlineStroke method.  You can override this method if you
-     * require different behaviour.
+     * Note: if the {@code autoTickUnitSelection} flag is
+     * {@code true} the tick unit may be changed while the axis is being
+     * drawn, so in that case the return value from this method may be
+     * irrelevant if the method is called before the axis has been drawn.
      *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
+     * @return The tick unit (possibly {@code null}).
      *
-     * @return The stroke (never {@code null}).
+     * @see #setTickUnit(DateTickUnit)
+     * @see ValueAxis#isAutoTickUnitSelection()
      */
-    Stroke getItemOutlineStroke(int row, int column);
+    public DateTickUnit getTickUnit() {
+        return this.tickUnit;
+    }
 
     /**
-     * Returns the stroke used to outline the items in a series.
+     * Sets the tick unit for the axis.  The auto-tick-unit-selection flag is
+     * set to {@code false}, and registered listeners are notified that
+     * the axis has been changed.
      *
-     * @param series  the series (zero-based index).
+     * @param unit  the tick unit.
      *
-     * @return The stroke (possibly {@code null}).
-     *
-     * @see #setSeriesOutlineStroke(int, Stroke)
+     * @see #getTickUnit()
+     * @see #setTickUnit(DateTickUnit, boolean, boolean)
      */
-    Stroke getSeriesOutlineStroke(int series);
+    public void setTickUnit(DateTickUnit unit) {
+        setTickUnit(unit, true, true);
+    }
 
     /**
-     * Sets the outline stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the tick unit attribute and, if requested, sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
+     * @param unit  the new tick unit.
+     * @param notify  notify registered listeners?
+     * @param turnOffAutoSelection  turn off auto selection?
      *
-     * @see #getSeriesOutlineStroke(int)
+     * @see #getTickUnit()
      */
-    void setSeriesOutlineStroke(int series, Stroke stroke);
+    public void setTickUnit(DateTickUnit unit, boolean notify, boolean turnOffAutoSelection) {
+        this.tickUnit = unit;
+        if (turnOffAutoSelection) {
+            setAutoTickUnitSelection(false, false);
+        }
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
 
     /**
-     * Sets the outline stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
+     * Returns the date format override.  If this is non-null, then it will be
+     * used to format the dates on the axis.
      *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesOutlineStroke(int)
+     * @return The formatter (possibly {@code null}).
      */
-    void setSeriesOutlineStroke(int series, Stroke stroke, boolean notify);
+    public DateFormat getDateFormatOverride() {
+        return this.dateFormatOverride;
+    }
 
     /**
-     * Returns the default outline stroke.
+     * Sets the date format override and sends an {@link AxisChangeEvent} to
+     * all registered listeners.  If this is non-null, then it will be
+     * used to format the dates on the axis.
      *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setDefaultOutlineStroke(Stroke)
+     * @param formatter  the date formatter ({@code null} permitted).
      */
-    Stroke getDefaultOutlineStroke();
+    public void setDateFormatOverride(DateFormat formatter) {
+        this.dateFormatOverride = formatter;
+        fireChangeEvent();
+    }
 
     /**
-     * Sets the default outline stroke and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
+     * Sets the upper and lower bounds for the axis and sends an
+     * {@link AxisChangeEvent} to all registered listeners.  As a side-effect,
+     * the auto-range flag is set to false.
      *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getDefaultOutlineStroke()
+     * @param range  the new range ({@code null} not permitted).
      */
-    void setDefaultOutlineStroke(Stroke stroke);
+    @Override
+    public void setRange(Range range) {
+        setRange(range, true, true);
+    }
 
     /**
-     * Sets the default outline stroke and sends a {@link RendererChangeEvent} to
-     * all registered listeners if requested.
+     * Sets the range for the axis, if requested, sends an
+     * {@link AxisChangeEvent} to all registered listeners.  As a side-effect,
+     * the auto-range flag is set to {@code false} (optional).
      *
-     * @param stroke  the stroke ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultOutlineStroke()
+     * @param range  the range ({@code null} not permitted).
+     * @param turnOffAutoRange  a flag that controls whether the auto
+     *                          range is turned off.
+     * @param notify  a flag that controls whether listeners are
+     *                notified.
      */
-    void setDefaultOutlineStroke(Stroke stroke, boolean notify);
-
-    //// SHAPE /////////////////////////////////////////////////////////////////
-    /**
-     * Returns a shape used to represent a data item.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The shape (never {@code null}).
-     */
-    Shape getItemShape(int row, int column);
-
-    /**
-     * Returns a shape used to represent the items in a series.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The shape (possibly {@code null}).
-     *
-     * @see #setSeriesShape(int, Shape)
-     */
-    Shape getSeriesShape(int series);
+    @Override
+    public void setRange(Range range, boolean turnOffAutoRange, boolean notify) {
+        Args.nullNotPermitted(range, "range");
+        // usually the range will be a DateRange, but if it isn't do a
+        // conversion...
+        if (!(range instanceof DateRange)) {
+            range = new DateRange(range);
+        }
+        super.setRange(range, turnOffAutoRange, notify);
+    }
 
     /**
-     * Sets the shape used for a series and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param shape  the shape ({@code null} permitted).
-     *
-     * @see #getSeriesShape(int)
-     */
-    void setSeriesShape(int series, Shape shape);
-
-    /**
-     * Sets the shape used for a series and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param shape  the shape ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesShape(int)
-     */
-    void setSeriesShape(int series, Shape shape, boolean notify);
-
-    /**
-     * Returns the default shape.
-     *
-     * @return The shape (never {@code null}).
-     *
-     * @see #setDefaultShape(Shape)
-     */
-    Shape getDefaultShape();
-
-    /**
-     * Sets the default shape and sends a {@link RendererChangeEvent} to all
+     * Sets the axis range and sends an {@link AxisChangeEvent} to all
      * registered listeners.
      *
-     * @param shape  the shape ({@code null} not permitted).
-     *
-     * @see #getDefaultShape()
+     * @param lower  the lower bound for the axis.
+     * @param upper  the upper bound for the axis.
      */
-    void setDefaultShape(Shape shape);
+    public void setRange(Date lower, Date upper) {
+        if (lower.getTime() >= upper.getTime()) {
+            throw new IllegalArgumentException("Requires 'lower' < 'upper'.");
+        }
+        setRange(new DateRange(lower, upper));
+    }
 
     /**
-     * Sets the default shape and sends a {@link RendererChangeEvent} to all
-     * registered listeners if requested.
+     * Sets the axis range and sends an {@link AxisChangeEvent} to all
+     * registered listeners.
      *
-     * @param shape  the shape ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultShape()
+     * @param lower  the lower bound for the axis.
+     * @param upper  the upper bound for the axis.
      */
-    void setDefaultShape(Shape shape, boolean notify);
+    @Override
+    public void setRange(double lower, double upper) {
+        if (lower >= upper) {
+            throw new IllegalArgumentException("Requires 'lower' < 'upper'.");
+        }
+        setRange(new DateRange(lower, upper));
+    }
 
-    // ITEM LABELS VISIBLE
     /**
-     * Returns {@code true} if an item label is visible, and
+     * Returns the earliest date visible on the axis.
+     *
+     * @return The date.
+     *
+     * @see #setMinimumDate(Date)
+     * @see #getMaximumDate()
+     */
+    public Date getMinimumDate() {
+        Date result;
+        Range range = getRange();
+        if (range instanceof DateRange) {
+            DateRange r = (DateRange) range;
+            result = r.getLowerDate();
+        } else {
+            result = new Date((long) range.getLowerBound());
+        }
+        return result;
+    }
+
+    /**
+     * Sets the minimum date visible on the axis and sends an
+     * {@link AxisChangeEvent} to all registered listeners.  If
+     * {@code date} is on or after the current maximum date for
+     * the axis, the maximum date will be shifted to preserve the current
+     * length of the axis.
+     *
+     * @param date  the date ({@code null} not permitted).
+     *
+     * @see #getMinimumDate()
+     * @see #setMaximumDate(Date)
+     */
+    public void setMinimumDate(Date date) {
+        Args.nullNotPermitted(date, "date");
+        // check the new minimum date relative to the current maximum date
+        Date maxDate = getMaximumDate();
+        long maxMillis = maxDate.getTime();
+        long newMinMillis = date.getTime();
+        if (maxMillis <= newMinMillis) {
+            Date oldMin = getMinimumDate();
+            long length = maxMillis - oldMin.getTime();
+            maxDate = new Date(newMinMillis + length);
+        }
+        setRange(new DateRange(date, maxDate), true, false);
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the latest date visible on the axis.
+     *
+     * @return The date.
+     *
+     * @see #setMaximumDate(Date)
+     * @see #getMinimumDate()
+     */
+    public Date getMaximumDate() {
+        Date result;
+        Range range = getRange();
+        if (range instanceof DateRange) {
+            DateRange r = (DateRange) range;
+            result = r.getUpperDate();
+        } else {
+            result = new Date((long) range.getUpperBound());
+        }
+        return result;
+    }
+
+    /**
+     * Sets the maximum date visible on the axis and sends an
+     * {@link AxisChangeEvent} to all registered listeners.  If
+     * {@code maximumDate} is on or before the current minimum date for
+     * the axis, the minimum date will be shifted to preserve the current
+     * length of the axis.
+     *
+     * @param maximumDate  the date ({@code null} not permitted).
+     *
+     * @see #getMinimumDate()
+     * @see #setMinimumDate(Date)
+     */
+    public void setMaximumDate(Date maximumDate) {
+        Args.nullNotPermitted(maximumDate, "maximumDate");
+        // check the new maximum date relative to the current minimum date
+        Date minDate = getMinimumDate();
+        long minMillis = minDate.getTime();
+        long newMaxMillis = maximumDate.getTime();
+        if (minMillis >= newMaxMillis) {
+            Date oldMax = getMaximumDate();
+            long length = oldMax.getTime() - minMillis;
+            minDate = new Date(newMaxMillis - length);
+        }
+        setRange(new DateRange(minDate, maximumDate), true, false);
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the tick mark position (start, middle or end of the time period).
+     *
+     * @return The position (never {@code null}).
+     */
+    public DateTickMarkPosition getTickMarkPosition() {
+        return this.tickMarkPosition;
+    }
+
+    /**
+     * Sets the tick mark position (start, middle or end of the time period)
+     * and sends an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param position  the position ({@code null} not permitted).
+     */
+    public void setTickMarkPosition(DateTickMarkPosition position) {
+        Args.nullNotPermitted(position, "position");
+        this.tickMarkPosition = position;
+        fireChangeEvent();
+    }
+
+    /**
+     * Configures the axis to work with the specified plot.  If the axis has
+     * auto-scaling, then sets the maximum and minimum values.
+     */
+    @Override
+    public void configure() {
+        if (isAutoRange()) {
+            autoAdjustRange();
+        }
+    }
+
+    /**
+     * Returns {@code true} if the axis hides this value, and
      * {@code false} otherwise.
      *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
+     * @param millis  the data value.
+     *
+     * @return A value.
+     */
+    public boolean isHiddenValue(long millis) {
+        return (!this.timeline.containsDomainValue(new Date(millis)));
+    }
+
+    /**
+     * Translates the data value to the display coordinates (Java 2D User Space)
+     * of the chart.
+     *
+     * @param value  the date to be plotted.
+     * @param area  the rectangle (in Java2D space) where the data is to be
+     *              plotted.
+     * @param edge  the axis location.
+     *
+     * @return The coordinate corresponding to the supplied data value.
+     */
+    @Override
+    public double valueToJava2D(double value, Rectangle2D area, RectangleEdge edge) {
+        value = this.timeline.toTimelineValue((long) value);
+        DateRange range = (DateRange) getRange();
+        double axisMin = this.timeline.toTimelineValue(range.getLowerMillis());
+        double axisMax = this.timeline.toTimelineValue(range.getUpperMillis());
+        double result = 0.0;
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            double minX = area.getX();
+            double maxX = area.getMaxX();
+            if (isInverted()) {
+                result = maxX + ((value - axisMin) / (axisMax - axisMin)) * (minX - maxX);
+            } else {
+                result = minX + ((value - axisMin) / (axisMax - axisMin)) * (maxX - minX);
+            }
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            double minY = area.getMinY();
+            double maxY = area.getMaxY();
+            if (isInverted()) {
+                result = minY + (((value - axisMin) / (axisMax - axisMin)) * (maxY - minY));
+            } else {
+                result = maxY - (((value - axisMin) / (axisMax - axisMin)) * (maxY - minY));
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Translates a date to Java2D coordinates, based on the range displayed by
+     * this axis for the specified data area.
+     *
+     * @param date  the date.
+     * @param area  the rectangle (in Java2D space) where the data is to be
+     *              plotted.
+     * @param edge  the axis location.
+     *
+     * @return The coordinate corresponding to the supplied date.
+     */
+    public double dateToJava2D(Date date, Rectangle2D area, RectangleEdge edge) {
+        double value = date.getTime();
+        return valueToJava2D(value, area, edge);
+    }
+
+    /**
+     * Translates a Java2D coordinate into the corresponding data value.  To
+     * perform this translation, you need to know the area used for plotting
+     * data, and which edge the axis is located on.
+     *
+     * @param java2DValue  the coordinate in Java2D space.
+     * @param area  the rectangle (in Java2D space) where the data is to be
+     *              plotted.
+     * @param edge  the axis location.
+     *
+     * @return A data value.
+     */
+    @Override
+    public double java2DToValue(double java2DValue, Rectangle2D area, RectangleEdge edge) {
+        DateRange range = (DateRange) getRange();
+        double axisMin = this.timeline.toTimelineValue(range.getLowerMillis());
+        double axisMax = this.timeline.toTimelineValue(range.getUpperMillis());
+        double min = 0.0;
+        double max = 0.0;
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            min = area.getX();
+            max = area.getMaxX();
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            min = area.getMaxY();
+            max = area.getY();
+        }
+        double result;
+        if (isInverted()) {
+            result = axisMax - ((java2DValue - min) / (max - min) * (axisMax - axisMin));
+        } else {
+            result = axisMin + ((java2DValue - min) / (max - min) * (axisMax - axisMin));
+        }
+        return this.timeline.toMillisecond((long) result);
+    }
+
+    /**
+     * Calculates the value of the lowest visible tick on the axis.
+     *
+     * @param unit  date unit to use.
+     *
+     * @return The value of the lowest visible tick on the axis.
+     */
+    public Date calculateLowestVisibleTickValue(DateTickUnit unit) {
+        return nextStandardDate(getMinimumDate(), unit);
+    }
+
+    /**
+     * Calculates the value of the highest visible tick on the axis.
+     *
+     * @param unit  date unit to use.
+     *
+     * @return The value of the highest visible tick on the axis.
+     */
+    public Date calculateHighestVisibleTickValue(DateTickUnit unit) {
+        return previousStandardDate(getMaximumDate(), unit);
+    }
+
+    /**
+     * Returns the previous "standard" date, for a given date and tick unit.
+     *
+     * @param date  the reference date.
+     * @param unit  the tick unit.
+     *
+     * @return The previous "standard" date.
+     */
+    protected Date previousStandardDate(Date date, DateTickUnit unit) {
+        int milliseconds;
+        int seconds;
+        int minutes;
+        int hours;
+        int days;
+        int months;
+        int years;
+        Calendar calendar = Calendar.getInstance(this.timeZone, this.locale);
+        calendar.setTime(date);
+        int count = unit.getMultiple();
+        int current = calendar.get(unit.getCalendarField());
+        int value = count * (current / count);
+        if (DateTickUnitType.MILLISECOND.equals(unit.getUnitType())) {
+            years = calendar.get(Calendar.YEAR);
+            months = calendar.get(Calendar.MONTH);
+            days = calendar.get(Calendar.DATE);
+            hours = calendar.get(Calendar.HOUR_OF_DAY);
+            minutes = calendar.get(Calendar.MINUTE);
+            seconds = calendar.get(Calendar.SECOND);
+            calendar.set(years, months, days, hours, minutes, seconds);
+            calendar.set(Calendar.MILLISECOND, value);
+            Date mm = calendar.getTime();
+            if (mm.getTime() >= date.getTime()) {
+                calendar.set(Calendar.MILLISECOND, value - count);
+                mm = calendar.getTime();
+            }
+            return mm;
+        } else if (DateTickUnitType.SECOND.equals(unit.getUnitType())) {
+            years = calendar.get(Calendar.YEAR);
+            months = calendar.get(Calendar.MONTH);
+            days = calendar.get(Calendar.DATE);
+            hours = calendar.get(Calendar.HOUR_OF_DAY);
+            minutes = calendar.get(Calendar.MINUTE);
+            if (this.tickMarkPosition == DateTickMarkPosition.START) {
+                milliseconds = 0;
+            } else if (this.tickMarkPosition == DateTickMarkPosition.MIDDLE) {
+                milliseconds = 500;
+            } else {
+                milliseconds = 999;
+            }
+            calendar.set(Calendar.MILLISECOND, milliseconds);
+            calendar.set(years, months, days, hours, minutes, value);
+            Date dd = calendar.getTime();
+            if (dd.getTime() >= date.getTime()) {
+                calendar.set(Calendar.SECOND, value - count);
+                dd = calendar.getTime();
+            }
+            return dd;
+        } else if (DateTickUnitType.MINUTE.equals(unit.getUnitType())) {
+            years = calendar.get(Calendar.YEAR);
+            months = calendar.get(Calendar.MONTH);
+            days = calendar.get(Calendar.DATE);
+            hours = calendar.get(Calendar.HOUR_OF_DAY);
+            if (this.tickMarkPosition == DateTickMarkPosition.START) {
+                seconds = 0;
+            } else if (this.tickMarkPosition == DateTickMarkPosition.MIDDLE) {
+                seconds = 30;
+            } else {
+                seconds = 59;
+            }
+            calendar.clear(Calendar.MILLISECOND);
+            calendar.set(years, months, days, hours, value, seconds);
+            Date d0 = calendar.getTime();
+            if (d0.getTime() >= date.getTime()) {
+                calendar.set(Calendar.MINUTE, value - count);
+                d0 = calendar.getTime();
+            }
+            return d0;
+        } else if (DateTickUnitType.HOUR.equals(unit.getUnitType())) {
+            years = calendar.get(Calendar.YEAR);
+            months = calendar.get(Calendar.MONTH);
+            days = calendar.get(Calendar.DATE);
+            if (this.tickMarkPosition == DateTickMarkPosition.START) {
+                minutes = 0;
+                seconds = 0;
+            } else if (this.tickMarkPosition == DateTickMarkPosition.MIDDLE) {
+                minutes = 30;
+                seconds = 0;
+            } else {
+                minutes = 59;
+                seconds = 59;
+            }
+            calendar.clear(Calendar.MILLISECOND);
+            calendar.set(years, months, days, value, minutes, seconds);
+            Date d1 = calendar.getTime();
+            if (d1.getTime() >= date.getTime()) {
+                calendar.set(Calendar.HOUR_OF_DAY, value - count);
+                d1 = calendar.getTime();
+            }
+            return d1;
+        } else if (DateTickUnitType.DAY.equals(unit.getUnitType())) {
+            years = calendar.get(Calendar.YEAR);
+            months = calendar.get(Calendar.MONTH);
+            if (this.tickMarkPosition == DateTickMarkPosition.START) {
+                hours = 0;
+            } else if (this.tickMarkPosition == DateTickMarkPosition.MIDDLE) {
+                hours = 12;
+            } else {
+                hours = 23;
+            }
+            calendar.clear(Calendar.MILLISECOND);
+            calendar.set(years, months, value, hours, 0, 0);
+            // long result = calendar.getTimeInMillis();
+            // won't work with JDK 1.3
+            Date d2 = calendar.getTime();
+            if (d2.getTime() >= date.getTime()) {
+                calendar.set(Calendar.DATE, value - count);
+                d2 = calendar.getTime();
+            }
+            return d2;
+        } else if (DateTickUnitType.MONTH.equals(unit.getUnitType())) {
+            value = count * ((current + 1) / count) - 1;
+            years = calendar.get(Calendar.YEAR);
+            calendar.clear(Calendar.MILLISECOND);
+            calendar.set(years, value, 1, 0, 0, 0);
+            Month month = new Month(calendar.getTime(), this.timeZone, this.locale);
+            Date standardDate = calculateDateForPosition(month, this.tickMarkPosition);
+            long millis = standardDate.getTime();
+            if (millis >= date.getTime()) {
+                for (int i = 0; i < count; i++) {
+                    month = (Month) month.previous();
+                }
+                // need to peg the month in case the time zone isn't the
+                // default - see bug 2078057
+                month.peg(Calendar.getInstance(this.timeZone));
+                standardDate = calculateDateForPosition(month, this.tickMarkPosition);
+            }
+            return standardDate;
+        } else if (DateTickUnitType.YEAR.equals(unit.getUnitType())) {
+            if (this.tickMarkPosition == DateTickMarkPosition.START) {
+                months = 0;
+                days = 1;
+            } else if (this.tickMarkPosition == DateTickMarkPosition.MIDDLE) {
+                months = 6;
+                days = 1;
+            } else {
+                months = 11;
+                days = 31;
+            }
+            calendar.clear(Calendar.MILLISECOND);
+            calendar.set(value, months, days, 0, 0, 0);
+            Date d3 = calendar.getTime();
+            if (d3.getTime() >= date.getTime()) {
+                calendar.set(Calendar.YEAR, value - count);
+                d3 = calendar.getTime();
+            }
+            return d3;
+        }
+        return null;
+    }
+
+    /**
+     * Returns a {@link java.util.Date} corresponding to the specified position
+     * within a {@link RegularTimePeriod}.
+     *
+     * @param period  the period.
+     * @param position  the position ({@code null} not permitted).
+     *
+     * @return A date.
+     */
+    private Date calculateDateForPosition(RegularTimePeriod period, DateTickMarkPosition position) {
+        Args.nullNotPermitted(period, "period");
+        Date result = null;
+        if (position == DateTickMarkPosition.START) {
+            result = new Date(period.getFirstMillisecond());
+        } else if (position == DateTickMarkPosition.MIDDLE) {
+            result = new Date(period.getMiddleMillisecond());
+        } else if (position == DateTickMarkPosition.END) {
+            result = new Date(period.getLastMillisecond());
+        }
+        return result;
+    }
+
+    /**
+     * Returns the first "standard" date (based on the specified field and
+     * units).
+     *
+     * @param date  the reference date.
+     * @param unit  the date tick unit.
+     *
+     * @return The next "standard" date.
+     */
+    protected Date nextStandardDate(Date date, DateTickUnit unit) {
+        Date previous = previousStandardDate(date, unit);
+        Calendar calendar = Calendar.getInstance(this.timeZone, this.locale);
+        calendar.setTime(previous);
+        calendar.add(unit.getCalendarField(), unit.getMultiple());
+        return calendar.getTime();
+    }
+
+    /**
+     * Returns a collection of standard date tick units that uses the default
+     * time zone.  This collection will be used by default, but you are free
+     * to create your own collection if you want to (see the
+     * {@link ValueAxis#setStandardTickUnits(TickUnitSource)} method inherited
+     * from the {@link ValueAxis} class).
+     *
+     * @return A collection of standard date tick units.
+     */
+    public static TickUnitSource createStandardDateTickUnits() {
+        return createStandardDateTickUnits(TimeZone.getDefault(), Locale.getDefault());
+    }
+
+    /**
+     * Returns a collection of standard date tick units.  This collection will
+     * be used by default, but you are free to create your own collection if
+     * you want to (see the
+     * {@link ValueAxis#setStandardTickUnits(TickUnitSource)} method inherited
+     * from the {@link ValueAxis} class).
+     *
+     * @param zone  the time zone ({@code null} not permitted).
+     * @param locale  the locale ({@code null} not permitted).
+     *
+     * @return A collection of standard date tick units.
+     */
+    public static TickUnitSource createStandardDateTickUnits(TimeZone zone, Locale locale) {
+        Args.nullNotPermitted(zone, "zone");
+        Args.nullNotPermitted(locale, "locale");
+        TickUnits units = new TickUnits();
+        // date formatters
+        DateFormat f1 = new SimpleDateFormat("HH:mm:ss.SSS", locale);
+        DateFormat f2 = new SimpleDateFormat("HH:mm:ss", locale);
+        DateFormat f3 = new SimpleDateFormat("HH:mm", locale);
+        DateFormat f4 = new SimpleDateFormat("d-MMM, HH:mm", locale);
+        DateFormat f5 = new SimpleDateFormat("d-MMM", locale);
+        DateFormat f6 = new SimpleDateFormat("MMM-yyyy", locale);
+        DateFormat f7 = new SimpleDateFormat("yyyy", locale);
+        f1.setTimeZone(zone);
+        f2.setTimeZone(zone);
+        f3.setTimeZone(zone);
+        f4.setTimeZone(zone);
+        f5.setTimeZone(zone);
+        f6.setTimeZone(zone);
+        f7.setTimeZone(zone);
+        // milliseconds
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 1, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 5, DateTickUnitType.MILLISECOND, 1, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 10, DateTickUnitType.MILLISECOND, 1, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 25, DateTickUnitType.MILLISECOND, 5, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 50, DateTickUnitType.MILLISECOND, 10, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 100, DateTickUnitType.MILLISECOND, 10, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 250, DateTickUnitType.MILLISECOND, 10, f1));
+        units.add(new DateTickUnit(DateTickUnitType.MILLISECOND, 500, DateTickUnitType.MILLISECOND, 50, f1));
+        // seconds
+        units.add(new DateTickUnit(DateTickUnitType.SECOND, 1, DateTickUnitType.MILLISECOND, 50, f2));
+        units.add(new DateTickUnit(DateTickUnitType.SECOND, 5, DateTickUnitType.SECOND, 1, f2));
+        units.add(new DateTickUnit(DateTickUnitType.SECOND, 10, DateTickUnitType.SECOND, 1, f2));
+        units.add(new DateTickUnit(DateTickUnitType.SECOND, 30, DateTickUnitType.SECOND, 5, f2));
+        // minutes
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 1, DateTickUnitType.SECOND, 5, f3));
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 2, DateTickUnitType.SECOND, 10, f3));
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 5, DateTickUnitType.MINUTE, 1, f3));
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 10, DateTickUnitType.MINUTE, 1, f3));
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 15, DateTickUnitType.MINUTE, 5, f3));
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 20, DateTickUnitType.MINUTE, 5, f3));
+        units.add(new DateTickUnit(DateTickUnitType.MINUTE, 30, DateTickUnitType.MINUTE, 5, f3));
+        // hours
+        units.add(new DateTickUnit(DateTickUnitType.HOUR, 1, DateTickUnitType.MINUTE, 5, f3));
+        units.add(new DateTickUnit(DateTickUnitType.HOUR, 2, DateTickUnitType.MINUTE, 10, f3));
+        units.add(new DateTickUnit(DateTickUnitType.HOUR, 4, DateTickUnitType.MINUTE, 30, f3));
+        units.add(new DateTickUnit(DateTickUnitType.HOUR, 6, DateTickUnitType.HOUR, 1, f3));
+        units.add(new DateTickUnit(DateTickUnitType.HOUR, 12, DateTickUnitType.HOUR, 1, f4));
+        // days
+        units.add(new DateTickUnit(DateTickUnitType.DAY, 1, DateTickUnitType.HOUR, 1, f5));
+        units.add(new DateTickUnit(DateTickUnitType.DAY, 2, DateTickUnitType.HOUR, 1, f5));
+        units.add(new DateTickUnit(DateTickUnitType.DAY, 7, DateTickUnitType.DAY, 1, f5));
+        units.add(new DateTickUnit(DateTickUnitType.DAY, 15, DateTickUnitType.DAY, 1, f5));
+        // months
+        units.add(new DateTickUnit(DateTickUnitType.MONTH, 1, DateTickUnitType.DAY, 1, f6));
+        units.add(new DateTickUnit(DateTickUnitType.MONTH, 2, DateTickUnitType.DAY, 1, f6));
+        units.add(new DateTickUnit(DateTickUnitType.MONTH, 3, DateTickUnitType.MONTH, 1, f6));
+        units.add(new DateTickUnit(DateTickUnitType.MONTH, 4, DateTickUnitType.MONTH, 1, f6));
+        units.add(new DateTickUnit(DateTickUnitType.MONTH, 6, DateTickUnitType.MONTH, 1, f6));
+        // years
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 1, DateTickUnitType.MONTH, 1, f7));
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 2, DateTickUnitType.MONTH, 3, f7));
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 5, DateTickUnitType.YEAR, 1, f7));
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 10, DateTickUnitType.YEAR, 1, f7));
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 25, DateTickUnitType.YEAR, 5, f7));
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 50, DateTickUnitType.YEAR, 10, f7));
+        units.add(new DateTickUnit(DateTickUnitType.YEAR, 100, DateTickUnitType.YEAR, 20, f7));
+        return units;
+    }
+
+    /**
+     * Rescales the axis to ensure that all data is visible.
+     */
+    @Override
+    protected void autoAdjustRange() {
+        Plot plot = getPlot();
+        if (plot == null) {
+            // no plot, no data
+            return;
+        }
+        if (plot instanceof ValueAxisPlot) {
+            ValueAxisPlot vap = (ValueAxisPlot) plot;
+            Range r = vap.getDataRange(this);
+            if (r == null) {
+                r = new DateRange();
+            }
+            long upper = this.timeline.toTimelineValue((long) r.getUpperBound());
+            long lower;
+            long fixedAutoRange = (long) getFixedAutoRange();
+            if (fixedAutoRange > 0.0) {
+                lower = upper - fixedAutoRange;
+            } else {
+                lower = this.timeline.toTimelineValue((long) r.getLowerBound());
+                double range = upper - lower;
+                long minRange = (long) getAutoRangeMinimumSize();
+                if (range < minRange) {
+                    long expand = (long) (minRange - range) / 2;
+                    upper = upper + expand;
+                    lower = lower - expand;
+                }
+                upper = upper + (long) (range * getUpperMargin());
+                lower = lower - (long) (range * getLowerMargin());
+            }
+            upper = this.timeline.toMillisecond(upper);
+            lower = this.timeline.toMillisecond(lower);
+            DateRange dr = new DateRange(new Date(lower), new Date(upper));
+            setRange(dr, false, false);
+        }
+    }
+
+    /**
+     * Selects an appropriate tick value for the axis.  The strategy is to
+     * display as many ticks as possible (selected from an array of 'standard'
+     * tick units) without the labels overlapping.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area defined by the axes.
+     * @param edge  the axis location.
+     */
+    protected void selectAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            selectHorizontalAutoTickUnit(g2, dataArea, edge);
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            selectVerticalAutoTickUnit(g2, dataArea, edge);
+        }
+    }
+
+    /**
+     * Selects an appropriate tick size for the axis.  The strategy is to
+     * display as many ticks as possible (selected from a collection of
+     * 'standard' tick units) without the labels overlapping.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area defined by the axes.
+     * @param edge  the axis location.
+     */
+    protected void selectHorizontalAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+        double zero = valueToJava2D(0.0, dataArea, edge);
+        double tickLabelWidth = estimateMaximumTickLabelWidth(g2, getTickUnit());
+        // start with the current tick unit...
+        TickUnitSource tickUnits = getStandardTickUnits();
+        TickUnit unit1 = tickUnits.getCeilingTickUnit(getTickUnit());
+        double x1 = valueToJava2D(unit1.getSize(), dataArea, edge);
+        double unit1Width = Math.abs(x1 - zero);
+        // then extrapolate...
+        double guess = (tickLabelWidth / unit1Width) * unit1.getSize();
+        DateTickUnit unit2 = (DateTickUnit) tickUnits.getCeilingTickUnit(guess);
+        double x2 = valueToJava2D(unit2.getSize(), dataArea, edge);
+        double unit2Width = Math.abs(x2 - zero);
+        tickLabelWidth = estimateMaximumTickLabelWidth(g2, unit2);
+        if (tickLabelWidth > unit2Width) {
+            unit2 = (DateTickUnit) tickUnits.getLargerTickUnit(unit2);
+        }
+        setTickUnit(unit2, false, false);
+    }
+
+    /**
+     * Selects an appropriate tick size for the axis.  The strategy is to
+     * display as many ticks as possible (selected from a collection of
+     * 'standard' tick units) without the labels overlapping.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area in which the plot should be drawn.
+     * @param edge  the axis location.
+     */
+    protected void selectVerticalAutoTickUnit(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+        // start with the current tick unit...
+        TickUnitSource tickUnits = getStandardTickUnits();
+        double zero = valueToJava2D(0.0, dataArea, edge);
+        // start with a unit that is at least 1/10th of the axis length
+        double estimate1 = getRange().getLength() / 10.0;
+        DateTickUnit candidate1 = (DateTickUnit) tickUnits.getCeilingTickUnit(estimate1);
+        double labelHeight1 = estimateMaximumTickLabelHeight(g2, candidate1);
+        double y1 = valueToJava2D(candidate1.getSize(), dataArea, edge);
+        double candidate1UnitHeight = Math.abs(y1 - zero);
+        // now extrapolate based on label height and unit height...
+        double estimate2 = (labelHeight1 / candidate1UnitHeight) * candidate1.getSize();
+        DateTickUnit candidate2 = (DateTickUnit) tickUnits.getCeilingTickUnit(estimate2);
+        double labelHeight2 = estimateMaximumTickLabelHeight(g2, candidate2);
+        double y2 = valueToJava2D(candidate2.getSize(), dataArea, edge);
+        double unit2Height = Math.abs(y2 - zero);
+        // make final selection...
+        DateTickUnit finalUnit;
+        if (labelHeight2 < unit2Height) {
+            finalUnit = candidate2;
+        } else {
+            finalUnit = (DateTickUnit) tickUnits.getLargerTickUnit(candidate2);
+        }
+        setTickUnit(finalUnit, false, false);
+    }
+
+    /**
+     * Estimates the maximum width of the tick labels, assuming the specified
+     * tick unit is used.
+     * <P>
+     * Rather than computing the string bounds of every tick on the axis, we
+     * just look at two values: the lower bound and the upper bound for the
+     * axis.  These two values will usually be representative.
+     *
+     * @param g2  the graphics device.
+     * @param unit  the tick unit to use for calculation.
+     *
+     * @return The estimated maximum width of the tick labels.
+     */
+    private double estimateMaximumTickLabelWidth(Graphics2D g2, DateTickUnit unit) {
+        RectangleInsets tickLabelInsets = getTickLabelInsets();
+        double result = tickLabelInsets.getLeft() + tickLabelInsets.getRight();
+        Font tickLabelFont = getTickLabelFont();
+        FontRenderContext frc = g2.getFontRenderContext();
+        LineMetrics lm = tickLabelFont.getLineMetrics("ABCxyz", frc);
+        if (isVerticalTickLabels()) {
+            // all tick labels have the same width (equal to the height of
+            // the font)...
+            result += lm.getHeight();
+        } else {
+            // look at lower and upper bounds...
+            DateRange range = (DateRange) getRange();
+            Date lower = range.getLowerDate();
+            Date upper = range.getUpperDate();
+            String lowerStr, upperStr;
+            DateFormat formatter = getDateFormatOverride();
+            if (formatter != null) {
+                lowerStr = formatter.format(lower);
+                upperStr = formatter.format(upper);
+            } else {
+                lowerStr = unit.dateToString(lower);
+                upperStr = unit.dateToString(upper);
+            }
+            FontMetrics fm = g2.getFontMetrics(tickLabelFont);
+            double w1 = fm.stringWidth(lowerStr);
+            double w2 = fm.stringWidth(upperStr);
+            result += Math.max(w1, w2);
+        }
+        return result;
+    }
+
+    /**
+     * Estimates the maximum width of the tick labels, assuming the specified
+     * tick unit is used.
+     * <P>
+     * Rather than computing the string bounds of every tick on the axis, we
+     * just look at two values: the lower bound and the upper bound for the
+     * axis.  These two values will usually be representative.
+     *
+     * @param g2  the graphics device.
+     * @param unit  the tick unit to use for calculation.
+     *
+     * @return The estimated maximum width of the tick labels.
+     */
+    private double estimateMaximumTickLabelHeight(Graphics2D g2, DateTickUnit unit) {
+        RectangleInsets tickLabelInsets = getTickLabelInsets();
+        double result = tickLabelInsets.getTop() + tickLabelInsets.getBottom();
+        Font tickLabelFont = getTickLabelFont();
+        FontRenderContext frc = g2.getFontRenderContext();
+        LineMetrics lm = tickLabelFont.getLineMetrics("ABCxyz", frc);
+        if (!isVerticalTickLabels()) {
+            // all tick labels have the same width (equal to the height of
+            // the font)...
+            result += lm.getHeight();
+        } else {
+            // look at lower and upper bounds...
+            DateRange range = (DateRange) getRange();
+            Date lower = range.getLowerDate();
+            Date upper = range.getUpperDate();
+            String lowerStr, upperStr;
+            DateFormat formatter = getDateFormatOverride();
+            if (formatter != null) {
+                lowerStr = formatter.format(lower);
+                upperStr = formatter.format(upper);
+            } else {
+                lowerStr = unit.dateToString(lower);
+                upperStr = unit.dateToString(upper);
+            }
+            FontMetrics fm = g2.getFontMetrics(tickLabelFont);
+            double w1 = fm.stringWidth(lowerStr);
+            double w2 = fm.stringWidth(upperStr);
+            result += Math.max(w1, w2);
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the positions of the tick labels for the axis, storing the
+     * results in the tick label list (ready for drawing).
+     *
+     * @param g2  the graphics device.
+     * @param state  the axis state.
+     * @param dataArea  the area in which the plot should be drawn.
+     * @param edge  the location of the axis.
+     *
+     * @return A list of ticks.
+     */
+    @Override
+    public List<? extends Tick> refreshTicks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        List<? extends Tick> result = null;
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            result = refreshTicksHorizontal(g2, dataArea, edge);
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            result = refreshTicksVertical(g2, dataArea, edge);
+        }
+        return result;
+    }
+
+    /**
+     * Corrects the given tick date for the position setting.
+     *
+     * @param time  the tick date/time.
+     * @param unit  the tick unit.
+     * @param position  the tick position.
+     *
+     * @return The adjusted time.
+     */
+    private Date correctTickDateForPosition(Date time, DateTickUnit unit, DateTickMarkPosition position) {
+        Date result = time;
+        if (unit.getUnitType().equals(DateTickUnitType.MONTH)) {
+            result = calculateDateForPosition(new Month(time, this.timeZone, this.locale), position);
+        } else if (unit.getUnitType().equals(DateTickUnitType.YEAR)) {
+            result = calculateDateForPosition(new Year(time, this.timeZone, this.locale), position);
+        }
+        return result;
+    }
+
+    /**
+     * Recalculates the ticks for the date axis.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area in which the data is to be drawn.
+     * @param edge  the location of the axis.
+     *
+     * @return A list of ticks.
+     */
+    protected List<? extends Tick> refreshTicksHorizontal(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+        List<DateTick> result = new ArrayList<>();
+        Font tickLabelFont = getTickLabelFont();
+        g2.setFont(tickLabelFont);
+        if (isAutoTickUnitSelection()) {
+            selectAutoTickUnit(g2, dataArea, edge);
+        }
+        DateTickUnit unit = getTickUnit();
+        Date tickDate = calculateLowestVisibleTickValue(unit);
+        Date upperDate = getMaximumDate();
+        boolean hasRolled = false;
+        while (tickDate.before(upperDate)) {
+            // could add a flag to make the following correction optional...
+            if (!hasRolled) {
+                tickDate = correctTickDateForPosition(tickDate, unit, this.tickMarkPosition);
+            }
+            long lowestTickTime = tickDate.getTime();
+            long distance = unit.addToDate(tickDate, this.timeZone).getTime() - lowestTickTime;
+            int minorTickSpaces = getMinorTickCount();
+            if (minorTickSpaces <= 0) {
+                minorTickSpaces = unit.getMinorTickCount();
+            }
+            for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
+                long minorTickTime = lowestTickTime - distance * minorTick / minorTickSpaces;
+                if (minorTickTime > 0 && getRange().contains(minorTickTime) && (!isHiddenValue(minorTickTime))) {
+                    result.add(new DateTick(TickType.MINOR, new Date(minorTickTime), "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
+                }
+            }
+            if (!isHiddenValue(tickDate.getTime())) {
+                // work out the value, label and position
+                String tickLabel;
+                DateFormat formatter = getDateFormatOverride();
+                if (formatter != null) {
+                    tickLabel = formatter.format(tickDate);
+                } else {
+                    tickLabel = this.tickUnit.dateToString(tickDate);
+                }
+                TextAnchor anchor, rotationAnchor;
+                double angle = 0.0;
+                if (isVerticalTickLabels()) {
+                    anchor = TextAnchor.CENTER_RIGHT;
+                    rotationAnchor = TextAnchor.CENTER_RIGHT;
+                    if (edge == RectangleEdge.TOP) {
+                        angle = Math.PI / 2.0;
+                    } else {
+                        angle = -Math.PI / 2.0;
+                    }
+                } else {
+                    if (edge == RectangleEdge.TOP) {
+                        anchor = TextAnchor.BOTTOM_CENTER;
+                        rotationAnchor = TextAnchor.BOTTOM_CENTER;
+                    } else {
+                        anchor = TextAnchor.TOP_CENTER;
+                        rotationAnchor = TextAnchor.TOP_CENTER;
+                    }
+                }
+                DateTick tick = new DateTick(tickDate, tickLabel, anchor, rotationAnchor, angle);
+                result.add(tick);
+                hasRolled = false;
+                long currentTickTime = tickDate.getTime();
+                tickDate = unit.addToDate(tickDate, this.timeZone);
+                long nextTickTime = tickDate.getTime();
+                for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
+                    long minorTickTime = currentTickTime + (nextTickTime - currentTickTime) * minorTick / minorTickSpaces;
+                    if (getRange().contains(minorTickTime) && (!isHiddenValue(minorTickTime))) {
+                        result.add(new DateTick(TickType.MINOR, new Date(minorTickTime), "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
+                    }
+                }
+            } else {
+                tickDate = unit.rollDate(tickDate, this.timeZone);
+                hasRolled = true;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Recalculates the ticks for the date axis.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area in which the plot should be drawn.
+     * @param edge  the location of the axis.
+     *
+     * @return A list of ticks.
+     */
+    protected List<? extends Tick> refreshTicksVertical(Graphics2D g2, Rectangle2D dataArea, RectangleEdge edge) {
+        List<DateTick> result = new ArrayList<>();
+        Font tickLabelFont = getTickLabelFont();
+        g2.setFont(tickLabelFont);
+        if (isAutoTickUnitSelection()) {
+            selectAutoTickUnit(g2, dataArea, edge);
+        }
+        DateTickUnit unit = getTickUnit();
+        Date tickDate = calculateLowestVisibleTickValue(unit);
+        Date upperDate = getMaximumDate();
+        boolean hasRolled = false;
+        while (tickDate.before(upperDate)) {
+            // could add a flag to make the following correction optional...
+            if (!hasRolled) {
+                tickDate = correctTickDateForPosition(tickDate, unit, this.tickMarkPosition);
+            }
+            long lowestTickTime = tickDate.getTime();
+            long distance = unit.addToDate(tickDate, this.timeZone).getTime() - lowestTickTime;
+            int minorTickSpaces = getMinorTickCount();
+            if (minorTickSpaces <= 0) {
+                minorTickSpaces = unit.getMinorTickCount();
+            }
+            for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
+                long minorTickTime = lowestTickTime - distance * minorTick / minorTickSpaces;
+                if (minorTickTime > 0 && getRange().contains(minorTickTime) && (!isHiddenValue(minorTickTime))) {
+                    result.add(new DateTick(TickType.MINOR, new Date(minorTickTime), "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
+                }
+            }
+            if (!isHiddenValue(tickDate.getTime())) {
+                // work out the value, label and position
+                String tickLabel;
+                DateFormat formatter = getDateFormatOverride();
+                if (formatter != null) {
+                    tickLabel = formatter.format(tickDate);
+                } else {
+                    tickLabel = this.tickUnit.dateToString(tickDate);
+                }
+                TextAnchor anchor, rotationAnchor;
+                double angle = 0.0;
+                if (isVerticalTickLabels()) {
+                    anchor = TextAnchor.BOTTOM_CENTER;
+                    rotationAnchor = TextAnchor.BOTTOM_CENTER;
+                    if (edge == RectangleEdge.LEFT) {
+                        angle = -Math.PI / 2.0;
+                    } else {
+                        angle = Math.PI / 2.0;
+                    }
+                } else {
+                    if (edge == RectangleEdge.LEFT) {
+                        anchor = TextAnchor.CENTER_RIGHT;
+                        rotationAnchor = TextAnchor.CENTER_RIGHT;
+                    } else {
+                        anchor = TextAnchor.CENTER_LEFT;
+                        rotationAnchor = TextAnchor.CENTER_LEFT;
+                    }
+                }
+                DateTick tick = new DateTick(tickDate, tickLabel, anchor, rotationAnchor, angle);
+                result.add(tick);
+                hasRolled = false;
+                long currentTickTime = tickDate.getTime();
+                tickDate = unit.addToDate(tickDate, this.timeZone);
+                long nextTickTime = tickDate.getTime();
+                for (int minorTick = 1; minorTick < minorTickSpaces; minorTick++) {
+                    long minorTickTime = currentTickTime + (nextTickTime - currentTickTime) * minorTick / minorTickSpaces;
+                    if (getRange().contains(minorTickTime) && (!isHiddenValue(minorTickTime))) {
+                        result.add(new DateTick(TickType.MINOR, new Date(minorTickTime), "", TextAnchor.TOP_CENTER, TextAnchor.CENTER, 0.0));
+                    }
+                }
+            } else {
+                tickDate = unit.rollDate(tickDate, this.timeZone);
+                hasRolled = true;
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Draws the axis on a Java 2D graphics device (such as the screen or a
+     * printer).
+     *
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param cursor  the cursor location.
+     * @param plotArea  the area within which the axes and data should be
+     *                  drawn ({@code null} not permitted).
+     * @param dataArea  the area within which the data should be drawn
+     *                  ({@code null} not permitted).
+     * @param edge  the location of the axis ({@code null} not permitted).
+     * @param plotState  collects information about the plot
+     *                   ({@code null} permitted).
+     *
+     * @return The axis state (never {@code null}).
+     */
+    @Override
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, PlotRenderingInfo plotState) {
+        // if the axis is not visible, don't draw it...
+        if (!isVisible()) {
+            AxisState state = new AxisState(cursor);
+            // even though the axis is not visible, we need to refresh ticks in
+            // case the grid is being drawn...
+            List ticks = refreshTicks(g2, state, dataArea, edge);
+            state.setTicks(ticks);
+            return state;
+        }
+        // draw the tick marks and labels...
+        AxisState state = drawTickMarksAndLabels(g2, cursor, plotArea, dataArea, edge);
+        // draw the axis label (note that 'state' is passed in *and*
+        // returned)...
+        if (getAttributedLabel() != null) {
+            state = drawAttributedLabel(getAttributedLabel(), g2, plotArea, dataArea, edge, state);
+        } else {
+            state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
+        }
+        createAndAddEntity(cursor, state, dataArea, edge, plotState);
+        return state;
+    }
+
+    /**
+     * Zooms in on the current range (zoom-in stops once the axis length
+     * reaches the equivalent of one millisecond).
+     *
+     * @param lowerPercent  the new lower bound.
+     * @param upperPercent  the new upper bound.
+     */
+    @Override
+    public void zoomRange(double lowerPercent, double upperPercent) {
+        double start = this.timeline.toTimelineValue((long) getRange().getLowerBound());
+        double end = this.timeline.toTimelineValue((long) getRange().getUpperBound());
+        double length = end - start;
+        Range adjusted;
+        long adjStart, adjEnd;
+        if (isInverted()) {
+            adjStart = (long) (start + (length * (1 - upperPercent)));
+            adjEnd = (long) (start + (length * (1 - lowerPercent)));
+        } else {
+            adjStart = (long) (start + length * lowerPercent);
+            adjEnd = (long) (start + length * upperPercent);
+        }
+        // when zooming to sub-millisecond ranges, it can be the case that
+        // adjEnd == adjStart...and we can't have an axis with zero length
+        // so we apply this instead:
+        if (adjEnd <= adjStart) {
+            adjEnd = adjStart + 1L;
+        }
+        adjusted = new DateRange(this.timeline.toMillisecond(adjStart), this.timeline.toMillisecond(adjEnd));
+        setRange(adjusted);
+    }
+
+    /**
+     * Tests this axis for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
      *
      * @return A boolean.
      */
-    boolean isItemLabelVisible(int row, int column);
-
-    /**
-     * Returns {@code true} if the item labels for a series are visible,
-     * and {@code false} otherwise.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return A boolean.
-     *
-     * @see #setSeriesItemLabelsVisible(int, Boolean)
-     */
-    boolean isSeriesItemLabelsVisible(int series);
-
-    /**
-     * Sets a flag that controls the visibility of the item labels for a series.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag.
-     *
-     * @see #isSeriesItemLabelsVisible(int)
-     */
-    void setSeriesItemLabelsVisible(int series, boolean visible);
-
-    /**
-     * Sets a flag that controls the visibility of the item labels for a series.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag ({@code null} permitted).
-     *
-     * @see #isSeriesItemLabelsVisible(int)
-     */
-    void setSeriesItemLabelsVisible(int series, Boolean visible);
-
-    /**
-     * Sets the visibility of item labels for a series and, if requested, sends
-     * a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the visible flag.
-     * @param notify  a flag that controls whether listeners are notified.
-     *
-     * @see #isSeriesItemLabelsVisible(int)
-     */
-    void setSeriesItemLabelsVisible(int series, Boolean visible, boolean notify);
-
-    /**
-     * Returns the default setting for item label visibility.  A {@code null}
-     * result should be interpreted as equivalent to {@code Boolean.FALSE}
-     * (this is an error in the API design, the return value should have been
-     * a boolean primitive).
-     *
-     * @return A flag (possibly {@code null}).
-     *
-     * @see #setDefaultItemLabelsVisible(boolean)
-     */
-    boolean getDefaultItemLabelsVisible();
-
-    /**
-     * Sets the default flag that controls whether item labels are visible
-     * and sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the flag.
-     *
-     * @see #getDefaultItemLabelsVisible()
-     */
-    void setDefaultItemLabelsVisible(boolean visible);
-
-    /**
-     * Sets the default visibility for item labels and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the visibility flag.
-     * @param notify  a flag that controls whether listeners are notified.
-     *
-     * @see #getDefaultItemLabelsVisible()
-     */
-    void setDefaultItemLabelsVisible(boolean visible, boolean notify);
-
-    // ITEM LABEL GENERATOR
-    /**
-     * Returns the item label generator for the specified data item.
-     *
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    CategoryItemLabelGenerator getItemLabelGenerator(int series, int item);
-
-    /**
-     * Returns the item label generator for a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The label generator (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelGenerator(int, CategoryItemLabelGenerator)
-     */
-    CategoryItemLabelGenerator getSeriesItemLabelGenerator(int series);
-
-    /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator.
-     *
-     * @see #getSeriesItemLabelGenerator(int)
-     */
-    void setSeriesItemLabelGenerator(int series, CategoryItemLabelGenerator generator);
-
-    /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator.
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemLabelGenerator(int)
-     */
-    void setSeriesItemLabelGenerator(int series, CategoryItemLabelGenerator generator, boolean notify);
-
-    /**
-     * Returns the default item label generator.
-     *
-     * @return The generator (possibly {@code null}).
-     *
-     * @see #setDefaultItemLabelGenerator(CategoryItemLabelGenerator)
-     */
-    CategoryItemLabelGenerator getDefaultItemLabelGenerator();
-
-    /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getDefaultItemLabelGenerator()
-     */
-    void setDefaultItemLabelGenerator(CategoryItemLabelGenerator generator);
-
-    /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemLabelGenerator()
-     */
-    void setDefaultItemLabelGenerator(CategoryItemLabelGenerator generator, boolean notify);
-
-    // TOOL TIP GENERATOR
-    /**
-     * Returns the tool tip generator that should be used for the specified
-     * item.  This method looks up the generator using the "three-layer"
-     * approach outlined in the general description of this interface.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    CategoryToolTipGenerator getToolTipGenerator(int row, int column);
-
-    /**
-     * Returns the tool tip generator for the specified series (a "layer 1"
-     * generator).
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setSeriesToolTipGenerator(int, CategoryToolTipGenerator)
-     */
-    CategoryToolTipGenerator getSeriesToolTipGenerator(int series);
-
-    /**
-     * Sets the tool tip generator for a series and sends a
-     * {@link org.jfree.chart.event.RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getSeriesToolTipGenerator(int)
-     */
-    void setSeriesToolTipGenerator(int series, CategoryToolTipGenerator generator);
-
-    /**
-     * Sets the tool tip generator for a series and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesToolTipGenerator(int)
-     */
-    void setSeriesToolTipGenerator(int series, CategoryToolTipGenerator generator, boolean notify);
-
-    /**
-     * Returns the default tool tip generator (the "layer 2" generator).
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setDefaultToolTipGenerator(CategoryToolTipGenerator)
-     */
-    CategoryToolTipGenerator getDefaultToolTipGenerator();
-
-    /**
-     * Sets the default tool tip generator and sends a
-     * {@link org.jfree.chart.event.RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    void setDefaultToolTipGenerator(CategoryToolTipGenerator generator);
-
-    /**
-     * Sets the default tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered
-     * listeners if requested.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    void setDefaultToolTipGenerator(CategoryToolTipGenerator generator, boolean notify);
-
-    //// ITEM LABEL FONT  //////////////////////////////////////////////////////
-    /**
-     * Returns the font for an item label.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     *
-     * @return The font (never {@code null}).
-     */
-    Font getItemLabelFont(int row, int column);
-
-    /**
-     * Returns the font for all the item labels in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The font (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelFont(int, Font)
-     */
-    Font getSeriesItemLabelFont(int series);
-
-    /**
-     * Sets the item label font for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param font  the font ({@code null} permitted).
-     *
-     * @see #getSeriesItemLabelFont(int)
-     */
-    void setSeriesItemLabelFont(int series, Font font);
-
-    /**
-     * Sets the item label font for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param font  the font ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemLabelFont(int)
-     */
-    void setSeriesItemLabelFont(int series, Font font, boolean notify);
-
-    /**
-     * Returns the default item label font (this is used when no other font
-     * setting is available).
-     *
-     * @return The font (never {@code null}).
-     *
-     * @see #setDefaultItemLabelFont(Font)
-     */
-    Font getDefaultItemLabelFont();
-
-    /**
-     * Sets the default item label font and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param font  the font ({@code null} not permitted).
-     *
-     * @see #getDefaultItemLabelFont()
-     */
-    void setDefaultItemLabelFont(Font font);
-
-    /**
-     * Sets the default item label font and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param font  the font ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemLabelFont()
-     */
-    void setDefaultItemLabelFont(Font font, boolean notify);
-
-    //// ITEM LABEL PAINT  /////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to draw an item label.
-     *
-     * @param row  the row index (zero based).
-     * @param column  the column index (zero based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemLabelPaint(int row, int column);
-
-    /**
-     * Returns the paint used to draw the item labels for a series.
-     *
-     * @param series  the series index (zero based).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelPaint(int, Paint)
-     */
-    Paint getSeriesItemLabelPaint(int series);
-
-    /**
-     * Sets the item label paint for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series (zero based index).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesItemLabelPaint(int)
-     */
-    void setSeriesItemLabelPaint(int series, Paint paint);
-
-    /**
-     * Sets the item label paint for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series (zero based index).
-     * @param paint  the paint ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemLabelPaint(int)
-     */
-    void setSeriesItemLabelPaint(int series, Paint paint, boolean notify);
-
-    /**
-     * Returns the default item label paint.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDefaultItemLabelPaint(Paint)
-     */
-    Paint getDefaultItemLabelPaint();
-
-    /**
-     * Sets the default item label paint and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultItemLabelPaint()
-     */
-    void setDefaultItemLabelPaint(Paint paint);
-
-    /**
-     * Sets the default item label paint and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemLabelPaint()
-     */
-    void setDefaultItemLabelPaint(Paint paint, boolean notify);
-
-    // POSITIVE ITEM LABEL POSITION...
-    /**
-     * Returns the item label position for positive values.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     *
-     * @return The item label position (never {@code null}).
-     */
-    ItemLabelPosition getPositiveItemLabelPosition(int row, int column);
-
-    /**
-     * Returns the item label position for all positive values in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The item label position.
-     *
-     * @see #setSeriesPositiveItemLabelPosition(int, ItemLabelPosition)
-     */
-    ItemLabelPosition getSeriesPositiveItemLabelPosition(int series);
-
-    /**
-     * Sets the item label position for all positive values in a series and
-     * sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     *
-     * @see #getSeriesPositiveItemLabelPosition(int)
-     */
-    void setSeriesPositiveItemLabelPosition(int series, ItemLabelPosition position);
-
-    /**
-     * Sets the item label position for all positive values in a series and (if
-     * requested) sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     * @param notify  notify registered listeners?
-     *
-     * @see #getSeriesPositiveItemLabelPosition(int)
-     */
-    void setSeriesPositiveItemLabelPosition(int series, ItemLabelPosition position, boolean notify);
-
-    /**
-     * Returns the default positive item label position.
-     *
-     * @return The position.
-     *
-     * @see #setDefaultPositiveItemLabelPosition(ItemLabelPosition)
-     */
-    ItemLabelPosition getDefaultPositiveItemLabelPosition();
-
-    /**
-     * Sets the default positive item label position.
-     *
-     * @param position  the position.
-     *
-     * @see #getDefaultPositiveItemLabelPosition()
-     */
-    void setDefaultPositiveItemLabelPosition(ItemLabelPosition position);
-
-    /**
-     * Sets the default positive item label position and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param position  the position.
-     * @param notify  notify registered listeners?
-     *
-     * @see #getDefaultPositiveItemLabelPosition()
-     */
-    void setDefaultPositiveItemLabelPosition(ItemLabelPosition position, boolean notify);
-
-    // NEGATIVE ITEM LABEL POSITION...
-    /**
-     * Returns the item label position for negative values.  This method can be
-     * overridden to provide customisation of the item label position for
-     * individual data items.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column (zero-based).
-     *
-     * @return The item label position.
-     */
-    ItemLabelPosition getNegativeItemLabelPosition(int row, int column);
-
-    /**
-     * Returns the item label position for all negative values in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The item label position.
-     *
-     * @see #setSeriesNegativeItemLabelPosition(int, ItemLabelPosition)
-     */
-    ItemLabelPosition getSeriesNegativeItemLabelPosition(int series);
-
-    /**
-     * Sets the item label position for negative values in a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     *
-     * @see #getSeriesNegativeItemLabelPosition(int)
-     */
-    void setSeriesNegativeItemLabelPosition(int series, ItemLabelPosition position);
-
-    /**
-     * Sets the item label position for negative values in a series and (if
-     * requested) sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     * @param notify  notify registered listeners?
-     *
-     * @see #getSeriesNegativeItemLabelPosition(int)
-     */
-    void setSeriesNegativeItemLabelPosition(int series, ItemLabelPosition position, boolean notify);
-
-    /**
-     * Returns the default item label position for negative values.
-     *
-     * @return The position.
-     *
-     * @see #setDefaultNegativeItemLabelPosition(ItemLabelPosition)
-     */
-    ItemLabelPosition getDefaultNegativeItemLabelPosition();
-
-    /**
-     * Sets the default item label position for negative values and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param position  the position.
-     *
-     * @see #getDefaultNegativeItemLabelPosition()
-     */
-    void setDefaultNegativeItemLabelPosition(ItemLabelPosition position);
-
-    /**
-     * Sets the default negative item label position and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param position  the position.
-     * @param notify  notify registered listeners?
-     *
-     * @see #getDefaultNegativeItemLabelPosition()
-     */
-    void setDefaultNegativeItemLabelPosition(ItemLabelPosition position, boolean notify);
-
-    // CREATE ENTITIES
-    /**
-     * Returns a flag that determines whether an entity is generated
-     * for the specified item.  The standard implementation of this method
-     * will typically return the flag for the series or, if that is
-     * {@code null}, the value returned by {@link #getDefaultCreateEntities()}.
-     *
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
-     *
-     * @return A boolean.
-     */
-    boolean getItemCreateEntity(int series, int item);
-
-    /**
-     * Returns a boolean indicating whether entities should be created
-     * for the items in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return A boolean (possibly {@code null}).
-     */
-    Boolean getSeriesCreateEntities(int series);
-
-    /**
-     * Sets a flag that indicates whether entities should be created during
-     * rendering for the items in the specified series, and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param create  the new flag value ({@code null} permitted).
-     */
-    void setSeriesCreateEntities(int series, Boolean create);
-
-    /**
-     * Sets a flag that indicates whether entities should be created during
-     * rendering for the items in the specified series, and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param create  the new flag value ({@code null} permitted).
-     * @param notify  send change event?
-     */
-    void setSeriesCreateEntities(int series, Boolean create, boolean notify);
-
-    /**
-     * Returns the default value for the flag that controls whether
-     * an entity is created for an item during rendering.
-     *
-     * @return A boolean.
-     */
-    boolean getDefaultCreateEntities();
-
-    /**
-     * Sets the default setting for whether entities should be created
-     * for items during rendering, and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
-     *
-     * @param create  the new flag value.
-     */
-    void setDefaultCreateEntities(boolean create);
-
-    /**
-     * Sets the default setting for whether entities should be created
-     * for items during rendering, and sends a {@link RendererChangeEvent} to
-     * all registered listeners if requested.
-     *
-     * @param create  the new flag value.
-     * @param notify  send change event?
-     */
-    void setDefaultCreateEntities(boolean create, boolean notify);
-
-    // ITEM URL GENERATOR
-    /**
-     * Returns the URL generator for an item.
-     *
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
-     *
-     * @return The item URL generator.
-     */
-    CategoryURLGenerator getItemURLGenerator(int series, int item);
-
-    /**
-     * Returns the item URL generator for a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The URL generator.
-     *
-     * @see #setSeriesItemURLGenerator(int, CategoryURLGenerator)
-     */
-    CategoryURLGenerator getSeriesItemURLGenerator(int series);
-
-    /**
-     * Sets the item URL generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getSeriesItemURLGenerator(int)
-     */
-    void setSeriesItemURLGenerator(int series, CategoryURLGenerator generator);
-
-    /**
-     * Sets the item URL generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemURLGenerator(int)
-     */
-    void setSeriesItemURLGenerator(int series, CategoryURLGenerator generator, boolean notify);
-
-    /**
-     * Returns the default item URL generator.
-     *
-     * @return The item URL generator (possibly {@code null}).
-     *
-     * @see #setDefaultItemURLGenerator(CategoryURLGenerator)
-     */
-    CategoryURLGenerator getDefaultItemURLGenerator();
-
-    /**
-     * Sets the default item URL generator and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param generator  the item URL generator ({@code null} permitted).
-     *
-     * @see #getDefaultItemURLGenerator()
-     */
-    void setDefaultItemURLGenerator(CategoryURLGenerator generator);
-
-    /**
-     * Sets the default item URL generator and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param generator  the item URL generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemURLGenerator()
-     */
-    void setDefaultItemURLGenerator(CategoryURLGenerator generator, boolean notify);
-
-    /**
-     * Returns a legend item for a series.  This method can return
-     * {@code null}, in which case the series will have no entry in the
-     * legend.
-     *
-     * @param datasetIndex  the dataset index (zero-based).
-     * @param series  the series (zero-based index).
-     *
-     * @return The legend item (possibly {@code null}).
-     */
-    LegendItem getLegendItem(int datasetIndex, int series);
-
-    /**
-     * Draws a background for the data area.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the data area.
-     */
-    void drawBackground(Graphics2D g2, CategoryPlot<?, ?> plot, Rectangle2D dataArea);
-
-    /**
-     * Draws an outline for the data area.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the data area.
-     */
-    void drawOutline(Graphics2D g2, CategoryPlot<?, ?> plot, Rectangle2D dataArea);
-
-    /**
-     * Draws a single data item.
-     *
-     * @param g2  the graphics device.
-     * @param state  state information for one chart.
-     * @param dataArea  the data plot area.
-     * @param plot  the plot.
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param dataset  the data.
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     * @param pass  the pass index.
-     */
-    void drawItem(Graphics2D g2, CategoryItemRendererState state, Rectangle2D dataArea, CategoryPlot<?, ?> plot, CategoryAxis domainAxis, ValueAxis rangeAxis, CategoryDataset<?, ?> dataset, int row, int column, int pass);
-
-    /**
-     * Draws a grid line against the domain axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value.
-     */
-    void drawDomainGridline(Graphics2D g2, CategoryPlot<?, ?> plot, Rectangle2D dataArea, double value);
-
-    /**
-     * Draws a grid line against the range axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value.
-     * @param paint  the paint ({@code null} not permitted).
-     * @param stroke  the line stroke ({@code null} not permitted).
-     */
-    void drawRangeLine(Graphics2D g2, CategoryPlot<?, ?> plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke);
-
-    /**
-     * Draws a line (or some other marker) to indicate a particular category on
-     * the domain axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the category axis.
-     * @param marker  the marker.
-     * @param dataArea  the area for plotting data.
-     *
-     * @see #drawRangeMarker(Graphics2D, CategoryPlot, ValueAxis, Marker,
-     *     Rectangle2D)
-     */
-    void drawDomainMarker(Graphics2D g2, CategoryPlot<?, ?> plot, CategoryAxis axis, CategoryMarker marker, Rectangle2D dataArea);
-
-    /**
-     * Draws a line (or some other marker) to indicate a particular value on
-     * the range axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param marker  the marker.
-     * @param dataArea  the area for plotting data.
-     *
-     * @see #drawDomainMarker(Graphics2D, CategoryPlot, CategoryAxis,
-     *     CategoryMarker, Rectangle2D)
-     */
-    void drawRangeMarker(Graphics2D g2, CategoryPlot<?, ?> plot, ValueAxis axis, Marker marker, Rectangle2D dataArea);
-
-    /**
-     * Returns the Java2D coordinate for the middle of the specified data item.
-     *
-     * @param rowKey  the row key.
-     * @param columnKey  the column key.
-     * @param dataset  the dataset.
-     * @param axis  the axis.
-     * @param area  the data area.
-     * @param edge  the edge along which the axis lies.
-     *
-     * @return The Java2D coordinate for the middle of the item.
-     */
-    double getItemMiddle(Comparable<?> rowKey, Comparable<?> columnKey, CategoryDataset<?, ?> dataset, CategoryAxis axis, Rectangle2D area, RectangleEdge edge);
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof DateAxis)) {
+            return false;
+        }
+        DateAxis that = (DateAxis) obj;
+        if (!Objects.equals(this.timeZone, that.timeZone)) {
+            return false;
+        }
+        if (!Objects.equals(this.locale, that.locale)) {
+            return false;
+        }
+        if (!Objects.equals(this.tickUnit, that.tickUnit)) {
+            return false;
+        }
+        if (!Objects.equals(this.dateFormatOverride, that.dateFormatOverride)) {
+            return false;
+        }
+        if (!Objects.equals(this.tickMarkPosition, that.tickMarkPosition)) {
+            return false;
+        }
+        if (!Objects.equals(this.timeline, that.timeline)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+
+    /**
+     * Returns a hash code for this object.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    /**
+     * Returns a clone of the object.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if some component of the axis does
+     *         not support cloning.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        DateAxis clone = (DateAxis) super.clone();
+        // 'dateTickUnit' is immutable : no need to clone
+        if (this.dateFormatOverride != null) {
+            clone.dateFormatOverride = (DateFormat) this.dateFormatOverride.clone();
+        }
+        // 'tickMarkPosition' is immutable : no need to clone
+        return clone;
+    }
 }
 /* ======================================================
  * JFreeChart : a chart library for the Java(tm) platform
@@ -1566,162 +1599,669 @@ interface CategoryItemRenderer extends ChartElement, LegendItemSource {
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ------------------------
- * XYItemRendererState.java
- * ------------------------
- * (C) Copyright 2003-present, by David Gilbert and Contributors.
+ * -----------------
+ * XYCoordinate.java
+ * -----------------
+ * (C) Copyright 2007-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Ulrich Voigt;
- *                   Greg Darke;
- *
- * Changes:
- * --------
- * 07-Oct-2003 : Version 1 (DG);
- * 27-Jan-2004 : Added workingLine attribute (DG);
- * ------------- JFREECHART 1.0.x ---------------------------------------------
- * 04-May-2007 : Added processVisibleItemsOnly flag (DG);
- * 09-Jul-2008 : Added start/endSeriesPass() methods - see patch 1997549 by
- *               Ulrich Voigt (DG);
- * 19-Sep-2008 : Added first and last item indices, based on patch by Greg
- *               Darke (DG);
+ * Contributor(s):   -;
  *
  */
 /**
- * The state for an {@link XYItemRenderer}.
+ * Represents an (x, y) coordinate.
  */
-class XYItemRendererState extends RendererState {
+public class XYCoordinate implements Comparable, Serializable {
 
     /**
-     * The first item in the series that will be displayed.
-     *
-     * @since 1.0.11
+     * The x-coordinate.
      */
-    private int firstItemIndex;
+    private double x;
 
     /**
-     * The last item in the current series that will be displayed.
-     *
-     * @since 1.0.11
+     * The y-coordinate.
      */
-    private int lastItemIndex;
+    private double y;
 
     /**
-     * A line object that the renderer can reuse to save instantiating a lot
-     * of objects.
+     * Creates a new coordinate for the point (0.0, 0.0).
      */
-    public Line2D workingLine;
-
-    /**
-     * A flag that controls whether the plot should pass ALL data items to the
-     * renderer, or just the items that will be visible.
-     *
-     * @since 1.0.6
-     */
-    private boolean processVisibleItemsOnly;
-
-    /**
-     * Creates a new state.
-     *
-     * @param info  the plot rendering info.
-     */
-    public XYItemRendererState(PlotRenderingInfo info) {
-        super(info);
-        this.workingLine = new Line2D.Double();
-        this.processVisibleItemsOnly = true;
+    public XYCoordinate() {
+        this(0.0, 0.0);
     }
 
     /**
-     * Returns the flag that controls whether the plot passes all data
-     * items in each series to the renderer, or just the visible items.  The
-     * default value is {@code true}.
+     * Creates a new coordinate for the point (x, y).
+     *
+     * @param x  the x-coordinate.
+     * @param y  the y-coordinate.
+     */
+    public XYCoordinate(double x, double y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    /**
+     * Returns the x-coordinate.
+     *
+     * @return The x-coordinate.
+     */
+    public double getX() {
+        return this.x;
+    }
+
+    /**
+     * Returns the y-coordinate.
+     *
+     * @return The y-coordinate.
+     */
+    public double getY() {
+        return this.y;
+    }
+
+    /**
+     * Tests this coordinate for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
      *
      * @return A boolean.
-     *
-     * @since 1.0.6
-     *
-     * @see #setProcessVisibleItemsOnly(boolean)
      */
-    public boolean getProcessVisibleItemsOnly() {
-        return this.processVisibleItemsOnly;
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof XYCoordinate)) {
+            return false;
+        }
+        XYCoordinate that = (XYCoordinate) obj;
+        if (this.x != that.x) {
+            return false;
+        }
+        if (this.y != that.y) {
+            return false;
+        }
+        return true;
     }
 
     /**
-     * Sets the flag that controls whether the plot passes all data
-     * items in each series to the renderer, or just the visible items.
+     * Returns a hash code for this instance.
      *
-     * @param flag  the new flag value.
-     *
-     * @since 1.0.6
+     * @return A hash code.
      */
-    public void setProcessVisibleItemsOnly(boolean flag) {
-        this.processVisibleItemsOnly = flag;
+    @Override
+    public int hashCode() {
+        int result = 193;
+        long temp = Double.doubleToLongBits(this.x);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(this.y);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        return result;
     }
 
     /**
-     * Returns the first item index (this is updated with each call to
-     * {@link #startSeriesPass(XYDataset, int, int, int, int, int)}.
+     * Returns a string representation of this instance, primarily for
+     * debugging purposes.
      *
-     * @return The first item index.
-     *
-     * @since 1.0.11
+     * @return A string.
      */
-    public int getFirstItemIndex() {
-        return this.firstItemIndex;
+    @Override
+    public String toString() {
+        return "(" + this.x + ", " + this.y + ")";
     }
 
     /**
-     * Returns the last item index (this is updated with each call to
-     * {@link #startSeriesPass(XYDataset, int, int, int, int, int)}.
+     * Compares this instance against an arbitrary object.
      *
-     * @return The last item index.
+     * @param obj  the object ({@code null} not permitted).
      *
-     * @since 1.0.11
+     * @return An integer indicating the relative order of the items.
      */
-    public int getLastItemIndex() {
-        return this.lastItemIndex;
+    @Override
+    public int compareTo(Object obj) {
+        if (!(obj instanceof XYCoordinate)) {
+            throw new IllegalArgumentException("Incomparable object.");
+        }
+        XYCoordinate that = (XYCoordinate) obj;
+        if (this.x > that.x) {
+            return 1;
+        } else if (this.x < that.x) {
+            return -1;
+        } else {
+            if (this.y > that.y) {
+                return 1;
+            } else if (this.y < that.y) {
+                return -1;
+            }
+        }
+        return 0;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * -----------------------
+ * RelativeDateFormat.java
+ * -----------------------
+ * (C) Copyright 2006-present, by David Gilbert and Contributors.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Michael Siemer;
+ *
+ */
+/**
+ * A formatter that formats dates to show the elapsed time relative to some
+ * base date.
+ */
+public class RelativeDateFormat extends DateFormat {
+
+    /**
+     * The base milliseconds for the elapsed time calculation.
+     */
+    private long baseMillis;
+
+    /**
+     * A flag that controls whether a zero day count is displayed.
+     */
+    private boolean showZeroDays;
+
+    /**
+     * A flag that controls whether a zero hour count is displayed.
+     */
+    private boolean showZeroHours;
+
+    /**
+     * A formatter for the day count (most likely not critical until the
+     * day count exceeds 999).
+     */
+    private NumberFormat dayFormatter;
+
+    /**
+     * A prefix prepended to the start of the format if the relative date is
+     * positive.
+     */
+    private String positivePrefix;
+
+    /**
+     * A string appended after the day count.
+     */
+    private String daySuffix;
+
+    /**
+     * A formatter for the hours.
+     */
+    private NumberFormat hourFormatter;
+
+    /**
+     * A string appended after the hours.
+     */
+    private String hourSuffix;
+
+    /**
+     * A formatter for the minutes.
+     */
+    private NumberFormat minuteFormatter;
+
+    /**
+     * A string appended after the minutes.
+     */
+    private String minuteSuffix;
+
+    /**
+     * A formatter for the seconds (and milliseconds).
+     */
+    private NumberFormat secondFormatter;
+
+    /**
+     * A string appended after the seconds.
+     */
+    private String secondSuffix;
+
+    /**
+     * A constant for the number of milliseconds in one hour.
+     */
+    private static final long MILLISECONDS_IN_ONE_HOUR = 60 * 60 * 1000L;
+
+    /**
+     * A constant for the number of milliseconds in one day.
+     */
+    private static final long MILLISECONDS_IN_ONE_DAY = 24 * MILLISECONDS_IN_ONE_HOUR;
+
+    /**
+     * Creates a new instance with base milliseconds set to zero.
+     */
+    public RelativeDateFormat() {
+        this(0L);
     }
 
     /**
-     * This method is called by the {@link XYPlot} when it starts a pass
-     * through the (visible) items in a series.  The default implementation
-     * records the first and last item indices - override this method to
-     * implement additional specialised behaviour.
+     * Creates a new instance.
      *
-     * @param dataset  the dataset.
-     * @param series  the series index.
-     * @param firstItem  the index of the first item in the series.
-     * @param lastItem  the index of the last item in the series.
-     * @param pass  the pass index.
-     * @param passCount  the number of passes.
-     *
-     * @see #endSeriesPass(XYDataset, int, int, int, int, int)
-     *
-     * @since 1.0.11
+     * @param time  the date/time ({@code null} not permitted).
      */
-    public void startSeriesPass(XYDataset dataset, int series, int firstItem, int lastItem, int pass, int passCount) {
-        this.firstItemIndex = firstItem;
-        this.lastItemIndex = lastItem;
+    public RelativeDateFormat(Date time) {
+        this(time.getTime());
     }
 
     /**
-     * This method is called by the {@link XYPlot} when it ends a pass
-     * through the (visible) items in a series.  The default implementation
-     * does nothing, but you can override this method to implement specialised
-     * behaviour.
+     * Creates a new instance.
      *
-     * @param dataset  the dataset.
-     * @param series  the series index.
-     * @param firstItem  the index of the first item in the series.
-     * @param lastItem  the index of the last item in the series.
-     * @param pass  the pass index.
-     * @param passCount  the number of passes.
-     *
-     * @see #startSeriesPass(XYDataset, int, int, int, int, int)
-     *
-     * @since 1.0.11
+     * @param baseMillis  the time zone ({@code null} not permitted).
      */
-    public void endSeriesPass(XYDataset dataset, int series, int firstItem, int lastItem, int pass, int passCount) {
-        // do nothing...this is just a hook for subclasses
+    public RelativeDateFormat(long baseMillis) {
+        super();
+        this.baseMillis = baseMillis;
+        this.showZeroDays = false;
+        this.showZeroHours = true;
+        this.positivePrefix = "";
+        this.dayFormatter = NumberFormat.getNumberInstance();
+        this.daySuffix = "d";
+        this.hourFormatter = NumberFormat.getNumberInstance();
+        this.hourSuffix = "h";
+        this.minuteFormatter = NumberFormat.getNumberInstance();
+        this.minuteSuffix = "m";
+        this.secondFormatter = NumberFormat.getNumberInstance();
+        this.secondFormatter.setMaximumFractionDigits(3);
+        this.secondFormatter.setMinimumFractionDigits(3);
+        this.secondSuffix = "s";
+        // we don't use the calendar or numberFormat fields, but equals(Object)
+        // is failing without them being non-null
+        this.calendar = new GregorianCalendar();
+        this.numberFormat = new DecimalFormat("0");
+    }
+
+    /**
+     * Returns the base date/time used to calculate the elapsed time for
+     * display.
+     *
+     * @return The base date/time in milliseconds since 1-Jan-1970.
+     *
+     * @see #setBaseMillis(long)
+     */
+    public long getBaseMillis() {
+        return this.baseMillis;
+    }
+
+    /**
+     * Sets the base date/time used to calculate the elapsed time for display.
+     * This should be specified in milliseconds using the same encoding as
+     * {@code java.util.Date}.
+     *
+     * @param baseMillis  the base date/time in milliseconds.
+     *
+     * @see #getBaseMillis()
+     */
+    public void setBaseMillis(long baseMillis) {
+        this.baseMillis = baseMillis;
+    }
+
+    /**
+     * Returns the flag that controls whether zero day counts are
+     * shown in the formatted output.
+     *
+     * @return The flag.
+     *
+     * @see #setShowZeroDays(boolean)
+     */
+    public boolean getShowZeroDays() {
+        return this.showZeroDays;
+    }
+
+    /**
+     * Sets the flag that controls whether zero day counts are shown
+     * in the formatted output.
+     *
+     * @param show  the flag.
+     *
+     * @see #getShowZeroDays()
+     */
+    public void setShowZeroDays(boolean show) {
+        this.showZeroDays = show;
+    }
+
+    /**
+     * Returns the flag that controls whether zero hour counts are
+     * shown in the formatted output.
+     *
+     * @return The flag.
+     *
+     * @see #setShowZeroHours(boolean)
+     */
+    public boolean getShowZeroHours() {
+        return this.showZeroHours;
+    }
+
+    /**
+     * Sets the flag that controls whether zero hour counts are shown
+     * in the formatted output.
+     *
+     * @param show  the flag.
+     *
+     * @see #getShowZeroHours()
+     */
+    public void setShowZeroHours(boolean show) {
+        this.showZeroHours = show;
+    }
+
+    /**
+     * Returns the string that is prepended to the format if the relative time
+     * is positive.
+     *
+     * @return The string (never {@code null}).
+     *
+     * @see #setPositivePrefix(String)
+     */
+    public String getPositivePrefix() {
+        return this.positivePrefix;
+    }
+
+    /**
+     * Sets the string that is prepended to the format if the relative time is
+     * positive.
+     *
+     * @param prefix  the prefix ({@code null} not permitted).
+     *
+     * @see #getPositivePrefix()
+     */
+    public void setPositivePrefix(String prefix) {
+        Args.nullNotPermitted(prefix, "prefix");
+        this.positivePrefix = prefix;
+    }
+
+    /**
+     * Sets the formatter for the days.
+     *
+     * @param formatter  the formatter ({@code null} not permitted).
+     */
+    public void setDayFormatter(NumberFormat formatter) {
+        Args.nullNotPermitted(formatter, "formatter");
+        this.dayFormatter = formatter;
+    }
+
+    /**
+     * Returns the string that is appended to the day count.
+     *
+     * @return The string.
+     *
+     * @see #setDaySuffix(String)
+     */
+    public String getDaySuffix() {
+        return this.daySuffix;
+    }
+
+    /**
+     * Sets the string that is appended to the day count.
+     *
+     * @param suffix  the suffix ({@code null} not permitted).
+     *
+     * @see #getDaySuffix()
+     */
+    public void setDaySuffix(String suffix) {
+        Args.nullNotPermitted(suffix, "suffix");
+        this.daySuffix = suffix;
+    }
+
+    /**
+     * Sets the formatter for the hours.
+     *
+     * @param formatter  the formatter ({@code null} not permitted).
+     */
+    public void setHourFormatter(NumberFormat formatter) {
+        Args.nullNotPermitted(formatter, "formatter");
+        this.hourFormatter = formatter;
+    }
+
+    /**
+     * Returns the string that is appended to the hour count.
+     *
+     * @return The string.
+     *
+     * @see #setHourSuffix(String)
+     */
+    public String getHourSuffix() {
+        return this.hourSuffix;
+    }
+
+    /**
+     * Sets the string that is appended to the hour count.
+     *
+     * @param suffix  the suffix ({@code null} not permitted).
+     *
+     * @see #getHourSuffix()
+     */
+    public void setHourSuffix(String suffix) {
+        Args.nullNotPermitted(suffix, "suffix");
+        this.hourSuffix = suffix;
+    }
+
+    /**
+     * Sets the formatter for the minutes.
+     *
+     * @param formatter  the formatter ({@code null} not permitted).
+     */
+    public void setMinuteFormatter(NumberFormat formatter) {
+        Args.nullNotPermitted(formatter, "formatter");
+        this.minuteFormatter = formatter;
+    }
+
+    /**
+     * Returns the string that is appended to the minute count.
+     *
+     * @return The string.
+     *
+     * @see #setMinuteSuffix(String)
+     */
+    public String getMinuteSuffix() {
+        return this.minuteSuffix;
+    }
+
+    /**
+     * Sets the string that is appended to the minute count.
+     *
+     * @param suffix  the suffix ({@code null} not permitted).
+     *
+     * @see #getMinuteSuffix()
+     */
+    public void setMinuteSuffix(String suffix) {
+        Args.nullNotPermitted(suffix, "suffix");
+        this.minuteSuffix = suffix;
+    }
+
+    /**
+     * Returns the string that is appended to the second count.
+     *
+     * @return The string.
+     *
+     * @see #setSecondSuffix(String)
+     */
+    public String getSecondSuffix() {
+        return this.secondSuffix;
+    }
+
+    /**
+     * Sets the string that is appended to the second count.
+     *
+     * @param suffix  the suffix ({@code null} not permitted).
+     *
+     * @see #getSecondSuffix()
+     */
+    public void setSecondSuffix(String suffix) {
+        Args.nullNotPermitted(suffix, "suffix");
+        this.secondSuffix = suffix;
+    }
+
+    /**
+     * Sets the formatter for the seconds and milliseconds.
+     *
+     * @param formatter  the formatter ({@code null} not permitted).
+     */
+    public void setSecondFormatter(NumberFormat formatter) {
+        Args.nullNotPermitted(formatter, "formatter");
+        this.secondFormatter = formatter;
+    }
+
+    /**
+     * Formats the given date as the amount of elapsed time (relative to the
+     * base date specified in the constructor).
+     *
+     * @param date  the date.
+     * @param toAppendTo  the string buffer.
+     * @param fieldPosition  the field position.
+     *
+     * @return The formatted date.
+     */
+    @Override
+    public StringBuffer format(Date date, StringBuffer toAppendTo, FieldPosition fieldPosition) {
+        long currentMillis = date.getTime();
+        long elapsed = currentMillis - this.baseMillis;
+        String signPrefix;
+        if (elapsed < 0) {
+            elapsed *= -1L;
+            signPrefix = "-";
+        } else {
+            signPrefix = this.positivePrefix;
+        }
+        long days = elapsed / MILLISECONDS_IN_ONE_DAY;
+        elapsed = elapsed - (days * MILLISECONDS_IN_ONE_DAY);
+        long hours = elapsed / MILLISECONDS_IN_ONE_HOUR;
+        elapsed = elapsed - (hours * MILLISECONDS_IN_ONE_HOUR);
+        long minutes = elapsed / 60000L;
+        elapsed = elapsed - (minutes * 60000L);
+        double seconds = elapsed / 1000.0;
+        toAppendTo.append(signPrefix);
+        if (days != 0 || this.showZeroDays) {
+            toAppendTo.append(this.dayFormatter.format(days)).append(getDaySuffix());
+        }
+        if (hours != 0 || this.showZeroHours) {
+            toAppendTo.append(this.hourFormatter.format(hours)).append(getHourSuffix());
+        }
+        toAppendTo.append(this.minuteFormatter.format(minutes)).append(getMinuteSuffix());
+        toAppendTo.append(this.secondFormatter.format(seconds)).append(getSecondSuffix());
+        return toAppendTo;
+    }
+
+    /**
+     * Parses the given string (not implemented).
+     *
+     * @param source  the date string.
+     * @param pos  the parse position.
+     *
+     * @return {@code null}, as this method has not been implemented.
+     */
+    @Override
+    public Date parse(String source, ParsePosition pos) {
+        return null;
+    }
+
+    /**
+     * Tests this formatter for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof RelativeDateFormat)) {
+            return false;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        RelativeDateFormat that = (RelativeDateFormat) obj;
+        if (this.baseMillis != that.baseMillis) {
+            return false;
+        }
+        if (this.showZeroDays != that.showZeroDays) {
+            return false;
+        }
+        if (this.showZeroHours != that.showZeroHours) {
+            return false;
+        }
+        if (!this.positivePrefix.equals(that.positivePrefix)) {
+            return false;
+        }
+        if (!this.daySuffix.equals(that.daySuffix)) {
+            return false;
+        }
+        if (!this.hourSuffix.equals(that.hourSuffix)) {
+            return false;
+        }
+        if (!this.minuteSuffix.equals(that.minuteSuffix)) {
+            return false;
+        }
+        if (!this.secondSuffix.equals(that.secondSuffix)) {
+            return false;
+        }
+        if (!this.dayFormatter.equals(that.dayFormatter)) {
+            return false;
+        }
+        if (!this.hourFormatter.equals(that.hourFormatter)) {
+            return false;
+        }
+        if (!this.minuteFormatter.equals(that.minuteFormatter)) {
+            return false;
+        }
+        if (!this.secondFormatter.equals(that.secondFormatter)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this instance.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result = 193;
+        result = 37 * result + (int) (this.baseMillis ^ (this.baseMillis >>> 32));
+        result = 37 * result + this.positivePrefix.hashCode();
+        result = 37 * result + this.daySuffix.hashCode();
+        result = 37 * result + this.hourSuffix.hashCode();
+        result = 37 * result + this.minuteSuffix.hashCode();
+        result = 37 * result + this.secondSuffix.hashCode();
+        result = 37 * result + this.secondFormatter.hashCode();
+        return result;
+    }
+
+    /**
+     * Returns a clone of this instance.
+     *
+     * @return A clone.
+     */
+    @Override
+    public Object clone() {
+        RelativeDateFormat clone = (RelativeDateFormat) super.clone();
+        clone.dayFormatter = (NumberFormat) this.dayFormatter.clone();
+        clone.secondFormatter = (NumberFormat) this.secondFormatter.clone();
+        return clone;
     }
 }

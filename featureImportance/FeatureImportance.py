@@ -86,7 +86,7 @@ def main() -> None:
 
     if args.csv is None:
         # Prefer a local project.csv if present; otherwise fall back to user's path if exists
-        candidate_local = os.path.join(os.getcwd(), "project.csv")
+        candidate_local = os.path.join(os.getcwd(), "new_log.csv")
         candidate_user = r"C:\\Users\\74993\\Desktop\\毕设\\snowball\\project.csv"
         if os.path.isfile(candidate_local):
             csv_path = candidate_local

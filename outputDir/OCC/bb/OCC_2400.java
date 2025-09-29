@@ -1626,217 +1626,388 @@ public abstract class Axis implements ChartElement, Cloneable, Serializable {
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * XYDataItem.java
- * ---------------
- * (C) Copyright 2003-present, by David Gilbert.
+ * -----------------------
+ * DefaultWindDataset.java
+ * -----------------------
+ * (C) Copyright 2001-2021, by Achilleus Mantzios and Contributors.
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   -;
+ * Original Author:  Achilleus Mantzios;
+ * Contributor(s):   David Gilbert;
  *
  */
 /**
- * Represents one (x, y) data item for an {@link XYSeries}.  Note that
- * subclasses are REQUIRED to support cloning.
+ * A default implementation of the {@link WindDataset} interface.
  */
-class XYDataItem implements Cloneable, Comparable<XYDataItem>, Serializable {
+public class DefaultWindDataset extends AbstractXYDataset implements WindDataset, PublicCloneable {
 
     /**
-     * For serialization.
+     * The keys for the series.
      */
-    private static final long serialVersionUID = 2751513470325494890L;
+    private List seriesKeys;
 
     /**
-     * The x-value ({@code null} not permitted).
+     * Storage for the series data.
+     */
+    private List allSeriesData;
+
+    /**
+     * Constructs a new, empty, dataset.  Since there are currently no methods
+     * to add data to an existing dataset, you should probably use a different
+     * constructor.
+     */
+    public DefaultWindDataset() {
+        this.seriesKeys = new java.util.ArrayList();
+        this.allSeriesData = new java.util.ArrayList();
+    }
+
+    /**
+     * Constructs a dataset based on the specified data array.
+     *
+     * @param data  the data ({@code null} not permitted).
+     *
+     * @throws NullPointerException if {@code data} is {@code null}.
+     */
+    public DefaultWindDataset(Object[][][] data) {
+        this(seriesNameListFromDataArray(data), data);
+    }
+
+    /**
+     * Constructs a dataset based on the specified data array.
+     *
+     * @param seriesNames  the names of the series ({@code null} not
+     *     permitted).
+     * @param data  the wind data.
+     *
+     * @throws NullPointerException if {@code seriesNames} is {@code null}.
+     */
+    public DefaultWindDataset(String[] seriesNames, Object[][][] data) {
+        this(Arrays.asList(seriesNames), data);
+    }
+
+    /**
+     * Constructs a dataset based on the specified data array.  The array
+     * can contain multiple series, each series can contain multiple items,
+     * and each item is as follows:
+     * <ul>
+     * <li>{@code data[series][item][0]} - the date (either a
+     *   {@code Date} or a {@code Number} that is the milliseconds
+     *   since 1-Jan-1970);</li>
+     * <li>{@code data[series][item][1]} - the wind direction (1 - 12,
+     *   like the numbers on a clock face);</li>
+     * <li>{@code data[series][item][2]} - the wind force (1 - 12 on the
+     *   Beaufort scale)</li>
+     * </ul>
+     *
+     * @param seriesKeys  the names of the series ({@code null} not
+     *     permitted).
+     * @param data  the wind dataset ({@code null} not permitted).
+     *
+     * @throws IllegalArgumentException if {@code seriesKeys} is
+     *     {@code null}.
+     * @throws IllegalArgumentException if the number of series keys does not
+     *     match the number of series in the array.
+     * @throws NullPointerException if {@code data} is {@code null}.
+     */
+    public DefaultWindDataset(List seriesKeys, Object[][][] data) {
+        Args.nullNotPermitted(seriesKeys, "seriesKeys");
+        if (seriesKeys.size() != data.length) {
+            throw new IllegalArgumentException("The number of series keys does " + "not match the number of series in the data array.");
+        }
+        this.seriesKeys = seriesKeys;
+        int seriesCount = data.length;
+        this.allSeriesData = new java.util.ArrayList(seriesCount);
+        for (int seriesIndex = 0; seriesIndex < seriesCount; seriesIndex++) {
+            List oneSeriesData = new java.util.ArrayList();
+            int maxItemCount = data[seriesIndex].length;
+            for (int itemIndex = 0; itemIndex < maxItemCount; itemIndex++) {
+                Object xObject = data[seriesIndex][itemIndex][0];
+                if (xObject != null) {
+                    Number xNumber;
+                    if (xObject instanceof Number) {
+                        xNumber = (Number) xObject;
+                    } else {
+                        if (xObject instanceof Date) {
+                            Date xDate = (Date) xObject;
+                            xNumber = xDate.getTime();
+                        } else {
+                            xNumber = 0;
+                        }
+                    }
+                    Number windDir = (Number) data[seriesIndex][itemIndex][1];
+                    Number windForce = (Number) data[seriesIndex][itemIndex][2];
+                    oneSeriesData.add(new WindDataItem(xNumber, windDir, windForce));
+                }
+            }
+            Collections.sort(oneSeriesData);
+            this.allSeriesData.add(seriesIndex, oneSeriesData);
+        }
+    }
+
+    /**
+     * Returns the number of series in the dataset.
+     *
+     * @return The series count.
+     */
+    @Override
+    public int getSeriesCount() {
+        return this.allSeriesData.size();
+    }
+
+    /**
+     * Returns the number of items in a series.
+     *
+     * @param series  the series (zero-based index).
+     *
+     * @return The item count.
+     */
+    @Override
+    public int getItemCount(int series) {
+        if (series < 0 || series >= getSeriesCount()) {
+            throw new IllegalArgumentException("Invalid series index: " + series);
+        }
+        List oneSeriesData = (List) this.allSeriesData.get(series);
+        return oneSeriesData.size();
+    }
+
+    /**
+     * Returns the key for a series.
+     *
+     * @param series  the series (zero-based index).
+     *
+     * @return The series key.
+     */
+    @Override
+    public Comparable getSeriesKey(int series) {
+        if (series < 0 || series >= getSeriesCount()) {
+            throw new IllegalArgumentException("Invalid series index: " + series);
+        }
+        return (Comparable) this.seriesKeys.get(series);
+    }
+
+    /**
+     * Returns the x-value for one item within a series.  This should represent
+     * a point in time, encoded as milliseconds in the same way as
+     * java.util.Date.
+     *
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The x-value for the item within the series.
+     */
+    @Override
+    public Number getX(int series, int item) {
+        List oneSeriesData = (List) this.allSeriesData.get(series);
+        WindDataItem windItem = (WindDataItem) oneSeriesData.get(item);
+        return windItem.getX();
+    }
+
+    /**
+     * Returns the y-value for one item within a series.  This maps to the
+     * {@link #getWindForce(int, int)} method and is implemented because
+     * {@code WindDataset} is an extension of {@link XYDataset}.
+     *
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The y-value for the item within the series.
+     */
+    @Override
+    public Number getY(int series, int item) {
+        return getWindForce(series, item);
+    }
+
+    /**
+     * Returns the wind direction for one item within a series.  This is a
+     * number between 0 and 12, like the numbers on an upside-down clock face.
+     *
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The wind direction for the item within the series.
+     */
+    @Override
+    public Number getWindDirection(int series, int item) {
+        List oneSeriesData = (List) this.allSeriesData.get(series);
+        WindDataItem windItem = (WindDataItem) oneSeriesData.get(item);
+        return windItem.getWindDirection();
+    }
+
+    /**
+     * Returns the wind force for one item within a series.  This is a number
+     * between 0 and 12, as defined by the Beaufort scale.
+     *
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The wind force for the item within the series.
+     */
+    @Override
+    public Number getWindForce(int series, int item) {
+        List oneSeriesData = (List) this.allSeriesData.get(series);
+        WindDataItem windItem = (WindDataItem) oneSeriesData.get(item);
+        return windItem.getWindForce();
+    }
+
+    /**
+     * Utility method for automatically generating series names.
+     *
+     * @param data  the wind data ({@code null} not permitted).
+     *
+     * @return An array of <i>Series N</i> with N = { 1 .. data.length }.
+     *
+     * @throws NullPointerException if {@code data} is {@code null}.
+     */
+    public static List seriesNameListFromDataArray(Object[][] data) {
+        int seriesCount = data.length;
+        List seriesNameList = new java.util.ArrayList(seriesCount);
+        for (int i = 0; i < seriesCount; i++) {
+            seriesNameList.add("Series " + (i + 1));
+        }
+        return seriesNameList;
+    }
+
+    /**
+     * Checks this {@code WindDataset} for equality with an arbitrary
+     * object.  This method returns {@code true} if and only if:
+     * <ul>
+     *   <li>{@code obj} is not {@code null};</li>
+     *   <li>{@code obj} is an instance of {@code DefaultWindDataset};</li>
+     *   <li>both datasets have the same number of series containing identical
+     *       values.</li>
+     * </ul>
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (!(obj instanceof DefaultWindDataset)) {
+            return false;
+        }
+        DefaultWindDataset that = (DefaultWindDataset) obj;
+        if (!this.seriesKeys.equals(that.seriesKeys)) {
+            return false;
+        }
+        if (!this.allSeriesData.equals(that.allSeriesData)) {
+            return false;
+        }
+        return true;
+    }
+}
+
+/**
+ * A wind data item.
+ */
+class WindDataItem implements Comparable, Serializable {
+
+    /**
+     * The x-value.
      */
     private Number x;
 
     /**
-     * The y-value.
+     * The wind direction.
      */
-    private Number y;
+    private Number windDir;
 
     /**
-     * Constructs a new data item.
-     *
-     * @param x  the x-value ({@code null} NOT permitted).
-     * @param y  the y-value ({@code null} permitted).
+     * The wind force.
      */
-    public XYDataItem(Number x, Number y) {
-        Args.nullNotPermitted(x, "x");
-        this.x = x;
-        this.y = y;
-    }
+    private Number windForce;
 
     /**
-     * Constructs a new data item.
+     * Creates a new wind data item.
      *
      * @param x  the x-value.
-     * @param y  the y-value.
+     * @param windDir  the direction.
+     * @param windForce  the force.
      */
-    public XYDataItem(double x, double y) {
-        this(Double.valueOf(x), Double.valueOf(y));
+    public WindDataItem(Number x, Number windDir, Number windForce) {
+        this.x = x;
+        this.windDir = windDir;
+        this.windForce = windForce;
     }
 
     /**
      * Returns the x-value.
      *
-     * @return The x-value (never {@code null}).
+     * @return The x-value.
      */
     public Number getX() {
         return this.x;
     }
 
     /**
-     * Returns the x-value as a double primitive.
+     * Returns the wind direction.
      *
-     * @return The x-value.
-     *
-     * @see #getX()
-     * @see #getYValue()
+     * @return The wind direction.
      */
-    public double getXValue() {
-        // this.x is not allowed to be null...
-        return this.x.doubleValue();
+    public Number getWindDirection() {
+        return this.windDir;
     }
 
     /**
-     * Returns the y-value.
+     * Returns the wind force.
      *
-     * @return The y-value (possibly {@code null}).
+     * @return The wind force.
      */
-    public Number getY() {
-        return this.y;
+    public Number getWindForce() {
+        return this.windForce;
     }
 
     /**
-     * Returns the y-value as a double primitive.
+     * Compares this item to another object.
      *
-     * @return The y-value.
+     * @param object  the other object.
      *
-     * @see #getY()
-     * @see #getXValue()
-     */
-    public double getYValue() {
-        double result = Double.NaN;
-        if (this.y != null) {
-            result = this.y.doubleValue();
-        }
-        return result;
-    }
-
-    /**
-     * Sets the y-value for this data item.  Note that there is no
-     * corresponding method to change the x-value.
-     *
-     * @param y  the new y-value.
-     */
-    public void setY(double y) {
-        setY(Double.valueOf(y));
-    }
-
-    /**
-     * Sets the y-value for this data item.  Note that there is no
-     * corresponding method to change the x-value.
-     *
-     * @param y  the new y-value ({@code null} permitted).
-     */
-    public void setY(Number y) {
-        this.y = y;
-    }
-
-    /**
-     * Returns an integer indicating the order of this object relative to
-     * another object.
-     * <P>
-     * For the order we consider only the x-value:
-     * negative == "less-than", zero == "equal", positive == "greater-than".
-     *
-     * @param other  the data item being compared to.
-     *
-     * @return An integer indicating the order of this data pair object
-     *      relative to another object.
+     * @return An int that indicates the relative comparison.
      */
     @Override
-    public int compareTo(XYDataItem other) {
-        int result;
-        double compare = this.x.doubleValue() - other.getX().doubleValue();
-        if (compare > 0.0) {
-            result = 1;
-        } else {
-            if (compare < 0.0) {
-                result = -1;
+    public int compareTo(Object object) {
+        if (object instanceof WindDataItem) {
+            WindDataItem item = (WindDataItem) object;
+            if (this.x.doubleValue() > item.x.doubleValue()) {
+                return 1;
+            } else if (this.x.equals(item.x)) {
+                return 0;
             } else {
-                result = 0;
+                return -1;
             }
+        } else {
+            throw new ClassCastException("WindDataItem.compareTo(error)");
         }
-        return result;
     }
 
     /**
-     * Returns a clone of this object.
+     * Tests this {@code WindDataItem} for equality with an arbitrary
+     * object.
      *
-     * @return A clone.
-     */
-    @Override
-    public Object clone() {
-        Object clone = null;
-        try {
-            clone = super.clone();
-        } catch (CloneNotSupportedException e) {
-            // won't get here...
-            e.printStackTrace();
-        }
-        return clone;
-    }
-
-    /**
-     * Tests if this object is equal to another.
-     *
-     * @param obj  the object to test against for equality ({@code null}
-     *             permitted).
+     * @param obj  the object ({@code null} permitted).
      *
      * @return A boolean.
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof XYDataItem)) {
+        if (this == obj) {
             return false;
         }
-        XYDataItem that = (XYDataItem) obj;
+        if (!(obj instanceof WindDataItem)) {
+            return false;
+        }
+        WindDataItem that = (WindDataItem) obj;
         if (!this.x.equals(that.x)) {
             return false;
         }
-        if (!Objects.equals(this.y, that.y)) {
+        if (!this.windDir.equals(that.windDir)) {
+            return false;
+        }
+        if (!this.windForce.equals(that.windForce)) {
             return false;
         }
         return true;
-    }
-
-    /**
-     * Returns a hash code.
-     *
-     * @return A hash code.
-     */
-    @Override
-    public int hashCode() {
-        int result;
-        result = this.x.hashCode();
-        result = 29 * result + (this.y != null ? this.y.hashCode() : 0);
-        return result;
-    }
-
-    /**
-     * Returns a string representing this instance, primarily for debugging
-     * use.
-     *
-     * @return A string.
-     */
-    @Override
-    public String toString() {
-        return "[" + getXValue() + ", " + getYValue() + "]";
     }
 }

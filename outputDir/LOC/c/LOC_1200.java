@@ -7,6 +7,50 @@ package LOC.c;
  *
  * Project Info:  https://www.jfree.org/jfreechart/index.html
  *
+ * JSON.simple
+ * -----------
+ * The code in this file originates from the JSON.simple project by 
+ * FangYidong<fangyidong@yahoo.com.cn>:
+ * 
+ *     https://code.google.com/p/json-simple/
+ *  
+ * which is licensed under the Apache Software License version 2.0.  
+ * 
+ * It has been modified locally and repackaged under 
+ * org.jfree.data.json.impl.* to avoid conflicts with any other version that
+ * may be present on the classpath.
+ * 
+ */
+/**
+ * Beans that support customized output of JSON text to a writer shall
+ * implement this interface.
+ * @author FangYidong&lt;fangyidong@yahoo.com.cn&gt;
+ * <br><br>
+ * This class is for internal use by JFreeChart, it is not
+ * part of the supported API and you should not call it directly.  If you need
+ * JSON support in your project you should include JSON.simple
+ * (https://code.google.com/p/json-simple/) or some other JSON library directly
+ * in your project.
+ */
+public interface JSONStreamAware {
+
+    /**
+     * write JSON string to out.
+     *
+     * @param out  the output writer.
+     *
+     * @throws IOException if there is an I/O problem.
+     */
+    void writeJSONString(Writer out) throws IOException;
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
  * This library is free software; you can redistribute it and/or modify it
  * under the terms of the GNU Lesser General Public License as published by
  * the Free Software Foundation; either version 2.1 of the License, or
@@ -25,1027 +69,834 @@ package LOC.c;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * TimeSeries.java
- * ---------------
- * (C) Copyright 2001-present, by David Gilbert.
+ * ----------------------------------------
+ * DefaultBoxAndWhiskerCategoryDataset.java
+ * ----------------------------------------
+ * (C) Copyright 2003-present, by David Browning and Contributors.
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   Bryan Scott;
- *                   Nick Guenther;
+ * Original Author:  David Browning (for Australian Institute of Marine
+ *                   Science);
+ * Contributor(s):   David Gilbert;
  *
  */
 /**
- * Represents a sequence of zero or more data items in the form (period, value)
- * where 'period' is some instance of a subclass of {@link RegularTimePeriod}.
- * The time series will ensure that (a) all data items have the same type of
- * period (for example, {@link Day}) and (b) that each period appears at
- * most one time in the series.
+ * A convenience class that provides a default implementation of the
+ * {@link BoxAndWhiskerCategoryDataset} interface.
  *
- * @param <S>  the type for the series keys ({@code String} is commonly used).
+ * @param <R> the row key type.
+ * @param <C> the column key type.
  */
-class TimeSeries<S extends Comparable<S>> extends Series<S> implements Cloneable, Serializable {
+public class DefaultBoxAndWhiskerCategoryDataset<R extends Comparable<R>, C extends Comparable<C>> extends AbstractDataset implements BoxAndWhiskerCategoryDataset<R, C>, RangeInfo, PublicCloneable {
 
     /**
-     * For serialization.
+     * Storage for the data.
      */
-    private static final long serialVersionUID = -5032960206869675528L;
+    protected KeyedObjects2D<R, C> data;
 
     /**
-     * The type of period for the data.
+     * The minimum range value.
      */
-    protected Class timePeriodClass;
+    private double minimumRangeValue;
 
     /**
-     * The list of data items in the series.
+     * The row index for the cell that the minimum range value comes from.
      */
-    protected List<TimeSeriesDataItem> data;
+    private int minimumRangeValueRow;
 
     /**
-     * The maximum number of items for the series.
+     * The column index for the cell that the minimum range value comes from.
      */
-    private int maximumItemCount;
+    private int minimumRangeValueColumn;
 
     /**
-     * The maximum age of items for the series, specified as a number of
-     * time periods.
+     * The maximum range value.
      */
-    private long maximumItemAge;
+    private double maximumRangeValue;
 
     /**
-     * The minimum y-value in the series.
-     *
-     * @since 1.0.14
+     * The row index for the cell that the maximum range value comes from.
      */
-    private double minY;
+    private int maximumRangeValueRow;
 
     /**
-     * The maximum y-value in the series.
-     *
-     * @since 1.0.14
+     * The column index for the cell that the maximum range value comes from.
      */
-    private double maxY;
+    private int maximumRangeValueColumn;
 
     /**
-     * Creates a new (empty) time series.  By default, a daily time series is
-     * created.  Use one of the other constructors if you require a different
-     * time period.
-     *
-     * @param name  the series name ({@code null} not permitted).
+     * Creates a new dataset.
      */
-    public TimeSeries(S name) {
-        super(name);
-        this.timePeriodClass = null;
-        this.data = new ArrayList<>();
-        this.maximumItemCount = Integer.MAX_VALUE;
-        this.maximumItemAge = Long.MAX_VALUE;
-        this.minY = Double.NaN;
-        this.maxY = Double.NaN;
+    public DefaultBoxAndWhiskerCategoryDataset() {
+        super();
+        this.data = new KeyedObjects2D<>();
+        this.minimumRangeValue = Double.NaN;
+        this.minimumRangeValueRow = -1;
+        this.minimumRangeValueColumn = -1;
+        this.maximumRangeValue = Double.NaN;
+        this.maximumRangeValueRow = -1;
+        this.maximumRangeValueColumn = -1;
     }
 
     /**
-     * Returns the number of items in the series.
+     * Adds a list of values relating to one box-and-whisker entity to the
+     * table.  The various median values are calculated.
      *
-     * @return The item count.
+     * @param list  a collection of values from which the various medians will
+     *              be calculated.
+     * @param rowKey  the row key ({@code null} not permitted).
+     * @param columnKey  the column key ({@code null} not permitted).
+     *
+     * @see #add(BoxAndWhiskerItem, Comparable, Comparable)
      */
-    @Override
-    public int getItemCount() {
-        return this.data.size();
+    public void add(List<? extends Number> list, R rowKey, C columnKey) {
+        BoxAndWhiskerItem item = BoxAndWhiskerCalculator.calculateBoxAndWhiskerStatistics(list);
+        add(item, rowKey, columnKey);
     }
 
     /**
-     * Returns the list of data items for the series (the list contains
-     * {@link TimeSeriesDataItem} objects and is unmodifiable).
+     * Adds a list of values relating to one Box and Whisker entity to the
+     * table.  The various median values are calculated.
      *
-     * @return The list of data items.
+     * @param item  a box and whisker item ({@code null} not permitted).
+     * @param rowKey  the row key ({@code null} not permitted).
+     * @param columnKey  the column key ({@code null} not permitted).
+     *
+     * @see #add(List, Comparable, Comparable)
      */
-    public List<TimeSeriesDataItem> getItems() {
-        return CloneUtils.cloneList(this.data);
-    }
-
-    /**
-     * Returns the maximum number of items that will be retained in the series.
-     * The default value is {@code Integer.MAX_VALUE}.
-     *
-     * @return The maximum item count.
-     *
-     * @see #setMaximumItemCount(int)
-     */
-    public int getMaximumItemCount() {
-        return this.maximumItemCount;
-    }
-
-    /**
-     * Sets the maximum number of items that will be retained in the series.
-     * If you add a new item to the series such that the number of items will
-     * exceed the maximum item count, then the FIRST element in the series is
-     * automatically removed, ensuring that the maximum item count is not
-     * exceeded.
-     *
-     * @param maximum  the maximum (requires &gt;= 0).
-     *
-     * @see #getMaximumItemCount()
-     */
-    public void setMaximumItemCount(int maximum) {
-        if (maximum < 0) {
-            throw new IllegalArgumentException("Negative 'maximum' argument.");
-        }
-        this.maximumItemCount = maximum;
-        int count = this.data.size();
-        if (count > maximum) {
-            delete(0, count - maximum - 1);
-        }
-    }
-
-    /**
-     * Returns the maximum item age (in time periods) for the series.
-     *
-     * @return The maximum item age.
-     *
-     * @see #setMaximumItemAge(long)
-     */
-    public long getMaximumItemAge() {
-        return this.maximumItemAge;
-    }
-
-    /**
-     * Sets the number of time units in the 'history' for the series.  This
-     * provides one mechanism for automatically dropping old data from the
-     * time series. For example, if a series contains daily data, you might set
-     * the history count to 30.  Then, when you add a new data item, all data
-     * items more than 30 days older than the latest value are automatically
-     * dropped from the series.
-     *
-     * @param periods  the number of time periods.
-     *
-     * @see #getMaximumItemAge()
-     */
-    public void setMaximumItemAge(long periods) {
-        if (periods < 0) {
-            throw new IllegalArgumentException("Negative 'periods' argument.");
-        }
-        this.maximumItemAge = periods;
-        // remove old items and notify if necessary
-        removeAgedItems(true);
-    }
-
-    /**
-     * Returns the range of y-values in the time series.  Any {@code null} or
-     * {@code Double.NaN} data values in the series will be ignored (except for
-     * the special case where all data values are {@code null}, in which case
-     * the return value is {@code Range(Double.NaN, Double.NaN)}).  If the time
-     * series contains no items, this method will return {@code null}.
-     *
-     * @return The range of y-values in the time series (possibly {@code null}).
-     *
-     * @since 1.0.18
-     */
-    public Range findValueRange() {
-        if (this.data.isEmpty()) {
-            return null;
-        }
-        return new Range(this.minY, this.maxY);
-    }
-
-    /**
-     * Returns the range of y-values in the time series that fall within
-     * the specified range of x-values.  This is equivalent to
-     * {@code findValueRange(xRange, TimePeriodAnchor.MIDDLE, timeZone)}.
-     *
-     * @param xRange  the subrange of x-values ({@code null} not permitted).
-     * @param timeZone  the time zone used to convert x-values to time periods
-     *     ({@code null} not permitted).
-     *
-     * @return The range.
-     *
-     * @since 1.0.18
-     */
-    public Range findValueRange(Range xRange, TimeZone timeZone) {
-        return findValueRange(xRange, TimePeriodAnchor.MIDDLE, timeZone);
-    }
-
-    /**
-     * Finds the range of y-values that fall within the specified range of
-     * x-values (where the x-values are interpreted as milliseconds since the
-     * epoch and converted to time periods using the specified timezone).
-     *
-     * @param xRange  the subset of x-values to use ({@code null} not
-     *     permitted).
-     * @param xAnchor  the anchor point for the x-values ({@code null}
-     *     not permitted).
-     * @param zone  the time zone ({@code null} not permitted).
-     *
-     * @return The range of y-values.
-     *
-     * @since 1.0.18
-     */
-    public Range findValueRange(Range xRange, TimePeriodAnchor xAnchor, TimeZone zone) {
-        Args.nullNotPermitted(xRange, "xRange");
-        Args.nullNotPermitted(xAnchor, "xAnchor");
-        Args.nullNotPermitted(zone, "zone");
-        if (this.data.isEmpty()) {
-            return null;
-        }
-        Calendar calendar = Calendar.getInstance(zone);
-        return findValueRange(xRange, xAnchor, calendar);
-    }
-
-    /**
-     * Finds the range of y-values that fall within the specified range of
-     * x-values (where the x-values are interpreted as milliseconds since the
-     * epoch and converted to time periods using the specified timezone).
-     *
-     * @param xRange  the subset of x-values to use ({@code null} not
-     *     permitted).
-     * @param xAnchor  the anchor point for the x-values ({@code null}
-     *     not permitted).
-     * @param calendar  the calendar ({@code null} not permitted).
-     *
-     * @return The range of y-values.
-     */
-    public Range findValueRange(Range xRange, TimePeriodAnchor xAnchor, Calendar calendar) {
-        // since the items are ordered, we could be more clever here and avoid
-        // iterating over all the data
-        double lowY = Double.POSITIVE_INFINITY;
-        double highY = Double.NEGATIVE_INFINITY;
-        for (TimeSeriesDataItem item : this.data) {
-            long millis = item.getPeriod().getMillisecond(xAnchor, calendar);
-            if (xRange.contains(millis)) {
-                Number n = item.getValue();
-                if (n != null) {
-                    double v = n.doubleValue();
-                    lowY = minIgnoreNaN(lowY, v);
-                    highY = maxIgnoreNaN(highY, v);
-                }
-            }
-        }
-        if (Double.isInfinite(lowY) && Double.isInfinite(highY)) {
-            if (lowY < highY) {
-                return new Range(lowY, highY);
-            } else {
-                return new Range(Double.NaN, Double.NaN);
-            }
-        }
-        return new Range(lowY, highY);
-    }
-
-    /**
-     * Returns the smallest y-value in the series, ignoring any
-     * {@code null} and {@code Double.NaN} values.  This method
-     * returns {@code Double.NaN} if there is no smallest y-value (for
-     * example, when the series is empty).
-     *
-     * @return The smallest y-value.
-     *
-     * @see #getMaxY()
-     *
-     * @since 1.0.14
-     */
-    public double getMinY() {
-        return this.minY;
-    }
-
-    /**
-     * Returns the largest y-value in the series, ignoring any
-     * {@code null} and {@code Double.NaN} values.  This method
-     * returns {@code Double.NaN} if there is no largest y-value
-     * (for example, when the series is empty).
-     *
-     * @return The largest y-value.
-     *
-     * @see #getMinY()
-     *
-     * @since 1.0.14
-     */
-    public double getMaxY() {
-        return this.maxY;
-    }
-
-    /**
-     * Returns the time period class for this series.
-     * <p>
-     * Only one time period class can be used within a single series (enforced).
-     * If you add a data item with a {@link Year} for the time period, then all
-     * subsequent data items must also have a {@link Year} for the time period.
-     *
-     * @return The time period class (may be {@code null} but only for
-     *     an empty series).
-     */
-    public Class getTimePeriodClass() {
-        return this.timePeriodClass;
-    }
-
-    /**
-     * Returns a data item from the dataset.  Note that the returned object
-     * is a clone of the item in the series, so modifying it will have no
-     * effect on the data series.
-     *
-     * @param index  the item index.
-     *
-     * @return The data item.
-     */
-    public TimeSeriesDataItem getDataItem(int index) {
-        TimeSeriesDataItem item = this.data.get(index);
-        return (TimeSeriesDataItem) item.clone();
-    }
-
-    /**
-     * Returns the data item for a specific period.  Note that the returned
-     * object is a clone of the item in the series, so modifying it will have
-     * no effect on the data series.
-     *
-     * @param period  the period of interest ({@code null} not allowed).
-     *
-     * @return The data item matching the specified period (or
-     *         {@code null} if there is no match).
-     *
-     * @see #getDataItem(int)
-     */
-    public TimeSeriesDataItem getDataItem(RegularTimePeriod period) {
-        int index = getIndex(period);
-        if (index >= 0) {
-            return getDataItem(index);
-        }
-        return null;
-    }
-
-    /**
-     * Returns a data item for the series.  This method returns the object
-     * that is used for the underlying storage - you should not modify the
-     * contents of the returned value unless you know what you are doing.
-     *
-     * @param index  the item index (zero-based).
-     *
-     * @return The data item.
-     *
-     * @see #getDataItem(int)
-     *
-     * @since 1.0.14
-     */
-    TimeSeriesDataItem getRawDataItem(int index) {
-        return this.data.get(index);
-    }
-
-    /**
-     * Returns a data item for the series.  This method returns the object
-     * that is used for the underlying storage - you should not modify the
-     * contents of the returned value unless you know what you are doing.
-     *
-     * @param period  the item index (zero-based).
-     *
-     * @return The data item.
-     *
-     * @see #getDataItem(RegularTimePeriod)
-     *
-     * @since 1.0.14
-     */
-    TimeSeriesDataItem getRawDataItem(RegularTimePeriod period) {
-        int index = getIndex(period);
-        if (index >= 0) {
-            return this.data.get(index);
-        }
-        return null;
-    }
-
-    /**
-     * Returns the time period at the specified index.
-     *
-     * @param index  the index of the data item.
-     *
-     * @return The time period.
-     */
-    public RegularTimePeriod getTimePeriod(int index) {
-        return getRawDataItem(index).getPeriod();
-    }
-
-    /**
-     * Returns a time period that would be the next in sequence on the end of
-     * the time series.
-     *
-     * @return The next time period.
-     */
-    public RegularTimePeriod getNextTimePeriod() {
-        RegularTimePeriod last = getTimePeriod(getItemCount() - 1);
-        return last.next();
-    }
-
-    /**
-     * Returns a collection of all the time periods in the time series.
-     *
-     * @return A collection of all the time periods.
-     */
-    public Collection getTimePeriods() {
-        Collection result = new java.util.ArrayList<>();
-        for (int i = 0; i < getItemCount(); i++) {
-            result.add(getTimePeriod(i));
-        }
-        return result;
-    }
-
-    /**
-     * Returns a collection of time periods in the specified series, but not in
-     * this series, and therefore unique to the specified series.
-     *
-     * @param series  the series to check against this one.
-     *
-     * @return The unique time periods.
-     */
-    public Collection getTimePeriodsUniqueToOtherSeries(TimeSeries<S> series) {
-        Collection result = new java.util.ArrayList();
-        for (int i = 0; i < series.getItemCount(); i++) {
-            RegularTimePeriod period = series.getTimePeriod(i);
-            int index = getIndex(period);
-            if (index < 0) {
-                result.add(period);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the index for the item (if any) that corresponds to a time
-     * period.
-     *
-     * @param period  the time period ({@code null} not permitted).
-     *
-     * @return The index.
-     */
-    public int getIndex(RegularTimePeriod period) {
-        Args.nullNotPermitted(period, "period");
-        TimeSeriesDataItem dummy = new TimeSeriesDataItem(period, Integer.MIN_VALUE);
-        return Collections.binarySearch(this.data, dummy);
-    }
-
-    /**
-     * Returns the value at the specified index.
-     *
-     * @param index  index of a value.
-     *
-     * @return The value (possibly {@code null}).
-     */
-    public Number getValue(int index) {
-        return getRawDataItem(index).getValue();
-    }
-
-    /**
-     * Returns the value for a time period.  If there is no data item with the
-     * specified period, this method will return {@code null}.
-     *
-     * @param period  time period ({@code null} not permitted).
-     *
-     * @return The value (possibly {@code null}).
-     */
-    public Number getValue(RegularTimePeriod period) {
-        int index = getIndex(period);
-        if (index >= 0) {
-            return getValue(index);
-        }
-        return null;
-    }
-
-    /**
-     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
-     * all registered listeners.
-     *
-     * @param item  the (timeperiod, value) pair ({@code null} not permitted).
-     */
-    public void add(TimeSeriesDataItem item) {
-        add(item, true);
-    }
-
-    /**
-     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
-     * all registered listeners.
-     *
-     * @param item  the (timeperiod, value) pair ({@code null} not permitted).
-     * @param notify  notify listeners?
-     */
-    public void add(TimeSeriesDataItem item, boolean notify) {
-        Args.nullNotPermitted(item, "item");
-        item = (TimeSeriesDataItem) item.clone();
-        Class c = item.getPeriod().getClass();
-        if (this.timePeriodClass == null) {
-            this.timePeriodClass = c;
-        } else if (!this.timePeriodClass.equals(c)) {
-            StringBuilder b = new StringBuilder();
-            b.append("You are trying to add data where the time period class ");
-            b.append("is ");
-            b.append(item.getPeriod().getClass().getName());
-            b.append(", but the TimeSeries is expecting an instance of ");
-            b.append(this.timePeriodClass.getName());
-            b.append(".");
-            throw new SeriesException(b.toString());
-        }
-        // make the change (if it's not a duplicate time period)...
-        boolean added = false;
-        int count = getItemCount();
-        if (count == 0) {
-            this.data.add(item);
-            added = true;
+    public void add(BoxAndWhiskerItem item, R rowKey, C columnKey) {
+        this.data.addObject(item, rowKey, columnKey);
+        // update cached min and max values
+        int r = this.data.getRowIndex(rowKey);
+        int c = this.data.getColumnIndex(columnKey);
+        if ((this.maximumRangeValueRow == r && this.maximumRangeValueColumn == c) || (this.minimumRangeValueRow == r && this.minimumRangeValueColumn == c)) {
+            updateBounds();
         } else {
-            RegularTimePeriod last = getTimePeriod(getItemCount() - 1);
-            if (item.getPeriod().compareTo(last) > 0) {
-                this.data.add(item);
-                added = true;
-            } else {
-                int index = Collections.binarySearch(this.data, item);
-                if (index < 0) {
-                    this.data.add(-index - 1, item);
-                    added = true;
-                } else {
-                    StringBuilder b = new StringBuilder();
-                    b.append("You are attempting to add an observation for ");
-                    b.append("the time period ");
-                    b.append(item.getPeriod().toString());
-                    b.append(" but the series already contains an observation");
-                    b.append(" for that time period. Duplicates are not ");
-                    b.append("permitted.  Try using the addOrUpdate() method.");
-                    throw new SeriesException(b.toString());
-                }
+            double minval = Double.NaN;
+            if (item.getMinOutlier() != null) {
+                minval = item.getMinOutlier().doubleValue();
+            }
+            double maxval = Double.NaN;
+            if (item.getMaxOutlier() != null) {
+                maxval = item.getMaxOutlier().doubleValue();
+            }
+            if (Double.isNaN(this.maximumRangeValue)) {
+                this.maximumRangeValue = maxval;
+                this.maximumRangeValueRow = r;
+                this.maximumRangeValueColumn = c;
+            } else if (maxval > this.maximumRangeValue) {
+                this.maximumRangeValue = maxval;
+                this.maximumRangeValueRow = r;
+                this.maximumRangeValueColumn = c;
+            }
+            if (Double.isNaN(this.minimumRangeValue)) {
+                this.minimumRangeValue = minval;
+                this.minimumRangeValueRow = r;
+                this.minimumRangeValueColumn = c;
+            } else if (minval < this.minimumRangeValue) {
+                this.minimumRangeValue = minval;
+                this.minimumRangeValueRow = r;
+                this.minimumRangeValueColumn = c;
             }
         }
-        if (added) {
-            updateBoundsForAddedItem(item);
-            // check if this addition will exceed the maximum item count...
-            if (getItemCount() > this.maximumItemCount) {
-                TimeSeriesDataItem d = this.data.remove(0);
-                updateBoundsForRemovedItem(d);
-            }
-            // remove old items if necessary, but
-            removeAgedItems(false);
-            // don't notify anyone, because that
-            // happens next anyway...
-            if (notify) {
-                fireSeriesChanged();
-            }
-        }
+        fireDatasetChanged();
     }
 
     /**
-     * Adds a new data item to the series and sends a {@link SeriesChangeEvent}
+     * Removes an item from the dataset and sends a {@link DatasetChangeEvent}
      * to all registered listeners.
      *
-     * @param period  the time period ({@code null} not permitted).
-     * @param value  the value.
+     * @param rowKey  the row key ({@code null} not permitted).
+     * @param columnKey  the column key ({@code null} not permitted).
+     *
+     * @see #add(BoxAndWhiskerItem, Comparable, Comparable)
+     *
+     * @since 1.0.7
      */
-    public void add(RegularTimePeriod period, double value) {
-        // defer argument checking...
-        add(period, value, true);
+    public void remove(R rowKey, C columnKey) {
+        // defer null argument checks
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        this.data.removeObject(rowKey, columnKey);
+        // if this cell held a maximum and/or minimum value, we'll need to
+        // update the cached bounds...
+        if ((this.maximumRangeValueRow == r && this.maximumRangeValueColumn == c) || (this.minimumRangeValueRow == r && this.minimumRangeValueColumn == c)) {
+            updateBounds();
+        }
+        fireDatasetChanged();
     }
 
     /**
-     * Adds a new data item to the series and sends a {@link SeriesChangeEvent}
+     * Removes a row from the dataset and sends a {@link DatasetChangeEvent}
      * to all registered listeners.
      *
-     * @param period  the time period ({@code null} not permitted).
-     * @param value  the value.
-     * @param notify  notify listeners?
-     */
-    public void add(RegularTimePeriod period, double value, boolean notify) {
-        // defer argument checking...
-        TimeSeriesDataItem item = new TimeSeriesDataItem(period, value);
-        add(item, notify);
-    }
-
-    /**
-     * Adds a new data item to the series and sends
-     * a {@link org.jfree.data.general.SeriesChangeEvent} to all registered
-     * listeners.
+     * @param rowIndex  the row index.
      *
-     * @param period  the time period ({@code null} not permitted).
-     * @param value  the value ({@code null} permitted).
+     * @see #removeColumn(int)
+     *
+     * @since 1.0.7
      */
-    public void add(RegularTimePeriod period, Number value) {
-        // defer argument checking...
-        add(period, value, true);
+    public void removeRow(int rowIndex) {
+        this.data.removeRow(rowIndex);
+        updateBounds();
+        fireDatasetChanged();
     }
 
     /**
-     * Adds a new data item to the series and sends a {@link SeriesChangeEvent}
+     * Removes a row from the dataset and sends a {@link DatasetChangeEvent}
      * to all registered listeners.
      *
-     * @param period  the time period ({@code null} not permitted).
-     * @param value  the value ({@code null} permitted).
-     * @param notify  notify listeners?
+     * @param rowKey  the row key.
+     *
+     * @see #removeColumn(Comparable)
+     *
+     * @since 1.0.7
      */
-    public void add(RegularTimePeriod period, Number value, boolean notify) {
-        // defer argument checking...
-        TimeSeriesDataItem item = new TimeSeriesDataItem(period, value);
-        add(item, notify);
+    public void removeRow(R rowKey) {
+        this.data.removeRow(rowKey);
+        updateBounds();
+        fireDatasetChanged();
     }
 
     /**
-     * Updates (changes) the value for a time period.  Throws a
-     * {@link SeriesException} if the period does not exist.
+     * Removes a column from the dataset and sends a {@link DatasetChangeEvent}
+     * to all registered listeners.
      *
-     * @param period  the period ({@code null} not permitted).
-     * @param value  the value.
+     * @param columnIndex  the column index.
      *
-     * @since 1.0.14
+     * @see #removeRow(int)
+     *
+     * @since 1.0.7
      */
-    public void update(RegularTimePeriod period, double value) {
-        update(period, Double.valueOf(value));
+    public void removeColumn(int columnIndex) {
+        this.data.removeColumn(columnIndex);
+        updateBounds();
+        fireDatasetChanged();
     }
 
     /**
-     * Updates (changes) the value for a time period.  Throws a
-     * {@link SeriesException} if the period does not exist.
+     * Removes a column from the dataset and sends a {@link DatasetChangeEvent}
+     * to all registered listeners.
      *
-     * @param period  the period ({@code null} not permitted).
-     * @param value  the value ({@code null} permitted).
+     * @param columnKey  the column key.
+     *
+     * @see #removeRow(Comparable)
+     *
+     * @since 1.0.7
      */
-    public void update(RegularTimePeriod period, Number value) {
-        TimeSeriesDataItem temp = new TimeSeriesDataItem(period, value);
-        int index = Collections.binarySearch(this.data, temp);
-        if (index < 0) {
-            throw new SeriesException("There is no existing value for the " + "specified 'period'.");
-        }
-        update(index, value);
+    public void removeColumn(C columnKey) {
+        this.data.removeColumn(columnKey);
+        updateBounds();
+        fireDatasetChanged();
     }
 
     /**
-     * Updates (changes) the value of a data item.
+     * Clears all data from the dataset and sends a {@link DatasetChangeEvent}
+     * to all registered listeners.
      *
-     * @param index  the index of the data item.
-     * @param value  the new value ({@code null} permitted).
-     */
-    public void update(int index, Number value) {
-        TimeSeriesDataItem item = this.data.get(index);
-        boolean iterate = false;
-        Number oldYN = item.getValue();
-        if (oldYN != null) {
-            double oldY = oldYN.doubleValue();
-            if (!Double.isNaN(oldY)) {
-                iterate = oldY <= this.minY || oldY >= this.maxY;
-            }
-        }
-        item.setValue(value);
-        if (iterate) {
-            updateMinMaxYByIteration();
-        } else if (value != null) {
-            double yy = value.doubleValue();
-            this.minY = minIgnoreNaN(this.minY, yy);
-            this.maxY = maxIgnoreNaN(this.maxY, yy);
-        }
-        fireSeriesChanged();
-    }
-
-    /**
-     * Adds or updates data from one series to another.  Returns another series
-     * containing the values that were overwritten.
-     *
-     * @param series  the series to merge with this.
-     *
-     * @return A series containing the values that were overwritten.
-     */
-    public TimeSeries<S> addAndOrUpdate(TimeSeries<S> series) {
-        TimeSeries<S> overwritten = new TimeSeries<>(getKey());
-        for (int i = 0; i < series.getItemCount(); i++) {
-            TimeSeriesDataItem item = series.getRawDataItem(i);
-            TimeSeriesDataItem oldItem = addOrUpdate(item.getPeriod(), item.getValue());
-            if (oldItem != null) {
-                overwritten.add(oldItem);
-            }
-        }
-        return overwritten;
-    }
-
-    /**
-     * Adds or updates an item in the times series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param period  the time period to add/update ({@code null} not
-     *                permitted).
-     * @param value  the new value.
-     *
-     * @return A copy of the overwritten data item, or {@code null} if no
-     *         item was overwritten.
-     */
-    public TimeSeriesDataItem addOrUpdate(RegularTimePeriod period, double value) {
-        return addOrUpdate(period, Double.valueOf(value));
-    }
-
-    /**
-     * Adds or updates an item in the times series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param period  the time period to add/update ({@code null} not
-     *                permitted).
-     * @param value  the new value ({@code null} permitted).
-     *
-     * @return A copy of the overwritten data item, or {@code null} if no
-     *         item was overwritten.
-     */
-    public TimeSeriesDataItem addOrUpdate(RegularTimePeriod period, Number value) {
-        return addOrUpdate(new TimeSeriesDataItem(period, value));
-    }
-
-    /**
-     * Adds or updates an item in the times series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param item  the data item ({@code null} not permitted).
-     *
-     * @return A copy of the overwritten data item, or {@code null} if no
-     *         item was overwritten.
-     *
-     * @since 1.0.14
-     */
-    public TimeSeriesDataItem addOrUpdate(TimeSeriesDataItem item) {
-        Args.nullNotPermitted(item, "item");
-        Class periodClass = item.getPeriod().getClass();
-        if (this.timePeriodClass == null) {
-            this.timePeriodClass = periodClass;
-        } else if (!this.timePeriodClass.equals(periodClass)) {
-            String msg = "You are trying to add data where the time " + "period class is " + periodClass.getName() + ", but the TimeSeries is expecting an instance of " + this.timePeriodClass.getName() + ".";
-            throw new SeriesException(msg);
-        }
-        TimeSeriesDataItem overwritten = null;
-        int index = Collections.binarySearch(this.data, item);
-        if (index >= 0) {
-            TimeSeriesDataItem existing = this.data.get(index);
-            overwritten = (TimeSeriesDataItem) existing.clone();
-            // figure out if we need to iterate through all the y-values
-            // to find the revised minY / maxY
-            boolean iterate = false;
-            Number oldYN = existing.getValue();
-            double oldY = oldYN != null ? oldYN.doubleValue() : Double.NaN;
-            if (!Double.isNaN(oldY)) {
-                iterate = oldY <= this.minY || oldY >= this.maxY;
-            }
-            existing.setValue(item.getValue());
-            if (iterate) {
-                updateMinMaxYByIteration();
-            } else if (item.getValue() != null) {
-                double yy = item.getValue().doubleValue();
-                this.minY = minIgnoreNaN(this.minY, yy);
-                this.maxY = maxIgnoreNaN(this.maxY, yy);
-            }
-        } else {
-            item = (TimeSeriesDataItem) item.clone();
-            this.data.add(-index - 1, item);
-            updateBoundsForAddedItem(item);
-            // check if this addition will exceed the maximum item count...
-            if (getItemCount() > this.maximumItemCount) {
-                TimeSeriesDataItem d = this.data.remove(0);
-                updateBoundsForRemovedItem(d);
-            }
-        }
-        // remove old items if necessary, but
-        removeAgedItems(false);
-        // don't notify anyone, because that
-        // happens next anyway...
-        fireSeriesChanged();
-        return overwritten;
-    }
-
-    /**
-     * Age items in the series.  Ensure that the timespan from the youngest to
-     * the oldest record in the series does not exceed maximumItemAge time
-     * periods.  Oldest items will be removed if required.
-     *
-     * @param notify  controls whether a {@link SeriesChangeEvent} is
-     *                sent to registered listeners IF any items are removed.
-     */
-    public void removeAgedItems(boolean notify) {
-        // check if there are any values earlier than specified by the history
-        // count...
-        if (getItemCount() > 1) {
-            long latest = getTimePeriod(getItemCount() - 1).getSerialIndex();
-            boolean removed = false;
-            while ((latest - getTimePeriod(0).getSerialIndex()) > this.maximumItemAge) {
-                this.data.remove(0);
-                removed = true;
-            }
-            if (removed) {
-                updateMinMaxYByIteration();
-                if (notify) {
-                    fireSeriesChanged();
-                }
-            }
-        }
-    }
-
-    /**
-     * Age items in the series.  Ensure that the timespan from the supplied
-     * time to the oldest record in the series does not exceed history count.
-     * oldest items will be removed if required.
-     *
-     * @param latest  the time to be compared against when aging data
-     *     (specified in milliseconds).
-     * @param notify  controls whether a {@link SeriesChangeEvent} is
-     *                sent to registered listeners IF any items are removed.
-     */
-    public void removeAgedItems(long latest, boolean notify) {
-        if (this.data.isEmpty()) {
-            // nothing to do
-            return;
-        }
-        // find the serial index of the period specified by 'latest'
-        long index = Long.MAX_VALUE;
-        try {
-            Method m = RegularTimePeriod.class.getDeclaredMethod("createInstance", Class.class, Date.class, TimeZone.class, Locale.class);
-            RegularTimePeriod newest = (RegularTimePeriod) m.invoke(this.timePeriodClass, new Object[] { this.timePeriodClass, new Date(latest), TimeZone.getDefault(), Locale.getDefault() });
-            index = newest.getSerialIndex();
-        } catch (NoSuchMethodException e) {
-            throw new RuntimeException(e);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
-        } catch (InvocationTargetException e) {
-            throw new RuntimeException(e);
-        }
-        // check if there are any values earlier than specified by the history
-        // count...
-        boolean removed = false;
-        while (getItemCount() > 0 && (index - getTimePeriod(0).getSerialIndex()) > this.maximumItemAge) {
-            this.data.remove(0);
-            removed = true;
-        }
-        if (removed) {
-            updateMinMaxYByIteration();
-            if (notify) {
-                fireSeriesChanged();
-            }
-        }
-    }
-
-    /**
-     * Removes all data items from the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
+     * @since 1.0.7
      */
     public void clear() {
-        if (this.data.size() > 0) {
-            this.data.clear();
-            this.timePeriodClass = null;
-            this.minY = Double.NaN;
-            this.maxY = Double.NaN;
-            fireSeriesChanged();
-        }
+        this.data.clear();
+        updateBounds();
+        fireDatasetChanged();
     }
 
     /**
-     * Deletes the data item for the given time period and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.  If there is no
-     * item with the specified time period, this method does nothing.
+     * Return an item from within the dataset.
      *
-     * @param period  the period of the item to delete ({@code null} not
-     *                permitted).
+     * @param row  the row index.
+     * @param column  the column index.
+     *
+     * @return The item.
      */
-    public void delete(RegularTimePeriod period) {
-        int index = getIndex(period);
-        if (index >= 0) {
-            TimeSeriesDataItem item = this.data.remove(index);
-            updateBoundsForRemovedItem(item);
-            if (this.data.isEmpty()) {
-                this.timePeriodClass = null;
-            }
-            fireSeriesChanged();
-        }
+    public BoxAndWhiskerItem getItem(int row, int column) {
+        return (BoxAndWhiskerItem) this.data.getObject(row, column);
     }
 
     /**
-     * Deletes data from start until end index (end inclusive).
+     * Returns the value for an item.
      *
-     * @param start  the index of the first period to delete.
-     * @param end  the index of the last period to delete.
-     */
-    public void delete(int start, int end) {
-        delete(start, end, true);
-    }
-
-    /**
-     * Deletes data from start until end index (end inclusive).
+     * @param row  the row index.
+     * @param column  the column index.
      *
-     * @param start  the index of the first period to delete.
-     * @param end  the index of the last period to delete.
-     * @param notify  notify listeners?
+     * @return The value.
      *
-     * @since 1.0.14
-     */
-    public void delete(int start, int end, boolean notify) {
-        if (end < start) {
-            throw new IllegalArgumentException("Requires start <= end.");
-        }
-        for (int i = 0; i <= (end - start); i++) {
-            this.data.remove(start);
-        }
-        updateMinMaxYByIteration();
-        if (this.data.isEmpty()) {
-            this.timePeriodClass = null;
-        }
-        if (notify) {
-            fireSeriesChanged();
-        }
-    }
-
-    /**
-     * Returns a clone of the time series.
-     * <P>
-     * Notes:
-     * <ul>
-     *   <li>no need to clone the domain and range descriptions, since String
-     *     object is immutable;</li>
-     *   <li>we pass over to the more general method clone(start, end).</li>
-     * </ul>
-     *
-     * @return A clone of the time series.
-     *
-     * @throws CloneNotSupportedException not thrown by this class, but
-     *         subclasses may differ.
+     * @see #getMedianValue(int, int)
+     * @see #getValue(Comparable, Comparable)
      */
     @Override
-    public Object clone() throws CloneNotSupportedException {
-        TimeSeries<S> clone = (TimeSeries) super.clone();
-        clone.data = CloneUtils.cloneList(this.data);
-        return clone;
+    public Number getValue(int row, int column) {
+        return getMedianValue(row, column);
     }
 
     /**
-     * Creates a new timeseries by copying a subset of the data in this time
-     * series.
+     * Returns the value for an item.
      *
-     * @param start  the index of the first time period to copy.
-     * @param end  the index of the last time period to copy.
+     * @param rowKey  the row key.
+     * @param columnKey  the columnKey.
      *
-     * @return A series containing a copy of this times series from start until
-     *         end.
+     * @return The value.
      *
-     * @throws CloneNotSupportedException if there is a cloning problem.
+     * @see #getMedianValue(Comparable, Comparable)
+     * @see #getValue(int, int)
      */
-    public TimeSeries<S> createCopy(int start, int end) throws CloneNotSupportedException {
-        if (start < 0) {
-            throw new IllegalArgumentException("Requires start >= 0.");
+    @Override
+    public Number getValue(R rowKey, C columnKey) {
+        return getMedianValue(rowKey, columnKey);
+    }
+
+    /**
+     * Returns the mean value for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The mean value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMeanValue(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getMean();
         }
-        if (end < start) {
-            throw new IllegalArgumentException("Requires start <= end.");
+        return result;
+    }
+
+    /**
+     * Returns the mean value for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The mean value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMeanValue(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getMean();
         }
-        TimeSeries<S> copy = (TimeSeries) super.clone();
-        copy.minY = Double.NaN;
-        copy.maxY = Double.NaN;
-        copy.data = new java.util.ArrayList();
-        if (this.data.size() > 0) {
-            for (int index = start; index <= end; index++) {
-                TimeSeriesDataItem item = this.data.get(index);
-                TimeSeriesDataItem clone = (TimeSeriesDataItem) item.clone();
-                try {
-                    copy.add(clone);
-                } catch (SeriesException e) {
-                    throw new RuntimeException(e);
+        return result;
+    }
+
+    /**
+     * Returns the median value for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The median value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMedianValue(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getMedian();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the median value for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the columnKey.
+     *
+     * @return The median value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMedianValue(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getMedian();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the first quartile value.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The first quartile value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getQ1Value(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getQ1();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the first quartile value.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The first quartile value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getQ1Value(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getQ1();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the third quartile value.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The third quartile value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getQ3Value(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getQ3();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the third quartile value.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The third quartile value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getQ3Value(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getQ3();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the column index for a given key.
+     *
+     * @param key  the column key ({@code null} not permitted).
+     *
+     * @return The column index.
+     *
+     * @see #getColumnKey(int)
+     */
+    @Override
+    public int getColumnIndex(C key) {
+        return this.data.getColumnIndex(key);
+    }
+
+    /**
+     * Returns a column key.
+     *
+     * @param column  the column index (zero-based).
+     *
+     * @return The column key.
+     *
+     * @see #getColumnIndex(Comparable)
+     */
+    @Override
+    public C getColumnKey(int column) {
+        return this.data.getColumnKey(column);
+    }
+
+    /**
+     * Returns the column keys.
+     *
+     * @return The keys.
+     *
+     * @see #getRowKeys()
+     */
+    @Override
+    public List<C> getColumnKeys() {
+        return this.data.getColumnKeys();
+    }
+
+    /**
+     * Returns the row index for a given key.
+     *
+     * @param key  the row key ({@code null} not permitted).
+     *
+     * @return The row index.
+     *
+     * @see #getRowKey(int)
+     */
+    @Override
+    public int getRowIndex(R key) {
+        // defer null argument check
+        return this.data.getRowIndex(key);
+    }
+
+    /**
+     * Returns a row key.
+     *
+     * @param row  the row index (zero-based).
+     *
+     * @return The row key.
+     *
+     * @see #getRowIndex(Comparable)
+     */
+    @Override
+    public R getRowKey(int row) {
+        return this.data.getRowKey(row);
+    }
+
+    /**
+     * Returns the row keys.
+     *
+     * @return The keys.
+     *
+     * @see #getColumnKeys()
+     */
+    @Override
+    public List<R> getRowKeys() {
+        return this.data.getRowKeys();
+    }
+
+    /**
+     * Returns the number of rows in the table.
+     *
+     * @return The row count.
+     *
+     * @see #getColumnCount()
+     */
+    @Override
+    public int getRowCount() {
+        return this.data.getRowCount();
+    }
+
+    /**
+     * Returns the number of columns in the table.
+     *
+     * @return The column count.
+     *
+     * @see #getRowCount()
+     */
+    @Override
+    public int getColumnCount() {
+        return this.data.getColumnCount();
+    }
+
+    /**
+     * Returns the minimum y-value in the dataset.
+     *
+     * @param includeInterval  a flag that determines whether the
+     *                         y-interval is taken into account.
+     *
+     * @return The minimum value.
+     *
+     * @see #getRangeUpperBound(boolean)
+     */
+    @Override
+    public double getRangeLowerBound(boolean includeInterval) {
+        return this.minimumRangeValue;
+    }
+
+    /**
+     * Returns the maximum y-value in the dataset.
+     *
+     * @param includeInterval  a flag that determines whether the
+     *                         y-interval is taken into account.
+     *
+     * @return The maximum value.
+     *
+     * @see #getRangeLowerBound(boolean)
+     */
+    @Override
+    public double getRangeUpperBound(boolean includeInterval) {
+        return this.maximumRangeValue;
+    }
+
+    /**
+     * Returns the range of the values in this dataset's range.
+     *
+     * @param includeInterval  a flag that determines whether the
+     *                         y-interval is taken into account.
+     *
+     * @return The range.
+     */
+    @Override
+    public Range getRangeBounds(boolean includeInterval) {
+        return new Range(this.minimumRangeValue, this.maximumRangeValue);
+    }
+
+    /**
+     * Returns the minimum regular (non outlier) value for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The minimum regular value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMinRegularValue(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getMinRegularValue();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the minimum regular (non outlier) value for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The minimum regular value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMinRegularValue(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getMinRegularValue();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the maximum regular (non outlier) value for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The maximum regular value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMaxRegularValue(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getMaxRegularValue();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the maximum regular (non outlier) value for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The maximum regular value.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMaxRegularValue(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getMaxRegularValue();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the minimum outlier (non farout) value for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The minimum outlier.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMinOutlier(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getMinOutlier();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the minimum outlier (non farout) value for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The minimum outlier.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMinOutlier(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getMinOutlier();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the maximum outlier (non farout) value for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return The maximum outlier.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMaxOutlier(int row, int column) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            result = item.getMaxOutlier();
+        }
+        return result;
+    }
+
+    /**
+     * Returns the maximum outlier (non farout) value for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return The maximum outlier.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public Number getMaxOutlier(R rowKey, C columnKey) {
+        Number result = null;
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            result = item.getMaxOutlier();
+        }
+        return result;
+    }
+
+    /**
+     * Returns a list of outlier values for an item.
+     *
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
+     *
+     * @return A list of outlier values.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public List<? extends Number> getOutliers(int row, int column) {
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(row, column);
+        if (item != null) {
+            return item.getOutliers();
+        }
+        return null;
+    }
+
+    /**
+     * Returns a list of outlier values for an item.
+     *
+     * @param rowKey  the row key.
+     * @param columnKey  the column key.
+     *
+     * @return A list of outlier values.
+     *
+     * @see #getItem(int, int)
+     */
+    @Override
+    public List<? extends Number> getOutliers(R rowKey, C columnKey) {
+        BoxAndWhiskerItem item = (BoxAndWhiskerItem) this.data.getObject(rowKey, columnKey);
+        if (item != null) {
+            return item.getOutliers();
+        }
+        return null;
+    }
+
+    /**
+     * Resets the cached bounds, by iterating over the entire dataset to find
+     * the current bounds.
+     */
+    private void updateBounds() {
+        this.minimumRangeValue = Double.NaN;
+        this.minimumRangeValueRow = -1;
+        this.minimumRangeValueColumn = -1;
+        this.maximumRangeValue = Double.NaN;
+        this.maximumRangeValueRow = -1;
+        this.maximumRangeValueColumn = -1;
+        int rowCount = getRowCount();
+        int columnCount = getColumnCount();
+        for (int r = 0; r < rowCount; r++) {
+            for (int c = 0; c < columnCount; c++) {
+                BoxAndWhiskerItem item = getItem(r, c);
+                if (item != null) {
+                    Number min = item.getMinOutlier();
+                    if (min != null) {
+                        double minv = min.doubleValue();
+                        if (!Double.isNaN(minv)) {
+                            if (minv < this.minimumRangeValue || Double.isNaN(this.minimumRangeValue)) {
+                                this.minimumRangeValue = minv;
+                                this.minimumRangeValueRow = r;
+                                this.minimumRangeValueColumn = c;
+                            }
+                        }
+                    }
+                    Number max = item.getMaxOutlier();
+                    if (max != null) {
+                        double maxv = max.doubleValue();
+                        if (!Double.isNaN(maxv)) {
+                            if (maxv > this.maximumRangeValue || Double.isNaN(this.maximumRangeValue)) {
+                                this.maximumRangeValue = maxv;
+                                this.maximumRangeValueRow = r;
+                                this.maximumRangeValueColumn = c;
+                            }
+                        }
+                    }
                 }
             }
         }
-        return copy;
     }
 
     /**
-     * Creates a new timeseries by copying a subset of the data in this time
-     * series.
-     *
-     * @param start  the first time period to copy ({@code null} not
-     *         permitted).
-     * @param end  the last time period to copy ({@code null} not permitted).
-     *
-     * @return A time series containing a copy of this time series from start
-     *         until end.
-     *
-     * @throws CloneNotSupportedException if there is a cloning problem.
-     */
-    public TimeSeries<S> createCopy(RegularTimePeriod start, RegularTimePeriod end) throws CloneNotSupportedException {
-        Args.nullNotPermitted(start, "start");
-        Args.nullNotPermitted(end, "end");
-        if (start.compareTo(end) > 0) {
-            throw new IllegalArgumentException("Requires start on or before end.");
-        }
-        boolean emptyRange = false;
-        int startIndex = getIndex(start);
-        if (startIndex < 0) {
-            startIndex = -(startIndex + 1);
-            if (startIndex == this.data.size()) {
-                // start is after last data item
-                emptyRange = true;
-            }
-        }
-        int endIndex = getIndex(end);
-        if (endIndex < 0) {
-            // end period is not in original series
-            // this is first item AFTER end period
-            endIndex = -(endIndex + 1);
-            // so this is last item BEFORE end
-            endIndex = endIndex - 1;
-        }
-        if ((endIndex < 0) || (endIndex < startIndex)) {
-            emptyRange = true;
-        }
-        if (emptyRange) {
-            TimeSeries<S> copy = (TimeSeries) super.clone();
-            copy.data = new java.util.ArrayList();
-            return copy;
-        }
-        return createCopy(startIndex, endIndex);
-    }
-
-    /**
-     * Tests the series for equality with an arbitrary object.
+     * Tests this dataset for equality with an arbitrary object.
      *
      * @param obj  the object to test against ({@code null} permitted).
      *
@@ -1056,144 +907,252 @@ class TimeSeries<S extends Comparable<S>> extends Series<S> implements Cloneable
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof TimeSeries)) {
-            return false;
+        if (obj instanceof DefaultBoxAndWhiskerCategoryDataset) {
+            DefaultBoxAndWhiskerCategoryDataset dataset = (DefaultBoxAndWhiskerCategoryDataset) obj;
+            return Objects.equals(this.data, dataset.data);
         }
-        TimeSeries<S> that = (TimeSeries) obj;
-        if (!Objects.equals(this.timePeriodClass, that.timePeriodClass)) {
-            return false;
-        }
-        if (getMaximumItemAge() != that.getMaximumItemAge()) {
-            return false;
-        }
-        if (getMaximumItemCount() != that.getMaximumItemCount()) {
-            return false;
-        }
-        int count = getItemCount();
-        if (count != that.getItemCount()) {
-            return false;
-        }
-        if (!Objects.equals(this.data, that.data)) {
-            return false;
-        }
-        return super.equals(obj);
+        return false;
     }
 
-    /**
-     * Returns a hash code value for the object.
-     *
-     * @return The hashcode
-     */
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 29 * result + (this.timePeriodClass != null ? this.timePeriodClass.hashCode() : 0);
-        // it is too slow to look at every data item, so let's just look at
-        // the first, middle and last items...
-        int count = getItemCount();
-        if (count > 0) {
-            TimeSeriesDataItem item = getRawDataItem(0);
-            result = 29 * result + item.hashCode();
-        }
-        if (count > 1) {
-            TimeSeriesDataItem item = getRawDataItem(count - 1);
-            result = 29 * result + item.hashCode();
-        }
-        if (count > 2) {
-            TimeSeriesDataItem item = getRawDataItem(count / 2);
-            result = 29 * result + item.hashCode();
-        }
-        result = 29 * result + this.maximumItemCount;
-        result = 29 * result + (int) this.maximumItemAge;
-        return result;
+        int hash = 5;
+        hash = 23 * hash + Objects.hashCode(this.data);
+        return hash;
     }
 
     /**
-     * Updates the cached values for the minimum and maximum data values.
+     * Returns a clone of this dataset.
      *
-     * @param item  the item added ({@code null} not permitted).
+     * @return A clone.
      *
-     * @since 1.0.14
+     * @throws CloneNotSupportedException if cloning is not possible.
      */
-    private void updateBoundsForAddedItem(TimeSeriesDataItem item) {
-        Number yN = item.getValue();
-        if (item.getValue() != null) {
-            double y = yN.doubleValue();
-            this.minY = minIgnoreNaN(this.minY, y);
-            this.maxY = maxIgnoreNaN(this.maxY, y);
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        DefaultBoxAndWhiskerCategoryDataset<R, C> clone = (DefaultBoxAndWhiskerCategoryDataset) super.clone();
+        clone.data = (KeyedObjects2D<R, C>) this.data.clone();
+        return clone;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ----------------
+ * BlockBorder.java
+ * ----------------
+ * (C) Copyright 2004-present, by David Gilbert.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   -;
+ *
+ */
+/**
+ * A border for a block.  This class is immutable.
+ */
+public class BlockBorder implements BlockFrame, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = 4961579220410228283L;
+
+    /**
+     * An empty border.
+     */
+    public static final BlockBorder NONE = new BlockBorder(RectangleInsets.ZERO_INSETS, Color.WHITE);
+
+    /**
+     * The space reserved for the border.
+     */
+    private final RectangleInsets insets;
+
+    /**
+     * The border color.
+     */
+    private transient Paint paint;
+
+    /**
+     * Creates a default border.
+     */
+    public BlockBorder() {
+        this(Color.BLACK);
+    }
+
+    /**
+     * Creates a new border with the specified color.
+     *
+     * @param paint  the color ({@code null} not permitted).
+     */
+    public BlockBorder(Paint paint) {
+        this(new RectangleInsets(1, 1, 1, 1), paint);
+    }
+
+    /**
+     * Creates a new border with the specified line widths (in black).
+     *
+     * @param top  the width of the top border.
+     * @param left  the width of the left border.
+     * @param bottom  the width of the bottom border.
+     * @param right  the width of the right border.
+     */
+    public BlockBorder(double top, double left, double bottom, double right) {
+        this(new RectangleInsets(top, left, bottom, right), Color.BLACK);
+    }
+
+    /**
+     * Creates a new border with the specified line widths (in black).
+     *
+     * @param top  the width of the top border.
+     * @param left  the width of the left border.
+     * @param bottom  the width of the bottom border.
+     * @param right  the width of the right border.
+     * @param paint  the border paint ({@code null} not permitted).
+     */
+    public BlockBorder(double top, double left, double bottom, double right, Paint paint) {
+        this(new RectangleInsets(top, left, bottom, right), paint);
+    }
+
+    /**
+     * Creates a new border.
+     *
+     * @param insets  the border insets ({@code null} not permitted).
+     * @param paint  the paint ({@code null} not permitted).
+     */
+    public BlockBorder(RectangleInsets insets, Paint paint) {
+        Args.nullNotPermitted(insets, "insets");
+        Args.nullNotPermitted(paint, "paint");
+        this.insets = insets;
+        this.paint = paint;
+    }
+
+    /**
+     * Returns the space reserved for the border.
+     *
+     * @return The space (never {@code null}).
+     */
+    @Override
+    public RectangleInsets getInsets() {
+        return this.insets;
+    }
+
+    /**
+     * Returns the paint used to draw the border.
+     *
+     * @return The paint (never {@code null}).
+     */
+    public Paint getPaint() {
+        return this.paint;
+    }
+
+    /**
+     * Draws the border by filling in the reserved space.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area.
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area) {
+        // this default implementation will just fill the available
+        // border space with a single color
+        double t = this.insets.calculateTopInset(area.getHeight());
+        double b = this.insets.calculateBottomInset(area.getHeight());
+        double l = this.insets.calculateLeftInset(area.getWidth());
+        double r = this.insets.calculateRightInset(area.getWidth());
+        double x = area.getX();
+        double y = area.getY();
+        double w = area.getWidth();
+        double h = area.getHeight();
+        g2.setPaint(this.paint);
+        Rectangle2D rect = new Rectangle2D.Double();
+        if (t > 0.0) {
+            rect.setRect(x, y, w, t);
+            g2.fill(rect);
+        }
+        if (b > 0.0) {
+            rect.setRect(x, y + h - b, w, b);
+            g2.fill(rect);
+        }
+        if (l > 0.0) {
+            rect.setRect(x, y, l, h);
+            g2.fill(rect);
+        }
+        if (r > 0.0) {
+            rect.setRect(x + w - r, y, r, h);
+            g2.fill(rect);
         }
     }
 
     /**
-     * Updates the cached values for the minimum and maximum data values on
-     * the basis that the specified item has just been removed.
+     * Tests this border for equality with an arbitrary instance.
      *
-     * @param item  the item added ({@code null} not permitted).
+     * @param obj  the object ({@code null} permitted).
      *
-     * @since 1.0.14
+     * @return A boolean.
      */
-    private void updateBoundsForRemovedItem(TimeSeriesDataItem item) {
-        Number yN = item.getValue();
-        if (yN != null) {
-            double y = yN.doubleValue();
-            if (!Double.isNaN(y)) {
-                if (y <= this.minY || y >= this.maxY) {
-                    updateMinMaxYByIteration();
-                }
-            }
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
         }
+        if (!(obj instanceof BlockBorder)) {
+            return false;
+        }
+        BlockBorder that = (BlockBorder) obj;
+        if (!this.insets.equals(that.insets)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.paint, that.paint)) {
+            return false;
+        }
+        return true;
     }
 
     /**
-     * Finds the bounds of the x and y values for the series, by iterating
-     * through all the data items.
+     * Provides serialization support.
      *
-     * @since 1.0.14
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
      */
-    private void updateMinMaxYByIteration() {
-        this.minY = Double.NaN;
-        this.maxY = Double.NaN;
-        for (TimeSeriesDataItem item : this.data) {
-            updateBoundsForAddedItem(item);
-        }
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.paint, stream);
     }
 
     /**
-     * A function to find the minimum of two values, but ignoring any
-     * Double.NaN values.
+     * Provides serialization support.
      *
-     * @param a  the first value.
-     * @param b  the second value.
+     * @param stream  the input stream.
      *
-     * @return The minimum of the two values.
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
      */
-    private double minIgnoreNaN(double a, double b) {
-        if (Double.isNaN(a)) {
-            return b;
-        }
-        if (Double.isNaN(b)) {
-            return a;
-        }
-        return Math.min(a, b);
-    }
-
-    /**
-     * A function to find the maximum of two values, but ignoring any
-     * Double.NaN values.
-     *
-     * @param a  the first value.
-     * @param b  the second value.
-     *
-     * @return The maximum of the two values.
-     */
-    private double maxIgnoreNaN(double a, double b) {
-        if (Double.isNaN(a)) {
-            return b;
-        }
-        if (Double.isNaN(b)) {
-            return a;
-        } else {
-            return Math.max(a, b);
-        }
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.paint = SerialUtils.readPaint(stream);
     }
 }

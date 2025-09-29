@@ -22,590 +22,518 @@ package DEF.bx;
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
  *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------
- * Week.java
- * ---------
- * (C) Copyright 2001-present, by David Gilbert and Contributors.
+ * ----------------------
+ * DefaultPlotEditor.java
+ * ----------------------
+ * (C) Copyright 2005-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Aimin Han;
+ * Contributor(s):   Andrzej Porebski;
+ *                   Arnaud Lelievre;
+ *                   Daniel Gredler;
  *
  */
 /**
- * A calendar week.  All years are considered to have 53 weeks, numbered from 1
- * to 53, although in many cases the 53rd week is empty.  Most of the time, the
- * 1st week of the year *begins* in the previous calendar year, but it always
- * finishes in the current year (this behaviour matches the workings of the
- * {@code GregorianCalendar} class).
- * <P>
- * This class is immutable, which is a requirement for all
- * {@link RegularTimePeriod} subclasses.
+ * A panel for editing the properties of a {@link Plot}.
  */
-class Week extends RegularTimePeriod implements Serializable {
+class DefaultPlotEditor extends JPanel implements ActionListener {
 
     /**
-     * For serialization.
+     * Orientation constants.
      */
-    private static final long serialVersionUID = 1856387786939865061L;
+    private final static String[] orientationNames = { "Vertical", "Horizontal" };
+
+    private final static int ORIENTATION_VERTICAL = 0;
+
+    private final static int ORIENTATION_HORIZONTAL = 1;
 
     /**
-     * Constant for the first week in the year.
+     * The paint (color) used to fill the background of the plot.
      */
-    public static final int FIRST_WEEK_IN_YEAR = 1;
+    private PaintSample backgroundPaintSample;
 
     /**
-     * Constant for the last week in the year.
+     * The stroke used to draw the outline of the plot.
      */
-    public static final int LAST_WEEK_IN_YEAR = 53;
+    private StrokeSample outlineStrokeSample;
 
     /**
-     * The year in which the week falls.
+     * The paint (color) used to draw the outline of the plot.
      */
-    private final short year;
+    private PaintSample outlinePaintSample;
 
     /**
-     * The week (1-53).
+     * A panel used to display/edit the properties of the domain axis (if any).
      */
-    private final byte week;
+    private DefaultAxisEditor domainAxisPropertyPanel;
 
     /**
-     * The first millisecond.
+     * A panel used to display/edit the properties of the range axis (if any).
      */
-    private long firstMillisecond;
+    private DefaultAxisEditor rangeAxisPropertyPanel;
 
     /**
-     * The last millisecond.
+     * An array of stroke samples to choose from.
      */
-    private long lastMillisecond;
+    private StrokeSample[] availableStrokeSamples;
 
     /**
-     * Creates a new time period for the week in which the current system
-     * date/time falls.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
+     * The insets for the plot.
      */
-    public Week() {
-        this(new Date());
-    }
+    private RectangleInsets plotInsets;
 
     /**
-     * Creates a time period representing the week in the specified year.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
-     *
-     * @param week  the week (1 to 53).
-     * @param year  the year (1900 to 9999).
+     * The orientation for the plot (for <tt>CategoryPlot</tt>s and
+     * <tt>XYPlot</tt>s).
      */
-    public Week(int week, int year) {
-        super();
-        if ((week < FIRST_WEEK_IN_YEAR) || (week > LAST_WEEK_IN_YEAR)) {
-            throw new IllegalArgumentException("The 'week' argument must be in the range 1 - 53.");
-        }
-        this.week = (byte) week;
-        this.year = (short) year;
-        peg(getCalendarInstance());
-    }
+    private PlotOrientation plotOrientation;
 
     /**
-     * Creates a time period representing the week in the specified year.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
-     *
-     * @param week  the week (1 to 53).
-     * @param year  the year (1900 to 9999).
+     * The orientation combo box (for <tt>CategoryPlot</tt>s and
+     * <tt>XYPlot</tt>s).
      */
-    public Week(int week, Year year) {
-        super();
-        if ((week < FIRST_WEEK_IN_YEAR) || (week > LAST_WEEK_IN_YEAR)) {
-            throw new IllegalArgumentException("The 'week' argument must be in the range 1 - 53.");
-        }
-        this.week = (byte) week;
-        this.year = (short) year.getYear();
-        peg(getCalendarInstance());
-    }
+    private JComboBox orientationCombo;
 
     /**
-     * Creates a time period for the week in which the specified date/time
-     * falls.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
-     * The locale can affect the day-of-the-week that marks the beginning
-     * of the week, as well as the minimal number of days in the first week
-     * of the year.
-     *
-     * @param time  the time ({@code null} not permitted).
-     *
-     * @see #Week(Date, TimeZone, Locale)
+     * whether to draw lines between each data point (for
+     * <tt>LineAndShapeRenderer</tt>s and <tt>StandardXYItemRenderer</tt>s).
      */
-    public Week(Date time) {
-        // defer argument checking...
-        this(time, getCalendarInstance());
-    }
+    private Boolean drawLines;
 
     /**
-     * Creates a time period for the week in which the specified date/time
-     * falls, calculated relative to the specified time zone.
-     *
-     * @param time  the date/time ({@code null} not permitted).
-     * @param zone  the time zone ({@code null} not permitted).
-     * @param locale  the locale ({@code null} not permitted).
-     *
-     * @since 1.0.7
+     * The checkbox for whether to draw lines between each data point.
      */
-    public Week(Date time, TimeZone zone, Locale locale) {
-        super();
-        Args.nullNotPermitted(time, "time");
-        Args.nullNotPermitted(zone, "zone");
-        Args.nullNotPermitted(locale, "locale");
-        Calendar calendar = Calendar.getInstance(zone, locale);
-        calendar.setTime(time);
-        // sometimes the last few days of the year are considered to fall in
-        // the *first* week of the following year.  Refer to the Javadocs for
-        // GregorianCalendar.
-        int tempWeek = calendar.get(Calendar.WEEK_OF_YEAR);
-        if (tempWeek == 1 && calendar.get(Calendar.MONTH) == Calendar.DECEMBER) {
-            this.week = 1;
-            this.year = (short) (calendar.get(Calendar.YEAR) + 1);
-        } else {
-            this.week = (byte) Math.min(tempWeek, LAST_WEEK_IN_YEAR);
-            int yyyy = calendar.get(Calendar.YEAR);
-            // alternatively, sometimes the first few days of the year are
-            // considered to fall in the *last* week of the previous year...
-            if (calendar.get(Calendar.MONTH) == Calendar.JANUARY && this.week >= 52) {
-                yyyy--;
-            }
-            this.year = (short) yyyy;
-        }
-        peg(calendar);
-    }
+    private JCheckBox drawLinesCheckBox;
 
     /**
-     * Constructs a new instance, based on a particular date/time.
-     * The time zone and locale are determined by the {@code calendar}
-     * parameter.
-     *
-     * @param time the date/time ({@code null} not permitted).
-     * @param calendar the calendar to use for calculations ({@code null} not permitted).
+     * whether to draw shapes at each data point (for
+     * <tt>LineAndShapeRenderer</tt>s and <tt>StandardXYItemRenderer</tt>s).
      */
-    public Week(Date time, Calendar calendar) {
-        super();
-        calendar.setTime(time);
-        // sometimes the last few days of the year are considered to fall in
-        // the *first* week of the following year.  Refer to the Javadocs for
-        // GregorianCalendar.
-        int tempWeek = calendar.get(Calendar.WEEK_OF_YEAR);
-        if (tempWeek == 1 && calendar.get(Calendar.MONTH) == Calendar.DECEMBER) {
-            this.week = 1;
-            this.year = (short) (calendar.get(Calendar.YEAR) + 1);
-        } else {
-            this.week = (byte) Math.min(tempWeek, LAST_WEEK_IN_YEAR);
-            int yyyy = calendar.get(Calendar.YEAR);
-            // alternatively, sometimes the first few days of the year are
-            // considered to fall in the *last* week of the previous year...
-            if (calendar.get(Calendar.MONTH) == Calendar.JANUARY && this.week >= 52) {
-                yyyy--;
-            }
-            this.year = (short) yyyy;
-        }
-        peg(calendar);
-    }
+    private Boolean drawShapes;
 
     /**
-     * Returns the year in which the week falls.
-     *
-     * @return The year (never {@code null}).
+     * The checkbox for whether to draw shapes at each data point.
      */
-    public Year getYear() {
-        return new Year(this.year);
-    }
+    private JCheckBox drawShapesCheckBox;
 
     /**
-     * Returns the year in which the week falls, as an integer value.
-     *
-     * @return The year.
+     * The resourceBundle for the localization.
      */
-    public int getYearValue() {
-        return this.year;
-    }
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.editor.LocalizationBundle");
 
     /**
-     * Returns the week.
-     *
-     * @return The week.
-     */
-    public int getWeek() {
-        return this.week;
-    }
-
-    /**
-     * Returns the first millisecond of the week.  This will be determined
-     * relative to the time zone specified in the constructor, or in the
-     * calendar instance passed in the most recent call to the
-     * {@link #peg(Calendar)} method.
-     *
-     * @return The first millisecond of the week.
-     *
-     * @see #getLastMillisecond()
-     */
-    @Override
-    public long getFirstMillisecond() {
-        return this.firstMillisecond;
-    }
-
-    /**
-     * Returns the last millisecond of the week.  This will be
-     * determined relative to the time zone specified in the constructor, or
-     * in the calendar instance passed in the most recent call to the
-     * {@link #peg(Calendar)} method.
-     *
-     * @return The last millisecond of the week.
-     *
-     * @see #getFirstMillisecond()
-     */
-    @Override
-    public long getLastMillisecond() {
-        return this.lastMillisecond;
-    }
-
-    /**
-     * Recalculates the start date/time and end date/time for this time period
-     * relative to the supplied calendar (which incorporates a time zone
-     * and information about what day is the first day of the week).
-     *
-     * @param calendar  the calendar ({@code null} not permitted).
-     *
-     * @since 1.0.3
-     */
-    @Override
-    public void peg(Calendar calendar) {
-        this.firstMillisecond = getFirstMillisecond(calendar);
-        this.lastMillisecond = getLastMillisecond(calendar);
-    }
-
-    /**
-     * Returns the week preceding this one.  This method will return
-     * {@code null} for some lower limit on the range of weeks (currently
-     * week 1, 1900).  For week 1 of any year, the previous week is always week
-     * 53, but week 53 may not contain any days (you should check for this).
-     * No matter what time zone and locale this instance was created with,
-     * the returned instance will use the default calendar for time
-     * calculations, obtained with {@link RegularTimePeriod#getCalendarInstance()}.
-     *
-     * @return The preceding week (possibly {@code null}).
-     */
-    @Override
-    public RegularTimePeriod previous() {
-        Week result;
-        if (this.week != FIRST_WEEK_IN_YEAR) {
-            result = new Week(this.week - 1, this.year);
-        } else {
-            // we need to work out if the previous year has 52 or 53 weeks...
-            if (this.year > 1900) {
-                int yy = this.year - 1;
-                Calendar prevYearCalendar = getCalendarInstance();
-                prevYearCalendar.set(yy, Calendar.DECEMBER, 31);
-                result = new Week(prevYearCalendar.getActualMaximum(Calendar.WEEK_OF_YEAR), yy);
-            } else {
-                result = null;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the week following this one.  This method will return
-     * {@code null} for some upper limit on the range of weeks (currently
-     * week 53, 9999).  For week 52 of any year, the following week is always
-     * week 53, but week 53 may not contain any days (you should check for
-     * this).
-     * No matter what time zone and locale this instance was created with,
-     * the returned instance will use the default calendar for time
-     * calculations, obtained with {@link RegularTimePeriod#getCalendarInstance()}.
-     *
-     * @return The following week (possibly {@code null}).
-     */
-    @Override
-    public RegularTimePeriod next() {
-        Week result;
-        if (this.week < 52) {
-            result = new Week(this.week + 1, this.year);
-        } else {
-            Calendar calendar = getCalendarInstance();
-            calendar.set(this.year, Calendar.DECEMBER, 31);
-            int actualMaxWeek = calendar.getActualMaximum(Calendar.WEEK_OF_YEAR);
-            if (this.week < actualMaxWeek) {
-                result = new Week(this.week + 1, this.year);
-            } else {
-                if (this.year < 9999) {
-                    result = new Week(FIRST_WEEK_IN_YEAR, this.year + 1);
-                } else {
-                    result = null;
-                }
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a serial index number for the week.
-     *
-     * @return The serial index number.
-     */
-    @Override
-    public long getSerialIndex() {
-        return this.year * 53L + this.week;
-    }
-
-    /**
-     * Returns the first millisecond of the week, evaluated using the supplied
-     * calendar (which determines the time zone).
-     *
-     * @param calendar  the calendar ({@code null} not permitted).
-     *
-     * @return The first millisecond of the week.
-     *
-     * @throws NullPointerException if {@code calendar} is
-     *     {@code null}.
-     */
-    @Override
-    public long getFirstMillisecond(Calendar calendar) {
-        Calendar c = (Calendar) calendar.clone();
-        c.clear();
-        c.set(Calendar.YEAR, this.year);
-        c.set(Calendar.WEEK_OF_YEAR, this.week);
-        c.set(Calendar.DAY_OF_WEEK, c.getFirstDayOfWeek());
-        c.set(Calendar.HOUR, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        return c.getTimeInMillis();
-    }
-
-    /**
-     * Returns the last millisecond of the week, evaluated using the supplied
-     * calendar (which determines the time zone).
-     *
-     * @param calendar  the calendar ({@code null} not permitted).
-     *
-     * @return The last millisecond of the week.
-     *
-     * @throws NullPointerException if {@code calendar} is
-     *     {@code null}.
-     */
-    @Override
-    public long getLastMillisecond(Calendar calendar) {
-        Calendar c = (Calendar) calendar.clone();
-        c.clear();
-        c.set(Calendar.YEAR, this.year);
-        c.set(Calendar.WEEK_OF_YEAR, this.week + 1);
-        c.set(Calendar.DAY_OF_WEEK, c.getFirstDayOfWeek());
-        c.set(Calendar.HOUR, 0);
-        c.set(Calendar.MINUTE, 0);
-        c.set(Calendar.SECOND, 0);
-        c.set(Calendar.MILLISECOND, 0);
-        return c.getTimeInMillis() - 1;
-    }
-
-    /**
-     * Returns a string representing the week (e.g. "Week 9, 2002").
-     *
-     * @return A string representing the week.
-     */
-    @Override
-    public String toString() {
-        return "Week " + this.week + ", " + this.year;
-    }
-
-    /**
-     * Tests the equality of this Week object to an arbitrary object.  Returns
-     * true if the target is a Week instance representing the same week as this
-     * object.  In all other cases, returns false.
-     *
-     * @param obj  the object ({@code null} permitted).
-     *
-     * @return {@code true} if week and year of this and object are the
-     *         same.
-     */
-    @Override
-    public boolean equals(Object obj) {
-        if (obj == this) {
-            return true;
-        }
-        if (!(obj instanceof Week)) {
-            return false;
-        }
-        Week that = (Week) obj;
-        if (this.week != that.week) {
-            return false;
-        }
-        if (this.year != that.year) {
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Returns a hash code for this object instance.  The approach described by
-     * Joshua Bloch in "Effective Java" has been used here:
-     * <p>
-     * {@code http://developer.java.sun.com/developer/Books/effectivejava
-     * /Chapter3.pdf}
-     *
-     * @return A hash code.
-     */
-    @Override
-    public int hashCode() {
-        int result = 17;
-        result = 37 * result + this.week;
-        result = 37 * result + this.year;
-        return result;
-    }
-
-    /**
-     * Returns an integer indicating the order of this Week object relative to
-     * the specified object:
-     *
-     * negative == before, zero == same, positive == after.
-     *
-     * @param o1  the object to compare.
-     *
-     * @return negative == before, zero == same, positive == after.
-     */
-    @Override
-    public int compareTo(TimePeriod o1) {
-        int result;
-        // CASE 1 : Comparing to another Week object
-        // --------------------------------------------
-        if (o1 instanceof Week) {
-            Week w = (Week) o1;
-            result = this.year - w.getYear().getYear();
-            if (result == 0) {
-                result = this.week - w.getWeek();
-            }
-        } else // CASE 2 : Comparing to another TimePeriod object
-        // -----------------------------------------------
-        if (o1 instanceof RegularTimePeriod) {
-            // more difficult case - evaluate later...
-            result = 0;
-        } else // CASE 3 : Comparing to a non-TimePeriod object
-        // ---------------------------------------------
-        {
-            // consider time periods to be ordered after general objects
-            result = 1;
-        }
-        return result;
-    }
-
-    /**
-     * Parses the string argument as a week.
+     * Standard constructor - constructs a panel for editing the properties of
+     * the specified plot.
      * <P>
-     * This method is required to accept the format "YYYY-Wnn".  It will also
-     * accept "Wnn-YYYY". Anything else, at the moment, is a bonus.
+     * In designing the panel, we need to be aware that subclasses of Plot will
+     * need to implement subclasses of PlotPropertyEditPanel - so we need to
+     * leave one or two 'slots' where the subclasses can extend the user
+     * interface.
      *
-     * @param s  string to parse.
-     *
-     * @return {@code null} if the string is not parseable, the week
-     *         otherwise.
+     * @param plot  the plot, which should be changed.
      */
-    public static Week parseWeek(String s) {
-        Week result = null;
-        if (s != null) {
-            // trim whitespace from either end of the string
-            s = s.trim();
-            int i = Week.findSeparator(s);
-            if (i != -1) {
-                String s1 = s.substring(0, i).trim();
-                String s2 = s.substring(i + 1).trim();
-                Year y = Week.evaluateAsYear(s1);
-                int w;
-                if (y != null) {
-                    w = Week.stringToWeek(s2);
-                    if (w == -1) {
-                        throw new TimePeriodFormatException("Can't evaluate the week.");
-                    }
-                    result = new Week(w, y);
-                } else {
-                    y = Week.evaluateAsYear(s2);
-                    if (y != null) {
-                        w = Week.stringToWeek(s1);
-                        if (w == -1) {
-                            throw new TimePeriodFormatException("Can't evaluate the week.");
-                        }
-                        result = new Week(w, y);
-                    } else {
-                        throw new TimePeriodFormatException("Can't evaluate the year.");
-                    }
+    public DefaultPlotEditor(Plot plot) {
+        JPanel panel = createPlotPanel(plot);
+        add(panel);
+    }
+
+    /**
+     * Creates a panel for the plot.
+     *
+     * @param plot  the plot.
+     *
+     * @return The panel.
+     */
+    protected JPanel createPlotPanel(Plot plot) {
+        this.plotInsets = plot.getInsets();
+        this.backgroundPaintSample = new PaintSample(plot.getBackgroundPaint());
+        this.outlineStrokeSample = new StrokeSample(plot.getOutlineStroke());
+        this.outlinePaintSample = new PaintSample(plot.getOutlinePaint());
+        if (plot instanceof CategoryPlot) {
+            this.plotOrientation = ((CategoryPlot) plot).getOrientation();
+        } else if (plot instanceof XYPlot) {
+            this.plotOrientation = ((XYPlot) plot).getOrientation();
+        }
+        if (plot instanceof CategoryPlot) {
+            CategoryItemRenderer renderer = ((CategoryPlot) plot).getRenderer();
+            if (renderer instanceof LineAndShapeRenderer) {
+                LineAndShapeRenderer r = (LineAndShapeRenderer) renderer;
+                this.drawLines = r.getDefaultLinesVisible();
+                this.drawShapes = r.getDefaultShapesVisible();
+            }
+        } else if (plot instanceof XYPlot) {
+            XYItemRenderer renderer = ((XYPlot) plot).getRenderer();
+            if (renderer instanceof StandardXYItemRenderer) {
+                StandardXYItemRenderer r = (StandardXYItemRenderer) renderer;
+                this.drawLines = r.getPlotLines();
+                this.drawShapes = r.getBaseShapesVisible();
+            }
+        }
+        setLayout(new BorderLayout());
+        this.availableStrokeSamples = new StrokeSample[4];
+        this.availableStrokeSamples[0] = new StrokeSample(null);
+        this.availableStrokeSamples[1] = new StrokeSample(new BasicStroke(1.0f));
+        this.availableStrokeSamples[2] = new StrokeSample(new BasicStroke(2.0f));
+        this.availableStrokeSamples[3] = new StrokeSample(new BasicStroke(3.0f));
+        // create a panel for the settings...
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), plot.getPlotType() + localizationResources.getString(":")));
+        JPanel general = new JPanel(new BorderLayout());
+        general.setBorder(BorderFactory.createTitledBorder(localizationResources.getString("General")));
+        JPanel interior = new JPanel(new LCBLayout(7));
+        interior.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        //        interior.add(new JLabel(localizationResources.getString("Insets")));
+        //        JButton button = new JButton(
+        //            localizationResources.getString("Edit...")
+        //        );
+        //        button.setActionCommand("Insets");
+        //        button.addActionListener(this);
+        //
+        //        this.insetsTextField = new InsetsTextField(this.plotInsets);
+        //        this.insetsTextField.setEnabled(false);
+        //        interior.add(this.insetsTextField);
+        //        interior.add(button);
+        interior.add(new JLabel(localizationResources.getString("Outline_stroke")));
+        JButton button = new JButton(localizationResources.getString("Select..."));
+        button.setActionCommand("OutlineStroke");
+        button.addActionListener(this);
+        interior.add(this.outlineStrokeSample);
+        interior.add(button);
+        interior.add(new JLabel(localizationResources.getString("Outline_Paint")));
+        button = new JButton(localizationResources.getString("Select..."));
+        button.setActionCommand("OutlinePaint");
+        button.addActionListener(this);
+        interior.add(this.outlinePaintSample);
+        interior.add(button);
+        interior.add(new JLabel(localizationResources.getString("Background_paint")));
+        button = new JButton(localizationResources.getString("Select..."));
+        button.setActionCommand("BackgroundPaint");
+        button.addActionListener(this);
+        interior.add(this.backgroundPaintSample);
+        interior.add(button);
+        if (this.plotOrientation != null) {
+            boolean isVertical = this.plotOrientation.equals(PlotOrientation.VERTICAL);
+            int index = isVertical ? ORIENTATION_VERTICAL : ORIENTATION_HORIZONTAL;
+            interior.add(new JLabel(localizationResources.getString("Orientation")));
+            this.orientationCombo = new JComboBox(orientationNames);
+            this.orientationCombo.setSelectedIndex(index);
+            this.orientationCombo.setActionCommand("Orientation");
+            this.orientationCombo.addActionListener(this);
+            interior.add(new JPanel());
+            interior.add(this.orientationCombo);
+        }
+        if (this.drawLines != null) {
+            interior.add(new JLabel(localizationResources.getString("Draw_lines")));
+            this.drawLinesCheckBox = new JCheckBox();
+            this.drawLinesCheckBox.setSelected(this.drawLines);
+            this.drawLinesCheckBox.setActionCommand("DrawLines");
+            this.drawLinesCheckBox.addActionListener(this);
+            interior.add(new JPanel());
+            interior.add(this.drawLinesCheckBox);
+        }
+        if (this.drawShapes != null) {
+            interior.add(new JLabel(localizationResources.getString("Draw_shapes")));
+            this.drawShapesCheckBox = new JCheckBox();
+            this.drawShapesCheckBox.setSelected(this.drawShapes);
+            this.drawShapesCheckBox.setActionCommand("DrawShapes");
+            this.drawShapesCheckBox.addActionListener(this);
+            interior.add(new JPanel());
+            interior.add(this.drawShapesCheckBox);
+        }
+        general.add(interior, BorderLayout.NORTH);
+        JPanel appearance = new JPanel(new BorderLayout());
+        appearance.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        appearance.add(general, BorderLayout.NORTH);
+        JTabbedPane tabs = createPlotTabs(plot);
+        tabs.add(localizationResources.getString("Appearance"), appearance);
+        panel.add(tabs);
+        return panel;
+    }
+
+    /**
+     * Creates a tabbed pane for the plot.
+     *
+     * @param plot  the plot.
+     *
+     * @return A tabbed pane.
+     */
+    protected JTabbedPane createPlotTabs(Plot plot) {
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        Axis domainAxis = null;
+        if (plot instanceof CategoryPlot) {
+            domainAxis = ((CategoryPlot) plot).getDomainAxis();
+        } else if (plot instanceof XYPlot) {
+            domainAxis = ((XYPlot) plot).getDomainAxis();
+        }
+        this.domainAxisPropertyPanel = DefaultAxisEditor.getInstance(domainAxis);
+        if (this.domainAxisPropertyPanel != null) {
+            this.domainAxisPropertyPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+            tabs.add(localizationResources.getString("Domain_Axis"), this.domainAxisPropertyPanel);
+        }
+        Axis rangeAxis = null;
+        if (plot instanceof CategoryPlot) {
+            rangeAxis = ((CategoryPlot) plot).getRangeAxis();
+        } else if (plot instanceof XYPlot) {
+            rangeAxis = ((XYPlot) plot).getRangeAxis();
+        } else if (plot instanceof PolarPlot) {
+            rangeAxis = ((PolarPlot) plot).getAxis();
+        }
+        this.rangeAxisPropertyPanel = DefaultAxisEditor.getInstance(rangeAxis);
+        if (this.rangeAxisPropertyPanel != null) {
+            this.rangeAxisPropertyPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+            tabs.add(localizationResources.getString("Range_Axis"), this.rangeAxisPropertyPanel);
+        }
+        return tabs;
+    }
+
+    /**
+     * Returns the current plot insets.
+     *
+     * @return The current plot insets.
+     */
+    public RectangleInsets getPlotInsets() {
+        if (this.plotInsets == null) {
+            this.plotInsets = new RectangleInsets(0.0, 0.0, 0.0, 0.0);
+        }
+        return this.plotInsets;
+    }
+
+    /**
+     * Returns the current background paint.
+     *
+     * @return The current background paint.
+     */
+    public Paint getBackgroundPaint() {
+        return this.backgroundPaintSample.getPaint();
+    }
+
+    /**
+     * Returns the current outline stroke.
+     *
+     * @return The current outline stroke (possibly {@code null}).
+     */
+    public Stroke getOutlineStroke() {
+        return this.outlineStrokeSample.getStroke();
+    }
+
+    /**
+     * Returns the current outline paint.
+     *
+     * @return The current outline paint.
+     */
+    public Paint getOutlinePaint() {
+        return this.outlinePaintSample.getPaint();
+    }
+
+    /**
+     * Returns a reference to the panel for editing the properties of the
+     * domain axis.
+     *
+     * @return A reference to a panel.
+     */
+    public DefaultAxisEditor getDomainAxisPropertyEditPanel() {
+        return this.domainAxisPropertyPanel;
+    }
+
+    /**
+     * Returns a reference to the panel for editing the properties of the
+     * range axis.
+     *
+     * @return A reference to a panel.
+     */
+    public DefaultAxisEditor getRangeAxisPropertyEditPanel() {
+        return this.rangeAxisPropertyPanel;
+    }
+
+    /**
+     * Handles user actions generated within the panel.
+     * @param event     the event
+     */
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        String command = event.getActionCommand();
+        if (command.equals("BackgroundPaint")) {
+            attemptBackgroundPaintSelection();
+        } else if (command.equals("OutlineStroke")) {
+            attemptOutlineStrokeSelection();
+        } else if (command.equals("OutlinePaint")) {
+            attemptOutlinePaintSelection();
+        } else //        else if (command.equals("Insets")) {
+        //            editInsets();
+        //        }
+        if (command.equals("Orientation")) {
+            attemptOrientationSelection();
+        } else if (command.equals("DrawLines")) {
+            attemptDrawLinesSelection();
+        } else if (command.equals("DrawShapes")) {
+            attemptDrawShapesSelection();
+        }
+    }
+
+    /**
+     * Allow the user to change the background paint.
+     */
+    private void attemptBackgroundPaintSelection() {
+        Color c;
+        c = JColorChooser.showDialog(this, localizationResources.getString("Background_Color"), Color.BLUE);
+        if (c != null) {
+            this.backgroundPaintSample.setPaint(c);
+        }
+    }
+
+    /**
+     * Allow the user to change the outline stroke.
+     */
+    private void attemptOutlineStrokeSelection() {
+        StrokeChooserPanel panel = new StrokeChooserPanel(this.outlineStrokeSample, this.availableStrokeSamples);
+        int result = JOptionPane.showConfirmDialog(this, panel, localizationResources.getString("Stroke_Selection"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            this.outlineStrokeSample.setStroke(panel.getSelectedStroke());
+        }
+    }
+
+    /**
+     * Allow the user to change the outline paint.  We use JColorChooser, so
+     * the user can only choose colors (a subset of all possible paints).
+     */
+    private void attemptOutlinePaintSelection() {
+        Color c;
+        c = JColorChooser.showDialog(this, localizationResources.getString("Outline_Color"), Color.BLUE);
+        if (c != null) {
+            this.outlinePaintSample.setPaint(c);
+        }
+    }
+
+    //    /**
+    //     * Allow the user to edit the individual insets' values.
+    //     */
+    //    private void editInsets() {
+    //        InsetsChooserPanel panel = new InsetsChooserPanel(this.plotInsets);
+    //        int result = JOptionPane.showConfirmDialog(
+    //            this, panel, localizationResources.getString("Edit_Insets"),
+    //            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+    //        );
+    //
+    //        if (result == JOptionPane.OK_OPTION) {
+    //            this.plotInsets = panel.getInsets();
+    //            this.insetsTextField.setInsets(this.plotInsets);
+    //        }
+    //
+    //    }
+    //
+    /**
+     * Allow the user to modify the plot orientation if this is an editor for a
+     * <tt>CategoryPlot</tt> or a <tt>XYPlot</tt>.
+     */
+    private void attemptOrientationSelection() {
+        int index = this.orientationCombo.getSelectedIndex();
+        if (index == ORIENTATION_VERTICAL) {
+            this.plotOrientation = PlotOrientation.VERTICAL;
+        } else {
+            this.plotOrientation = PlotOrientation.HORIZONTAL;
+        }
+    }
+
+    /**
+     * Allow the user to modify whether lines are drawn between data
+     * points by <tt>LineAndShapeRenderer</tt>s and
+     * <tt>StandardXYItemRenderer</tt>s.
+     */
+    private void attemptDrawLinesSelection() {
+        this.drawLines = this.drawLinesCheckBox.isSelected();
+    }
+
+    /**
+     * Allow the user to modify whether shapes are drawn at data points
+     * by <tt>LineAndShapeRenderer</tt>s and <tt>StandardXYItemRenderer</tt>s.
+     */
+    private void attemptDrawShapesSelection() {
+        this.drawShapes = this.drawShapesCheckBox.isSelected();
+    }
+
+    /**
+     * Updates the plot properties to match the properties defined on the panel.
+     *
+     * @param plot  The plot.
+     */
+    public void updatePlotProperties(Plot plot) {
+        // set the plot properties...
+        plot.setOutlinePaint(getOutlinePaint());
+        plot.setOutlineStroke(getOutlineStroke());
+        plot.setBackgroundPaint(getBackgroundPaint());
+        plot.setInsets(getPlotInsets());
+        // then the axis properties...
+        if (this.domainAxisPropertyPanel != null) {
+            Axis domainAxis = null;
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                domainAxis = p.getDomainAxis();
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                domainAxis = p.getDomainAxis();
+            }
+            if (domainAxis != null) {
+                this.domainAxisPropertyPanel.setAxisProperties(domainAxis);
+            }
+        }
+        if (this.rangeAxisPropertyPanel != null) {
+            Axis rangeAxis = null;
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                rangeAxis = p.getRangeAxis();
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                rangeAxis = p.getRangeAxis();
+            } else if (plot instanceof PolarPlot) {
+                PolarPlot p = (PolarPlot) plot;
+                rangeAxis = p.getAxis();
+            }
+            if (rangeAxis != null) {
+                this.rangeAxisPropertyPanel.setAxisProperties(rangeAxis);
+            }
+        }
+        if (this.plotOrientation != null) {
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                p.setOrientation(this.plotOrientation);
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                p.setOrientation(this.plotOrientation);
+            }
+        }
+        if (this.drawLines != null) {
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                CategoryItemRenderer r = p.getRenderer();
+                if (r instanceof LineAndShapeRenderer) {
+                    ((LineAndShapeRenderer) r).setDefaultLinesVisible(this.drawLines);
                 }
-            } else {
-                throw new TimePeriodFormatException("Could not find separator.");
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                XYItemRenderer r = p.getRenderer();
+                if (r instanceof StandardXYItemRenderer) {
+                    ((StandardXYItemRenderer) r).setPlotLines(this.drawLines);
+                }
             }
         }
-        return result;
-    }
-
-    /**
-     * Finds the first occurrence of ' ', '-', ',' or '.'
-     *
-     * @param s  the string to parse.
-     *
-     * @return {@code -1} if none of the characters was found, the
-     *      index of the first occurrence otherwise.
-     */
-    private static int findSeparator(String s) {
-        int result = s.indexOf('-');
-        if (result == -1) {
-            result = s.indexOf(',');
-        }
-        if (result == -1) {
-            result = s.indexOf(' ');
-        }
-        if (result == -1) {
-            result = s.indexOf('.');
-        }
-        return result;
-    }
-
-    /**
-     * Creates a year from a string, or returns null (format exceptions
-     * suppressed).
-     *
-     * @param s  string to parse.
-     *
-     * @return {@code null} if the string is not parseable, the year
-     *         otherwise.
-     */
-    private static Year evaluateAsYear(String s) {
-        Year result = null;
-        try {
-            result = Year.parseYear(s);
-        } catch (TimePeriodFormatException e) {
-            // suppress
-        }
-        return result;
-    }
-
-    /**
-     * Converts a string to a week.
-     *
-     * @param s  the string to parse.
-     * @return {@code -1} if the string does not contain a week number,
-     *         the number of the week otherwise.
-     */
-    private static int stringToWeek(String s) {
-        int result = -1;
-        s = s.replace('W', ' ');
-        s = s.trim();
-        try {
-            result = Integer.parseInt(s);
-            if ((result < 1) || (result > LAST_WEEK_IN_YEAR)) {
-                result = -1;
+        if (this.drawShapes != null) {
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                CategoryItemRenderer r = p.getRenderer();
+                if (r instanceof LineAndShapeRenderer) {
+                    ((LineAndShapeRenderer) r).setDefaultShapesVisible(this.drawShapes);
+                }
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                XYItemRenderer r = p.getRenderer();
+                if (r instanceof StandardXYItemRenderer) {
+                    ((StandardXYItemRenderer) r).setBaseShapesVisible(this.drawShapes);
+                }
             }
-        } catch (NumberFormatException e) {
-            // suppress
         }
-        return result;
     }
 }

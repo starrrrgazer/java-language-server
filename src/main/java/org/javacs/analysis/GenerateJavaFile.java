@@ -48,6 +48,7 @@ public class GenerateJavaFile {
 
         // loc
         // NOD:1000-25000 DEF:80-2000 OCC:600-15000
+        Files.createDirectories(Paths.get(outputDir));
         generate(infos, (info) -> info.LOC, "LOC", 400);
         generate(infos, (info) -> info.NOD, "NOD", 1000);
         generate(infos, (info) -> info.OCC, "OCC", 600);
@@ -57,23 +58,44 @@ public class GenerateJavaFile {
     public static void generate(List<FileInfo> infos, Function<FileInfo, Integer> function, String prefix, int step)
             throws IOException {
         TreeMap<Integer, FileInfo> map = new TreeMap<>();
+        int cnt = 0;
+        Random rand = new Random();
         for (FileInfo info : infos) {
             map.put(function.apply(info), info);
         }
 
+//        for (int total = step; total <= step * 25; total += step) {
+//            String fileName = prefix + "_" + total + ".java";
+//            Path outputPath = Paths.get(outputDir, fileName);
+//            Files.createDirectories(outputPath.getParent());
+//            // unique
+//            Files.writeString(outputPath, "package " + prefix + "." + convertToAlpha(counter++) + ";\n");
+//            int left = total;
+//            Map.Entry<Integer, FileInfo> entry = map.floorEntry(left);
+//            while (left > 0 && entry != null) {
+//                FileInfo info = entry.getValue();
+//                left -= entry.getKey();
+//                Files.writeString(outputPath, info.codes, StandardOpenOption.APPEND);
+//                entry = map.floorEntry(left);
+//            }
+//            System.out.println("generated:" + total);
+//        }
+        Path parentPath = Paths.get(outputDir, prefix);
+        Files.createDirectories(parentPath);
         for (int total = step; total <= step * 25; total += step) {
+            Path dir = Paths.get(parentPath.toString(),  convertToAlpha(counter));
+            Files.createDirectories(dir);
             String fileName = prefix + "_" + total + ".java";
-            Path outputPath = Paths.get(outputDir, fileName);
-            Files.createDirectories(outputPath.getParent());
+            Path outputPath = Paths.get(dir.toString(), fileName);
             // unique
             Files.writeString(outputPath, "package " + prefix + "." + convertToAlpha(counter++) + ";\n");
             int left = total;
-            Map.Entry<Integer, FileInfo> entry = map.floorEntry(left);
-            while (left > 0 && entry != null) {
+            Map.Entry<Integer, FileInfo> entry = map.floorEntry(rand.nextInt(left + step/2));
+            while (left > step/4 && entry != null) {
                 FileInfo info = entry.getValue();
                 left -= entry.getKey();
                 Files.writeString(outputPath, info.codes, StandardOpenOption.APPEND);
-                entry = map.floorEntry(left);
+                entry = map.floorEntry(rand.nextInt(left + step/2));
             }
             System.out.println("generated:" + total);
         }

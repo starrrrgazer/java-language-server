@@ -64,7 +64,7 @@ package NOD.ah;
  * @see Plot
  * @see PieDataset
  */
-class PiePlot<K extends Comparable<K>> extends Plot implements Cloneable, Serializable {
+public class PiePlot<K extends Comparable<K>> extends Plot implements Cloneable, Serializable {
 
     /**
      * For serialization.
@@ -3060,542 +3060,777 @@ class PiePlot<K extends Comparable<K>> extends Plot implements Cloneable, Serial
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
  *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -------------------------------
- * CombinedDomainCategoryPlot.java
- * -------------------------------
- * (C) Copyright 2003-present, by David Gilbert.
+ * ----------------------
+ * StandardDialScale.java
+ * ----------------------
+ * (C) Copyright 2006-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Nicolas Brodu;
+ * Contributor(s):   -;
  *
  */
 /**
- * A combined category plot where the domain axis is shared.
+ * A scale for a {@link DialPlot}.
  */
-class CombinedDomainCategoryPlot extends CategoryPlot implements PlotChangeListener {
+public class StandardDialScale extends AbstractDialLayer implements DialScale, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 8207194522653701572L;
+    static final long serialVersionUID = 3715644629665918516L;
 
     /**
-     * Storage for the subplot references.
+     * The minimum data value for the scale.
      */
-    private List<CategoryPlot> subplots;
+    private double lowerBound;
 
     /**
-     * The gap between subplots.
+     * The maximum data value for the scale.
      */
-    private double gap;
+    private double upperBound;
 
     /**
-     * Temporary storage for the subplot areas.
+     * The start angle for the scale display, in degrees (using the same
+     * encoding as Arc2D).
      */
-    private transient Rectangle2D[] subplotAreas;
+    private double startAngle;
 
-    // FIXME:  move the above to the plot state
     /**
-     * Default constructor.
+     * The extent of the scale display.
      */
-    public CombinedDomainCategoryPlot() {
-        this(new CategoryAxis());
+    private double extent;
+
+    /**
+     * The factor (in the range 0.0 to 1.0) that determines the outside limit
+     * of the tick marks.
+     */
+    private double tickRadius;
+
+    /**
+     * The increment (in data units) between major tick marks.
+     */
+    private double majorTickIncrement;
+
+    /**
+     * The factor that is subtracted from the tickRadius to determine the
+     * inner point of the major ticks.
+     */
+    private double majorTickLength;
+
+    /**
+     * The paint to use for major tick marks.  This field is transient because
+     * it requires special handling for serialization.
+     */
+    private transient Paint majorTickPaint;
+
+    /**
+     * The stroke to use for major tick marks.  This field is transient because
+     * it requires special handling for serialization.
+     */
+    private transient Stroke majorTickStroke;
+
+    /**
+     * The number of minor ticks between each major tick.
+     */
+    private int minorTickCount;
+
+    /**
+     * The factor that is subtracted from the tickRadius to determine the
+     * inner point of the minor ticks.
+     */
+    private double minorTickLength;
+
+    /**
+     * The paint to use for minor tick marks.  This field is transient because
+     * it requires special handling for serialization.
+     */
+    private transient Paint minorTickPaint;
+
+    /**
+     * The stroke to use for minor tick marks.  This field is transient because
+     * it requires special handling for serialization.
+     */
+    private transient Stroke minorTickStroke;
+
+    /**
+     * The tick label offset.
+     */
+    private double tickLabelOffset;
+
+    /**
+     * The tick label font.
+     */
+    private Font tickLabelFont;
+
+    /**
+     * A flag that controls whether the tick labels are
+     * displayed.
+     */
+    private boolean tickLabelsVisible;
+
+    /**
+     * The number formatter for the tick labels.
+     */
+    private NumberFormat tickLabelFormatter;
+
+    /**
+     * A flag that controls whether the first tick label is
+     * displayed.
+     */
+    private boolean firstTickLabelVisible;
+
+    /**
+     * The tick label paint.  This field is transient because it requires
+     * special handling for serialization.
+     */
+    private transient Paint tickLabelPaint;
+
+    /**
+     * Creates a new instance of DialScale.
+     */
+    public StandardDialScale() {
+        this(0.0, 100.0, 175, -170, 10.0, 4);
     }
 
     /**
-     * Creates a new plot.
+     * Creates a new instance.
      *
-     * @param domainAxis  the shared domain axis ({@code null} not
-     *                    permitted).
+     * @param lowerBound  the lower bound of the scale.
+     * @param upperBound  the upper bound of the scale.
+     * @param startAngle  the start angle (in degrees, using the same
+     *     orientation as Java's {@code Arc2D} class).
+     * @param extent  the extent (in degrees, counter-clockwise).
+     * @param majorTickIncrement  the interval between major tick marks (must
+     *     be &gt; 0).
+     * @param minorTickCount  the number of minor ticks between major tick
+     *          marks.
      */
-    public CombinedDomainCategoryPlot(CategoryAxis domainAxis) {
-        super(null, domainAxis, null, null);
-        this.subplots = new ArrayList<>();
-        this.gap = 5.0;
-    }
-
-    /**
-     * Returns the space between subplots.  The default value is 5.0.
-     *
-     * @return The gap (in Java2D units).
-     *
-     * @see #setGap(double)
-     */
-    public double getGap() {
-        return this.gap;
-    }
-
-    /**
-     * Sets the amount of space between subplots and sends a
-     * {@link PlotChangeEvent} to all registered listeners.
-     *
-     * @param gap  the gap between subplots (in Java2D units).
-     *
-     * @see #getGap()
-     */
-    public void setGap(double gap) {
-        this.gap = gap;
-        fireChangeEvent();
-    }
-
-    /**
-     * Adds a subplot to the combined chart and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     * <br><br>
-     * The domain axis for the subplot will be set to {@code null}.  You
-     * must ensure that the subplot has a non-null range axis.
-     *
-     * @param subplot  the subplot ({@code null} not permitted).
-     */
-    public void add(CategoryPlot subplot) {
-        add(subplot, 1);
-    }
-
-    /**
-     * Adds a subplot to the combined chart and sends a {@link PlotChangeEvent}
-     * to all registered listeners.
-     * <br><br>
-     * The domain axis for the subplot will be set to {@code null}.  You
-     * must ensure that the subplot has a non-null range axis.
-     *
-     * @param subplot  the subplot ({@code null} not permitted).
-     * @param weight  the weight (must be &gt;= 1).
-     */
-    public void add(CategoryPlot subplot, int weight) {
-        Args.nullNotPermitted(subplot, "subplot");
-        if (weight < 1) {
-            throw new IllegalArgumentException("Require weight >= 1.");
+    public StandardDialScale(double lowerBound, double upperBound, double startAngle, double extent, double majorTickIncrement, int minorTickCount) {
+        if (majorTickIncrement <= 0.0) {
+            throw new IllegalArgumentException("Requires 'majorTickIncrement' > 0.");
         }
-        subplot.setParent(this);
-        subplot.setWeight(weight);
-        subplot.setInsets(new RectangleInsets(0.0, 0.0, 0.0, 0.0));
-        subplot.setDomainAxis(null);
-        subplot.setOrientation(getOrientation());
-        subplot.addChangeListener(this);
-        this.subplots.add(subplot);
-        CategoryAxis axis = getDomainAxis();
-        if (axis != null) {
-            axis.configure();
-        }
-        fireChangeEvent();
+        this.startAngle = startAngle;
+        this.extent = extent;
+        this.lowerBound = lowerBound;
+        this.upperBound = upperBound;
+        this.tickRadius = 0.70;
+        this.tickLabelsVisible = true;
+        this.tickLabelFormatter = new DecimalFormat("0.0");
+        this.firstTickLabelVisible = true;
+        this.tickLabelFont = new Font("Dialog", Font.BOLD, 16);
+        this.tickLabelPaint = Color.BLUE;
+        this.tickLabelOffset = 0.10;
+        this.majorTickIncrement = majorTickIncrement;
+        this.majorTickLength = 0.04;
+        this.majorTickPaint = Color.BLACK;
+        this.majorTickStroke = new BasicStroke(3.0f);
+        this.minorTickCount = minorTickCount;
+        this.minorTickLength = 0.02;
+        this.minorTickPaint = Color.BLACK;
+        this.minorTickStroke = new BasicStroke(1.0f);
     }
 
     /**
-     * Removes a subplot from the combined chart.  Potentially, this removes
-     * some unique categories from the overall union of the datasets...so the
-     * domain axis is reconfigured, then a {@link PlotChangeEvent} is sent to
+     * Returns the lower bound for the scale.
+     *
+     * @return The lower bound for the scale.
+     *
+     * @see #setLowerBound(double)
+     */
+    public double getLowerBound() {
+        return this.lowerBound;
+    }
+
+    /**
+     * Sets the lower bound for the scale and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
+     *
+     * @param lower  the lower bound.
+     *
+     * @see #getLowerBound()
+     */
+    public void setLowerBound(double lower) {
+        this.lowerBound = lower;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the upper bound for the scale.
+     *
+     * @return The upper bound for the scale.
+     *
+     * @see #setUpperBound(double)
+     */
+    public double getUpperBound() {
+        return this.upperBound;
+    }
+
+    /**
+     * Sets the upper bound for the scale and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
+     *
+     * @param upper  the upper bound.
+     *
+     * @see #getUpperBound()
+     */
+    public void setUpperBound(double upper) {
+        this.upperBound = upper;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the start angle for the scale (in degrees using the same
+     * orientation as Java's {@code Arc2D} class).
+     *
+     * @return The start angle.
+     *
+     * @see #setStartAngle(double)
+     */
+    public double getStartAngle() {
+        return this.startAngle;
+    }
+
+    /**
+     * Sets the start angle for the scale and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
+     *
+     * @param angle  the angle (in degrees).
+     *
+     * @see #getStartAngle()
+     */
+    public void setStartAngle(double angle) {
+        this.startAngle = angle;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the extent.
+     *
+     * @return The extent.
+     *
+     * @see #setExtent(double)
+     */
+    public double getExtent() {
+        return this.extent;
+    }
+
+    /**
+     * Sets the extent and sends a {@link DialLayerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param extent  the extent.
+     *
+     * @see #getExtent()
+     */
+    public void setExtent(double extent) {
+        this.extent = extent;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the radius (as a percentage of the maximum space available) of
+     * the outer limit of the tick marks.
+     *
+     * @return The tick radius.
+     *
+     * @see #setTickRadius(double)
+     */
+    public double getTickRadius() {
+        return this.tickRadius;
+    }
+
+    /**
+     * Sets the tick radius and sends a {@link DialLayerChangeEvent} to all
+     * registered listeners.
+     *
+     * @param radius  the radius.
+     *
+     * @see #getTickRadius()
+     */
+    public void setTickRadius(double radius) {
+        if (radius <= 0.0) {
+            throw new IllegalArgumentException("The 'radius' must be positive.");
+        }
+        this.tickRadius = radius;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the increment (in data units) between major tick labels.
+     *
+     * @return The increment between major tick labels.
+     *
+     * @see #setMajorTickIncrement(double)
+     */
+    public double getMajorTickIncrement() {
+        return this.majorTickIncrement;
+    }
+
+    /**
+     * Sets the increment (in data units) between major tick labels and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
+     *
+     * @param increment  the increment (must be &gt; 0).
+     *
+     * @see #getMajorTickIncrement()
+     */
+    public void setMajorTickIncrement(double increment) {
+        if (increment <= 0.0) {
+            throw new IllegalArgumentException("The 'increment' must be positive.");
+        }
+        this.majorTickIncrement = increment;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the length factor for the major tick marks.  The value is
+     * subtracted from the tick radius to determine the inner starting point
+     * for the tick marks.
+     *
+     * @return The length factor.
+     *
+     * @see #setMajorTickLength(double)
+     */
+    public double getMajorTickLength() {
+        return this.majorTickLength;
+    }
+
+    /**
+     * Sets the length factor for the major tick marks and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
+     *
+     * @param length  the length.
+     *
+     * @see #getMajorTickLength()
+     */
+    public void setMajorTickLength(double length) {
+        if (length < 0.0) {
+            throw new IllegalArgumentException("Negative 'length' argument.");
+        }
+        this.majorTickLength = length;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns the major tick paint.
+     *
+     * @return The major tick paint (never {@code null}).
+     *
+     * @see #setMajorTickPaint(Paint)
+     */
+    public Paint getMajorTickPaint() {
+        return this.majorTickPaint;
+    }
+
+    /**
+     * Sets the major tick paint and sends a {@link DialLayerChangeEvent} to
      * all registered listeners.
      *
-     * @param subplot  the subplot ({@code null} not permitted).
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getMajorTickPaint()
      */
-    public void remove(CategoryPlot subplot) {
-        Args.nullNotPermitted(subplot, "subplot");
-        int position = -1;
-        int size = this.subplots.size();
-        int i = 0;
-        while (position == -1 && i < size) {
-            if (this.subplots.get(i) == subplot) {
-                position = i;
-            }
-            i++;
-        }
-        if (position != -1) {
-            this.subplots.remove(position);
-            subplot.setParent(null);
-            subplot.removeChangeListener(this);
-            CategoryAxis domain = getDomainAxis();
-            if (domain != null) {
-                domain.configure();
-            }
-            fireChangeEvent();
-        }
+    public void setMajorTickPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.majorTickPaint = paint;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Returns the list of subplots.  The returned list may be empty, but is
-     * never {@code null}.
+     * Returns the stroke used to draw the major tick marks.
      *
-     * @return An unmodifiable list of subplots.
+     * @return The stroke (never {@code null}).
+     *
+     * @see #setMajorTickStroke(Stroke)
      */
-    public List<CategoryPlot> getSubplots() {
-        if (this.subplots != null) {
-            return Collections.unmodifiableList(this.subplots);
-        } else {
-            return Collections.EMPTY_LIST;
-        }
+    public Stroke getMajorTickStroke() {
+        return this.majorTickStroke;
     }
 
     /**
-     * Returns the subplot (if any) that contains the (x, y) point (specified
-     * in Java2D space).
+     * Sets the stroke used to draw the major tick marks and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @param info  the chart rendering info ({@code null} not permitted).
-     * @param source  the source point ({@code null} not permitted).
+     * @param stroke  the stroke ({@code null} not permitted).
      *
-     * @return A subplot (possibly {@code null}).
+     * @see #getMajorTickStroke()
      */
-    public CategoryPlot findSubplot(PlotRenderingInfo info, Point2D source) {
-        Args.nullNotPermitted(info, "info");
-        Args.nullNotPermitted(source, "source");
-        CategoryPlot result = null;
-        int subplotIndex = info.getSubplotIndex(source);
-        if (subplotIndex >= 0) {
-            result = (CategoryPlot) this.subplots.get(subplotIndex);
-        }
-        return result;
+    public void setMajorTickStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.majorTickStroke = stroke;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Multiplies the range on the range axis/axes by the specified factor.
+     * Returns the number of minor tick marks between major tick marks.
      *
-     * @param factor  the zoom factor.
-     * @param info  the plot rendering info ({@code null} not permitted).
-     * @param source  the source point ({@code null} not permitted).
+     * @return The number of minor tick marks between major tick marks.
+     *
+     * @see #setMinorTickCount(int)
      */
-    @Override
-    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source) {
-        zoomRangeAxes(factor, info, source, false);
+    public int getMinorTickCount() {
+        return this.minorTickCount;
     }
 
     /**
-     * Multiplies the range on the range axis/axes by the specified factor.
+     * Sets the number of minor tick marks between major tick marks and sends
+     * a {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @param factor  the zoom factor.
-     * @param info  the plot rendering info ({@code null} not permitted).
-     * @param source  the source point ({@code null} not permitted).
-     * @param useAnchor  zoom about the anchor point?
+     * @param count  the count.
+     *
+     * @see #getMinorTickCount()
      */
-    @Override
-    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
-        // delegate 'info' and 'source' argument checks...
-        CategoryPlot subplot = findSubplot(info, source);
-        if (subplot != null) {
-            subplot.zoomRangeAxes(factor, info, source, useAnchor);
-        } else {
-            // if the source point doesn't fall within a subplot, we do the
-            // zoom on all subplots...
-            for (CategoryPlot categoryPlot : getSubplots()) {
-                subplot = categoryPlot;
-                subplot.zoomRangeAxes(factor, info, source, useAnchor);
-            }
+    public void setMinorTickCount(int count) {
+        if (count < 0) {
+            throw new IllegalArgumentException("The 'count' cannot be negative.");
         }
+        this.minorTickCount = count;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Zooms in on the range axes.
+     * Returns the length factor for the minor tick marks.  The value is
+     * subtracted from the tick radius to determine the inner starting point
+     * for the tick marks.
      *
-     * @param lowerPercent  the lower bound.
-     * @param upperPercent  the upper bound.
-     * @param info  the plot rendering info ({@code null} not permitted).
-     * @param source  the source point ({@code null} not permitted).
+     * @return The length factor.
+     *
+     * @see #setMinorTickLength(double)
      */
-    @Override
-    public void zoomRangeAxes(double lowerPercent, double upperPercent, PlotRenderingInfo info, Point2D source) {
-        // delegate 'info' and 'source' argument checks...
-        CategoryPlot subplot = findSubplot(info, source);
-        if (subplot != null) {
-            subplot.zoomRangeAxes(lowerPercent, upperPercent, info, source);
-        } else {
-            // if the source point doesn't fall within a subplot, we do the
-            // zoom on all subplots...
-            for (CategoryPlot categoryPlot : getSubplots()) {
-                subplot = categoryPlot;
-                subplot.zoomRangeAxes(lowerPercent, upperPercent, info, source);
-            }
-        }
+    public double getMinorTickLength() {
+        return this.minorTickLength;
     }
 
     /**
-     * Calculates the space required for the axes.
+     * Sets the length factor for the minor tick marks and sends
+     * a {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @param g2  the graphics device.
-     * @param plotArea  the plot area.
+     * @param length  the length.
      *
-     * @return The space required for the axes.
+     * @see #getMinorTickLength()
      */
-    @Override
-    protected AxisSpace calculateAxisSpace(Graphics2D g2, Rectangle2D plotArea) {
-        AxisSpace space = new AxisSpace();
-        PlotOrientation orientation = getOrientation();
-        // work out the space required by the domain axis...
-        AxisSpace fixed = getFixedDomainAxisSpace();
-        if (fixed != null) {
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                space.setLeft(fixed.getLeft());
-                space.setRight(fixed.getRight());
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                space.setTop(fixed.getTop());
-                space.setBottom(fixed.getBottom());
-            }
-        } else {
-            CategoryAxis categoryAxis = getDomainAxis();
-            RectangleEdge categoryEdge = Plot.resolveDomainAxisLocation(getDomainAxisLocation(), orientation);
-            if (categoryAxis != null) {
-                space = categoryAxis.reserveSpace(g2, this, plotArea, categoryEdge, space);
-            } else {
-                if (getDrawSharedDomainAxis()) {
-                    space = getDomainAxis().reserveSpace(g2, this, plotArea, categoryEdge, space);
-                }
-            }
+    public void setMinorTickLength(double length) {
+        if (length < 0.0) {
+            throw new IllegalArgumentException("Negative 'length' argument.");
         }
-        Rectangle2D adjustedPlotArea = space.shrink(plotArea, null);
-        // work out the maximum height or width of the non-shared axes...
-        int n = this.subplots.size();
-        int totalWeight = 0;
-        for (int i = 0; i < n; i++) {
-            CategoryPlot sub = (CategoryPlot) this.subplots.get(i);
-            totalWeight += sub.getWeight();
-        }
-        this.subplotAreas = new Rectangle2D[n];
-        double x = adjustedPlotArea.getX();
-        double y = adjustedPlotArea.getY();
-        double usableSize = 0.0;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            usableSize = adjustedPlotArea.getWidth() - this.gap * (n - 1);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            usableSize = adjustedPlotArea.getHeight() - this.gap * (n - 1);
-        }
-        for (int i = 0; i < n; i++) {
-            CategoryPlot plot = (CategoryPlot) this.subplots.get(i);
-            // calculate sub-plot area
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                double w = usableSize * plot.getWeight() / totalWeight;
-                this.subplotAreas[i] = new Rectangle2D.Double(x, y, w, adjustedPlotArea.getHeight());
-                x = x + w + this.gap;
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                double h = usableSize * plot.getWeight() / totalWeight;
-                this.subplotAreas[i] = new Rectangle2D.Double(x, y, adjustedPlotArea.getWidth(), h);
-                y = y + h + this.gap;
-            }
-            AxisSpace subSpace = plot.calculateRangeAxisSpace(g2, this.subplotAreas[i], null);
-            space.ensureAtLeast(subSpace);
-        }
-        return space;
+        this.minorTickLength = length;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Receives a chart element visitor.  Many plot subclasses will override
-     * this method to handle their subcomponents.
+     * Returns the paint used to draw the minor tick marks.
      *
-     * @param visitor  the visitor ({@code null} not permitted).
+     * @return The paint (never {@code null}).
+     *
+     * @see #setMinorTickPaint(Paint)
      */
-    @Override
-    public void receive(ChartElementVisitor visitor) {
-        subplots.forEach(subplot -> {
-            subplot.receive(visitor);
-        });
-        super.receive(visitor);
+    public Paint getMinorTickPaint() {
+        return this.minorTickPaint;
     }
 
     /**
-     * Draws the plot on a Java 2D graphics device (such as the screen or a
-     * printer).  Will perform all the placement calculations for each of the
-     * sub-plots and then tell these to draw themselves.
+     * Sets the paint used to draw the minor tick marks and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @param g2  the graphics device.
-     * @param area  the area within which the plot (including axis labels)
-     *              should be drawn.
-     * @param anchor  the anchor point ({@code null} permitted).
-     * @param parentState  the state from the parent plot, if there is one.
-     * @param info  collects information about the drawing ({@code null}
-     *              permitted).
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getMinorTickPaint()
      */
-    @Override
-    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
-        // set up info collection...
-        if (info != null) {
-            info.setPlotArea(area);
-        }
-        // adjust the drawing area for plot insets (if any)...
-        RectangleInsets insets = getInsets();
-        area.setRect(area.getX() + insets.getLeft(), area.getY() + insets.getTop(), area.getWidth() - insets.getLeft() - insets.getRight(), area.getHeight() - insets.getTop() - insets.getBottom());
-        // calculate the data area...
-        setFixedRangeAxisSpaceForSubplots(null);
-        AxisSpace space = calculateAxisSpace(g2, area);
-        Rectangle2D dataArea = space.shrink(area, null);
-        // set the width and height of non-shared axis of all sub-plots
-        setFixedRangeAxisSpaceForSubplots(space);
-        // draw the shared axis
-        CategoryAxis axis = getDomainAxis();
-        RectangleEdge domainEdge = getDomainAxisEdge();
-        double cursor = RectangleEdge.coordinate(dataArea, domainEdge);
-        AxisState axisState = axis.draw(g2, cursor, area, dataArea, domainEdge, info);
-        if (parentState == null) {
-            parentState = new PlotState();
-        }
-        parentState.getSharedAxisStates().put(axis, axisState);
-        // draw all the subplots
-        for (int i = 0; i < this.subplots.size(); i++) {
-            CategoryPlot plot = (CategoryPlot) this.subplots.get(i);
-            PlotRenderingInfo subplotInfo = null;
-            if (info != null) {
-                subplotInfo = new PlotRenderingInfo(info.getOwner());
-                info.addSubplotInfo(subplotInfo);
-            }
-            Point2D subAnchor = null;
-            if (anchor != null && this.subplotAreas[i].contains(anchor)) {
-                subAnchor = anchor;
-            }
-            plot.draw(g2, this.subplotAreas[i], subAnchor, parentState, subplotInfo);
-        }
-        if (info != null) {
-            info.setDataArea(dataArea);
-        }
+    public void setMinorTickPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.minorTickPaint = paint;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Sets the size (width or height, depending on the orientation of the
-     * plot) for the range axis of each subplot.
+     * Returns the stroke used to draw the minor tick marks.
      *
-     * @param space  the space ({@code null} permitted).
+     * @return The paint (never {@code null}).
+     *
+     * @see #setMinorTickStroke(Stroke)
      */
-    protected void setFixedRangeAxisSpaceForSubplots(AxisSpace space) {
-        for (CategoryPlot plot : this.subplots) {
-            plot.setFixedRangeAxisSpace(space, false);
-        }
+    public Stroke getMinorTickStroke() {
+        return this.minorTickStroke;
     }
 
     /**
-     * Sets the orientation of the plot (and all subplots).
+     * Sets the stroke used to draw the minor tick marks and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @param orientation  the orientation ({@code null} not permitted).
+     * @param stroke  the stroke ({@code null} not permitted).
+     *
+     * @see #getMinorTickStroke()
      */
-    @Override
-    public void setOrientation(PlotOrientation orientation) {
-        super.setOrientation(orientation);
-        for (CategoryPlot plot : this.subplots) {
-            plot.setOrientation(orientation);
-        }
+    public void setMinorTickStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.minorTickStroke = stroke;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Sets the shadow generator for the plot (and all subplots) and sends
-     * a {@link PlotChangeEvent} to all registered listeners.
+     * Returns the tick label offset.
      *
-     * @param generator  the new generator ({@code null} permitted).
+     * @return The tick label offset.
+     *
+     * @see #setTickLabelOffset(double)
      */
-    @Override
-    public void setShadowGenerator(ShadowGenerator generator) {
-        setNotify(false);
-        super.setShadowGenerator(generator);
-        for (CategoryPlot plot : this.subplots) {
-            plot.setShadowGenerator(generator);
-        }
-        setNotify(true);
+    public double getTickLabelOffset() {
+        return this.tickLabelOffset;
     }
 
     /**
-     * Returns a range representing the extent of the data values in this plot
-     * (obtained from the subplots) that will be rendered against the specified
-     * axis.  NOTE: This method is intended for internal JFreeChart use, and
-     * is public only so that code in the axis classes can call it.  Since,
-     * for this class, the domain axis is a {@link CategoryAxis}
-     * (not a {@code ValueAxis}) and subplots have independent range axes,
-     * the JFreeChart code will never call this method (although this is not
-     * checked/enforced).
+     * Sets the tick label offset and sends a {@link DialLayerChangeEvent} to
+     * all registered listeners.
      *
-     * @param axis  the axis.
+     * @param offset  the offset.
      *
-     * @return The range.
+     * @see #getTickLabelOffset()
      */
-    @Override
-    public Range getDataRange(ValueAxis axis) {
-        // override is only for documentation purposes
-        return super.getDataRange(axis);
+    public void setTickLabelOffset(double offset) {
+        this.tickLabelOffset = offset;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Returns a collection of legend items for the plot.
+     * Returns the font used to draw the tick labels.
      *
-     * @return The legend items.
+     * @return The font (never {@code null}).
+     *
+     * @see #setTickLabelFont(Font)
      */
-    @Override
-    public LegendItemCollection getLegendItems() {
-        LegendItemCollection result = getFixedLegendItems();
-        if (result == null) {
-            result = new LegendItemCollection();
-            if (this.subplots != null) {
-                for (CategoryPlot plot : this.subplots) {
-                    LegendItemCollection more = plot.getLegendItems();
-                    result.addAll(more);
-                }
-            }
-        }
-        return result;
+    public Font getTickLabelFont() {
+        return this.tickLabelFont;
     }
 
     /**
-     * Returns an unmodifiable list of the categories contained in all the
-     * subplots.
+     * Sets the font used to display the tick labels and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @return The list.
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getTickLabelFont()
      */
-    @Override
-    public List getCategories() {
-        List result = new java.util.ArrayList();
-        if (this.subplots != null) {
-            for (CategoryPlot plot : this.subplots) {
-                List more = plot.getCategories();
-                for (Object o : more) {
-                    Comparable category = (Comparable) o;
-                    if (!result.contains(category)) {
-                        result.add(category);
-                    }
-                }
-            }
-        }
-        return Collections.unmodifiableList(result);
+    public void setTickLabelFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.tickLabelFont = font;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Overridden to return the categories in the subplots.
+     * Returns the paint used to draw the tick labels.
      *
-     * @param axis  ignored.
+     * @return The paint ({@code null} not permitted).
      *
-     * @return A list of the categories in the subplots.
+     * @see #setTickLabelPaint(Paint)
      */
-    @Override
-    public List getCategoriesForAxis(CategoryAxis axis) {
-        // FIXME:  this code means that it is not possible to use more than
-        // one domain axis for the combined plots...
-        return getCategories();
+    public Paint getTickLabelPaint() {
+        return this.tickLabelPaint;
     }
 
     /**
-     * Handles a 'click' on the plot.
+     * Sets the paint used to draw the tick labels and sends a
+     * {@link DialLayerChangeEvent} to all registered listeners.
      *
-     * @param x  x-coordinate of the click.
-     * @param y  y-coordinate of the click.
-     * @param info  information about the plot's dimensions.
+     * @param paint  the paint ({@code null} not permitted).
      */
-    @Override
-    public void handleClick(int x, int y, PlotRenderingInfo info) {
-        Rectangle2D dataArea = info.getDataArea();
-        if (dataArea.contains(x, y)) {
-            for (int i = 0; i < this.subplots.size(); i++) {
-                CategoryPlot subplot = (CategoryPlot) this.subplots.get(i);
-                PlotRenderingInfo subplotInfo = info.getSubplotInfo(i);
-                subplot.handleClick(x, y, subplotInfo);
-            }
-        }
+    public void setTickLabelPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.tickLabelPaint = paint;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Receives a {@link PlotChangeEvent} and responds by notifying all
+     * Returns {@code true} if the tick labels should be displayed,
+     * and {@code false} otherwise.
+     *
+     * @return A boolean.
+     *
+     * @see #setTickLabelsVisible(boolean)
+     */
+    public boolean getTickLabelsVisible() {
+        return this.tickLabelsVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the tick labels are
+     * displayed, and sends a {@link DialLayerChangeEvent} to all registered
      * listeners.
      *
-     * @param event  the event.
+     * @param visible  the new flag value.
+     *
+     * @see #getTickLabelsVisible()
      */
-    @Override
-    public void plotChanged(PlotChangeEvent event) {
-        notifyListeners(event);
+    public void setTickLabelsVisible(boolean visible) {
+        this.tickLabelsVisible = visible;
+        notifyListeners(new DialLayerChangeEvent(this));
     }
 
     /**
-     * Tests the plot for equality with an arbitrary object.
+     * Returns the number formatter used to convert the tick label values to
+     * strings.
+     *
+     * @return The formatter (never {@code null}).
+     *
+     * @see #setTickLabelFormatter(NumberFormat)
+     */
+    public NumberFormat getTickLabelFormatter() {
+        return this.tickLabelFormatter;
+    }
+
+    /**
+     * Sets the number formatter used to convert the tick label values to
+     * strings, and sends a {@link DialLayerChangeEvent} to all registered
+     * listeners.
+     *
+     * @param formatter  the formatter ({@code null} not permitted).
+     *
+     * @see #getTickLabelFormatter()
+     */
+    public void setTickLabelFormatter(NumberFormat formatter) {
+        Args.nullNotPermitted(formatter, "formatter");
+        this.tickLabelFormatter = formatter;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns a flag that controls whether the first tick label is
+     * visible.
+     *
+     * @return A boolean.
+     *
+     * @see #setFirstTickLabelVisible(boolean)
+     */
+    public boolean getFirstTickLabelVisible() {
+        return this.firstTickLabelVisible;
+    }
+
+    /**
+     * Sets a flag that controls whether the first tick label is
+     * visible, and sends a {@link DialLayerChangeEvent} to all registered
+     * listeners.
+     *
+     * @param visible  the new flag value.
+     *
+     * @see #getFirstTickLabelVisible()
+     */
+    public void setFirstTickLabelVisible(boolean visible) {
+        this.firstTickLabelVisible = visible;
+        notifyListeners(new DialLayerChangeEvent(this));
+    }
+
+    /**
+     * Returns {@code true} to indicate that this layer should be
+     * clipped within the dial window.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    public boolean isClippedToWindow() {
+        return true;
+    }
+
+    /**
+     * Draws the scale on the dial plot.
+     *
+     * @param g2  the graphics target ({@code null} not permitted).
+     * @param plot  the dial plot ({@code null} not permitted).
+     * @param frame  the reference frame that is used to construct the
+     *     geometry of the plot ({@code null} not permitted).
+     * @param view  the visible part of the plot ({@code null} not
+     *     permitted).
+     */
+    @Override
+    public void draw(Graphics2D g2, DialPlot plot, Rectangle2D frame, Rectangle2D view) {
+        Rectangle2D arcRect = DialPlot.rectangleByRadius(frame, this.tickRadius, this.tickRadius);
+        Rectangle2D arcRectMajor = DialPlot.rectangleByRadius(frame, this.tickRadius - this.majorTickLength, this.tickRadius - this.majorTickLength);
+        Rectangle2D arcRectMinor = arcRect;
+        if (this.minorTickCount > 0 && this.minorTickLength > 0.0) {
+            arcRectMinor = DialPlot.rectangleByRadius(frame, this.tickRadius - this.minorTickLength, this.tickRadius - this.minorTickLength);
+        }
+        Rectangle2D arcRectForLabels = DialPlot.rectangleByRadius(frame, this.tickRadius - this.tickLabelOffset, this.tickRadius - this.tickLabelOffset);
+        boolean firstLabel = true;
+        Arc2D arc = new Arc2D.Double();
+        Line2D workingLine = new Line2D.Double();
+        for (double v = this.lowerBound; v <= this.upperBound; v += this.majorTickIncrement) {
+            arc.setArc(arcRect, this.startAngle, valueToAngle(v) - this.startAngle, Arc2D.OPEN);
+            Point2D pt0 = arc.getEndPoint();
+            arc.setArc(arcRectMajor, this.startAngle, valueToAngle(v) - this.startAngle, Arc2D.OPEN);
+            Point2D pt1 = arc.getEndPoint();
+            g2.setPaint(this.majorTickPaint);
+            g2.setStroke(this.majorTickStroke);
+            workingLine.setLine(pt0, pt1);
+            g2.draw(workingLine);
+            arc.setArc(arcRectForLabels, this.startAngle, valueToAngle(v) - this.startAngle, Arc2D.OPEN);
+            Point2D pt2 = arc.getEndPoint();
+            if (this.tickLabelsVisible) {
+                if (!firstLabel || this.firstTickLabelVisible) {
+                    g2.setFont(this.tickLabelFont);
+                    g2.setPaint(this.tickLabelPaint);
+                    TextUtils.drawAlignedString(this.tickLabelFormatter.format(v), g2, (float) pt2.getX(), (float) pt2.getY(), TextAnchor.CENTER);
+                }
+            }
+            firstLabel = false;
+            // now do the minor tick marks
+            if (this.minorTickCount > 0 && this.minorTickLength > 0.0) {
+                double minorTickIncrement = this.majorTickIncrement / (this.minorTickCount + 1);
+                for (int i = 0; i < this.minorTickCount; i++) {
+                    double vv = v + ((i + 1) * minorTickIncrement);
+                    if (vv >= this.upperBound) {
+                        break;
+                    }
+                    double angle = valueToAngle(vv);
+                    arc.setArc(arcRect, this.startAngle, angle - this.startAngle, Arc2D.OPEN);
+                    pt0 = arc.getEndPoint();
+                    arc.setArc(arcRectMinor, this.startAngle, angle - this.startAngle, Arc2D.OPEN);
+                    Point2D pt3 = arc.getEndPoint();
+                    g2.setStroke(this.minorTickStroke);
+                    g2.setPaint(this.minorTickPaint);
+                    workingLine.setLine(pt0, pt3);
+                    g2.draw(workingLine);
+                }
+            }
+        }
+    }
+
+    /**
+     * Converts a data value to an angle against this scale.
+     *
+     * @param value  the data value.
+     *
+     * @return The angle (in degrees, using the same specification as Java's
+     *     Arc2D class).
+     *
+     * @see #angleToValue(double)
+     */
+    @Override
+    public double valueToAngle(double value) {
+        double range = this.upperBound - this.lowerBound;
+        double unit = this.extent / range;
+        return this.startAngle + unit * (value - this.lowerBound);
+    }
+
+    /**
+     * Converts the given angle to a data value, based on this scale.
+     *
+     * @param angle  the angle (in degrees).
+     *
+     * @return The data value.
+     *
+     * @see #valueToAngle(double)
+     */
+    @Override
+    public double angleToValue(double angle) {
+        double range = this.upperBound - this.lowerBound;
+        double unit = range / this.extent;
+        return (angle - this.startAngle) * unit;
+    }
+
+    /**
+     * Tests this {@code StandardDialScale} for equality with an arbitrary
+     * object.
      *
      * @param obj  the object ({@code null} permitted).
      *
@@ -3606,35 +3841,145 @@ class CombinedDomainCategoryPlot extends CategoryPlot implements PlotChangeListe
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof CombinedDomainCategoryPlot)) {
+        if (!(obj instanceof StandardDialScale)) {
             return false;
         }
-        CombinedDomainCategoryPlot that = (CombinedDomainCategoryPlot) obj;
-        if (this.gap != that.gap) {
+        StandardDialScale that = (StandardDialScale) obj;
+        if (this.lowerBound != that.lowerBound) {
             return false;
         }
-        if (!Objects.equals(this.subplots, that.subplots)) {
+        if (this.upperBound != that.upperBound) {
+            return false;
+        }
+        if (this.startAngle != that.startAngle) {
+            return false;
+        }
+        if (this.extent != that.extent) {
+            return false;
+        }
+        if (this.tickRadius != that.tickRadius) {
+            return false;
+        }
+        if (this.majorTickIncrement != that.majorTickIncrement) {
+            return false;
+        }
+        if (this.majorTickLength != that.majorTickLength) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.majorTickPaint, that.majorTickPaint)) {
+            return false;
+        }
+        if (!this.majorTickStroke.equals(that.majorTickStroke)) {
+            return false;
+        }
+        if (this.minorTickCount != that.minorTickCount) {
+            return false;
+        }
+        if (this.minorTickLength != that.minorTickLength) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.minorTickPaint, that.minorTickPaint)) {
+            return false;
+        }
+        if (!this.minorTickStroke.equals(that.minorTickStroke)) {
+            return false;
+        }
+        if (this.tickLabelsVisible != that.tickLabelsVisible) {
+            return false;
+        }
+        if (this.tickLabelOffset != that.tickLabelOffset) {
+            return false;
+        }
+        if (!this.tickLabelFont.equals(that.tickLabelFont)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.tickLabelPaint, that.tickLabelPaint)) {
             return false;
         }
         return super.equals(obj);
     }
 
     /**
-     * Returns a clone of the plot.
+     * Returns a hash code for this instance.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result = 193;
+        // lowerBound
+        long temp = Double.doubleToLongBits(this.lowerBound);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        // upperBound
+        temp = Double.doubleToLongBits(this.upperBound);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        // startAngle
+        temp = Double.doubleToLongBits(this.startAngle);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        // extent
+        temp = Double.doubleToLongBits(this.extent);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        // tickRadius
+        temp = Double.doubleToLongBits(this.tickRadius);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        // majorTickIncrement
+        // majorTickLength
+        // majorTickPaint
+        // majorTickStroke
+        // minorTickCount
+        // minorTickLength
+        // minorTickPaint
+        // minorTickStroke
+        // tickLabelOffset
+        // tickLabelFont
+        // tickLabelsVisible
+        // tickLabelFormatter
+        // firstTickLabelsVisible
+        return result;
+    }
+
+    /**
+     * Returns a clone of this instance.
      *
      * @return A clone.
      *
-     * @throws CloneNotSupportedException  this class will not throw this
-     *         exception, but subclasses (if any) might.
+     * @throws CloneNotSupportedException if this instance is not cloneable.
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        CombinedDomainCategoryPlot result = (CombinedDomainCategoryPlot) super.clone();
-        result.subplots = (List<CategoryPlot>) CloneUtils.cloneList(this.subplots);
-        for (Iterator it = result.subplots.iterator(); it.hasNext(); ) {
-            Plot child = (Plot) it.next();
-            child.setParent(result);
-        }
-        return result;
+        return super.clone();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.majorTickPaint, stream);
+        SerialUtils.writeStroke(this.majorTickStroke, stream);
+        SerialUtils.writePaint(this.minorTickPaint, stream);
+        SerialUtils.writeStroke(this.minorTickStroke, stream);
+        SerialUtils.writePaint(this.tickLabelPaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.majorTickPaint = SerialUtils.readPaint(stream);
+        this.majorTickStroke = SerialUtils.readStroke(stream);
+        this.minorTickPaint = SerialUtils.readPaint(stream);
+        this.minorTickStroke = SerialUtils.readStroke(stream);
+        this.tickLabelPaint = SerialUtils.readPaint(stream);
     }
 }

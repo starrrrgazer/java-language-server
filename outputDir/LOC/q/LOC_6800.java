@@ -61,7 +61,7 @@ package LOC.q;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5135,1600 +5135,1234 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * Other names may be trademarks of their respective owners.]
  *
  * -----------------
- * ChartFactory.java
+ * CategoryAxis.java
  * -----------------
- * (C) Copyright 2001-present, by David Gilbert and Contributors.
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Serge V. Grachov;
- *                   Joao Guilherme Del Valle;
- *                   Bill Kelemen;
- *                   Jon Iles;
- *                   Jelai Wang;
- *                   Richard Atkinson;
- *                   David Browning (for Australian Institute of Marine
- *                       Science);
- *                   Benoit Xhenseval;
+ * Contributor(s):   Pady Srinivasan (patch 1217634);
+ *                   Peter Kolb (patches 2497611 and 2603321);
+ *
  */
 /**
- * A collection of utility methods for creating some standard charts with
- * JFreeChart.
+ * An axis that displays categories.
  */
-public abstract class ChartFactory {
+public class CategoryAxis extends Axis implements Cloneable, Serializable {
 
     /**
-     * The chart theme.
+     * For serialization.
      */
-    private static ChartTheme currentTheme = new StandardChartTheme("JFree");
+    private static final long serialVersionUID = 5886554608114265863L;
 
-    private ChartFactory() {
-        // no requirement to instantiate
+    /**
+     * The default margin for the axis (used for both lower and upper margins).
+     */
+    public static final double DEFAULT_AXIS_MARGIN = 0.05;
+
+    /**
+     * The default margin between categories (a percentage of the overall axis
+     * length).
+     */
+    public static final double DEFAULT_CATEGORY_MARGIN = 0.20;
+
+    /**
+     * The amount of space reserved at the start of the axis.
+     */
+    private double lowerMargin;
+
+    /**
+     * The amount of space reserved at the end of the axis.
+     */
+    private double upperMargin;
+
+    /**
+     * The amount of space reserved between categories.
+     */
+    private double categoryMargin;
+
+    /**
+     * The maximum number of lines for category labels.
+     */
+    private int maximumCategoryLabelLines;
+
+    /**
+     * A ratio that is multiplied by the width of one category to determine the
+     * maximum label width.
+     */
+    private float maximumCategoryLabelWidthRatio;
+
+    /**
+     * The category label offset.
+     */
+    private int categoryLabelPositionOffset;
+
+    /**
+     * A structure defining the category label positions for each axis
+     * location.
+     */
+    private CategoryLabelPositions categoryLabelPositions;
+
+    /**
+     * Storage for tick label font overrides (if any).
+     */
+    private Map<Comparable, Font> tickLabelFontMap;
+
+    /**
+     * Storage for tick label paint overrides (if any).
+     */
+    private transient Map<Comparable, Paint> tickLabelPaintMap;
+
+    /**
+     * Storage for the category label tooltips (if any).
+     */
+    private Map<Comparable, String> categoryLabelToolTips;
+
+    /**
+     * Storage for the category label URLs (if any).
+     */
+    private Map<Comparable, String> categoryLabelURLs;
+
+    /**
+     * Creates a new category axis with no label.
+     */
+    public CategoryAxis() {
+        this(null);
     }
 
     /**
-     * Returns the current chart theme used by the factory.
+     * Constructs a category axis, using default values where necessary.
      *
-     * @return The chart theme.
-     *
-     * @see #setChartTheme(ChartTheme)
-     * @see ChartUtils#applyCurrentTheme(JFreeChart)
+     * @param label  the axis label ({@code null} permitted).
      */
-    public static ChartTheme getChartTheme() {
-        return currentTheme;
+    public CategoryAxis(String label) {
+        super(label);
+        this.lowerMargin = DEFAULT_AXIS_MARGIN;
+        this.upperMargin = DEFAULT_AXIS_MARGIN;
+        this.categoryMargin = DEFAULT_CATEGORY_MARGIN;
+        this.maximumCategoryLabelLines = 1;
+        this.maximumCategoryLabelWidthRatio = 0.0f;
+        this.categoryLabelPositionOffset = 4;
+        this.categoryLabelPositions = CategoryLabelPositions.STANDARD;
+        this.tickLabelFontMap = new HashMap<>();
+        this.tickLabelPaintMap = new HashMap<>();
+        this.categoryLabelToolTips = new HashMap<>();
+        this.categoryLabelURLs = new HashMap<>();
     }
 
     /**
-     * Sets the current chart theme.  This will be applied to all new charts
-     * created via methods in this class.
+     * Returns the lower margin for the axis.
      *
-     * @param theme  the theme ({@code null} not permitted).
+     * @return The margin.
      *
-     * @see #getChartTheme()
-     * @see ChartUtils#applyCurrentTheme(JFreeChart)
+     * @see #getUpperMargin()
+     * @see #setLowerMargin(double)
      */
-    public static void setChartTheme(ChartTheme theme) {
-        Args.nullNotPermitted(theme, "theme");
-        currentTheme = theme;
-        // here we do a check to see if the user is installing the "Legacy"
-        // theme, and reset the bar painters in that case...
-        if (theme instanceof StandardChartTheme) {
-            BarRenderer.setDefaultBarPainter(new StandardBarPainter());
-            XYBarRenderer.setDefaultBarPainter(new StandardXYBarPainter());
-        }
+    public double getLowerMargin() {
+        return this.lowerMargin;
     }
 
     /**
-     * Creates a pie chart with default settings.
-     * <P>
-     * The chart object returned by this method uses a {@link PiePlot} instance
-     * as the plot.
+     * Sets the lower margin for the axis and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param locale  the locale ({@code null} not permitted).
+     * @param margin  the margin as a percentage of the axis length (for
+     *                example, 0.05 is five percent).
      *
-     * @return A pie chart.
+     * @see #getLowerMargin()
      */
-    public static JFreeChart createPieChart(String title, PieDataset dataset, boolean legend, boolean tooltips, Locale locale) {
-        PiePlot plot = new PiePlot(dataset);
-        plot.setLabelGenerator(new StandardPieSectionLabelGenerator(locale));
-        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
-        if (tooltips) {
-            plot.setToolTipGenerator(new StandardPieToolTipGenerator(locale));
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public void setLowerMargin(double margin) {
+        this.lowerMargin = margin;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a pie chart with default settings.
-     * <P>
-     * The chart object returned by this method uses a {@link PiePlot} instance
-     * as the plot.
+     * Returns the upper margin for the axis.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @return The margin.
      *
-     * @return A pie chart.
+     * @see #getLowerMargin()
+     * @see #setUpperMargin(double)
      */
-    public static JFreeChart createPieChart(String title, PieDataset dataset) {
-        return createPieChart(title, dataset, true, true, false);
+    public double getUpperMargin() {
+        return this.upperMargin;
     }
 
     /**
-     * Creates a pie chart with default settings.
-     * <P>
-     * The chart object returned by this method uses a {@link PiePlot} instance
-     * as the plot.
+     * Sets the upper margin for the axis and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @param margin  the margin as a percentage of the axis length (for
+     *                example, 0.05 is five percent).
      *
-     * @return A pie chart.
+     * @see #getUpperMargin()
      */
-    public static JFreeChart createPieChart(String title, PieDataset dataset, boolean legend, boolean tooltips, boolean urls) {
-        PiePlot plot = new PiePlot(dataset);
-        plot.setLabelGenerator(new StandardPieSectionLabelGenerator());
-        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
-        if (tooltips) {
-            plot.setToolTipGenerator(new StandardPieToolTipGenerator());
-        }
-        if (urls) {
-            plot.setURLGenerator(new StandardPieURLGenerator());
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public void setUpperMargin(double margin) {
+        this.upperMargin = margin;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a pie chart with default settings that compares 2 datasets.
-     * The colour of each section will be determined by the move from the value
-     * for the same key in {@code previousDataset}. ie if value1 &gt;
-     * value2 then the section will be in green (unless
-     * {@code greenForIncrease} is {@code false}, in which case it
-     * would be {@code red}). Each section can have a shade of red or
-     * green as the difference can be tailored between 0% (black) and
-     * percentDiffForMaxScale% (bright red/green).
-     * <p>
-     * For instance if {@code percentDiffForMaxScale} is 10 (10%), a
-     * difference of 5% will have a half shade of red/green, a difference of
-     * 10% or more will have a maximum shade/brightness of red/green.
-     * <P>
-     * The chart object returned by this method uses a {@link PiePlot} instance
-     * as the plot.
-     * <p>
-     * Written by <a href="mailto:opensource@objectlab.co.uk">Benoit
-     * Xhenseval</a>.
+     * Returns the category margin.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param previousDataset  the dataset for the last run, this will be used
-     *                         to compare each key in the dataset
-     * @param percentDiffForMaxScale scale goes from bright red/green to black,
-     *                               percentDiffForMaxScale indicate the change
-     *                               required to reach top scale.
-     * @param greenForIncrease  an increase since previousDataset will be
-     *                          displayed in green (decrease red) if true.
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param locale  the locale ({@code null} not permitted).
-     * @param subTitle displays a subtitle with colour scheme if true
-     * @param showDifference  create a new dataset that will show the %
-     *                        difference between the two datasets.
+     * @return The margin.
      *
-     * @return A pie chart.
+     * @see #setCategoryMargin(double)
      */
-    public static JFreeChart createPieChart(String title, PieDataset<String> dataset, PieDataset<String> previousDataset, int percentDiffForMaxScale, boolean greenForIncrease, boolean legend, boolean tooltips, Locale locale, boolean subTitle, boolean showDifference) {
-        PiePlot<String> plot = new PiePlot<>(dataset);
-        plot.setLabelGenerator(new StandardPieSectionLabelGenerator<>(locale));
-        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
-        if (tooltips) {
-            plot.setToolTipGenerator(new StandardPieToolTipGenerator<>(locale));
-        }
-        List<String> keys = dataset.getKeys();
-        DefaultPieDataset<String> series = null;
-        if (showDifference) {
-            series = new DefaultPieDataset<>();
-        }
-        double colorPerPercent = 255.0 / percentDiffForMaxScale;
-        for (String key : keys) {
-            Number newValue = dataset.getValue(key);
-            Number oldValue = previousDataset.getValue(key);
-            if (oldValue == null) {
-                if (greenForIncrease) {
-                    plot.setSectionPaint(key, Color.GREEN);
-                } else {
-                    plot.setSectionPaint(key, Color.RED);
-                }
-                if (showDifference) {
-                    // suppresses compiler warning
-                    assert series != null;
-                    series.setValue(key + " (+100%)", newValue);
-                }
-            } else {
-                double percentChange = (newValue.doubleValue() / oldValue.doubleValue() - 1.0) * 100.0;
-                double shade = (Math.abs(percentChange) >= percentDiffForMaxScale ? 255 : Math.abs(percentChange) * colorPerPercent);
-                if (greenForIncrease && newValue.doubleValue() > oldValue.doubleValue() || !greenForIncrease && newValue.doubleValue() < oldValue.doubleValue()) {
-                    plot.setSectionPaint(key, new Color(0, (int) shade, 0));
-                } else {
-                    plot.setSectionPaint(key, new Color((int) shade, 0, 0));
-                }
-                if (showDifference) {
-                    // suppresses compiler warning
-                    assert series != null;
-                    series.setValue(key + " (" + (percentChange >= 0 ? "+" : "") + NumberFormat.getPercentInstance().format(percentChange / 100.0) + ")", newValue);
-                }
-            }
-        }
-        if (showDifference) {
-            plot.setDataset(series);
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        if (subTitle) {
-            TextTitle subtitle = new TextTitle("Bright " + (greenForIncrease ? "red" : "green") + "=change >=-" + percentDiffForMaxScale + "%, Bright " + (!greenForIncrease ? "red" : "green") + "=change >=+" + percentDiffForMaxScale + "%", new Font("SansSerif", Font.PLAIN, 10));
-            chart.addSubtitle(subtitle);
-        }
-        currentTheme.apply(chart);
-        return chart;
+    public double getCategoryMargin() {
+        return this.categoryMargin;
     }
 
     /**
-     * Creates a pie chart with default settings that compares 2 datasets.
-     * The colour of each section will be determined by the move from the value
-     * for the same key in {@code previousDataset}. ie if value1 &gt;
-     * value2 then the section will be in green (unless
-     * {@code greenForIncrease} is {@code false}, in which case it
-     * would be {@code red}). Each section can have a shade of red or
-     * green as the difference can be tailored between 0% (black) and
-     * percentDiffForMaxScale% (bright red/green).
-     * <p>
-     * For instance if {@code percentDiffForMaxScale} is 10 (10%), a
-     * difference of 5% will have a half shade of red/green, a difference of
-     * 10% or more will have a maximum shade/brightness of red/green.
-     * <P>
-     * The chart object returned by this method uses a {@link PiePlot} instance
-     * as the plot.
-     * <p>
-     * Written by <a href="mailto:opensource@objectlab.co.uk">Benoit
-     * Xhenseval</a>.
+     * Sets the category margin and sends an {@link AxisChangeEvent} to all
+     * registered listeners.  The overall category margin is distributed over
+     * N-1 gaps, where N is the number of categories on the axis.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param previousDataset  the dataset for the last run, this will be used
-     *                         to compare each key in the dataset
-     * @param percentDiffForMaxScale scale goes from bright red/green to black,
-     *                               percentDiffForMaxScale indicate the change
-     *                               required to reach top scale.
-     * @param greenForIncrease  an increase since previousDataset will be
-     *                          displayed in green (decrease red) if true.
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     * @param subTitle displays a subtitle with colour scheme if true
-     * @param showDifference  create a new dataset that will show the %
-     *                        difference between the two datasets.
+     * @param margin  the margin as a percentage of the axis length (for
+     *                example, 0.05 is five percent).
      *
-     * @return A pie chart.
+     * @see #getCategoryMargin()
      */
-    public static JFreeChart createPieChart(String title, PieDataset<String> dataset, PieDataset<String> previousDataset, int percentDiffForMaxScale, boolean greenForIncrease, boolean legend, boolean tooltips, boolean urls, boolean subTitle, boolean showDifference) {
-        PiePlot<String> plot = new PiePlot<>(dataset);
-        plot.setLabelGenerator(new StandardPieSectionLabelGenerator<>());
-        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
-        if (tooltips) {
-            plot.setToolTipGenerator(new StandardPieToolTipGenerator<>());
-        }
-        if (urls) {
-            plot.setURLGenerator(new StandardPieURLGenerator());
-        }
-        List<String> keys = dataset.getKeys();
-        DefaultPieDataset<String> series = null;
-        if (showDifference) {
-            series = new DefaultPieDataset();
-        }
-        double colorPerPercent = 255.0 / percentDiffForMaxScale;
-        for (String key : keys) {
-            Number newValue = dataset.getValue(key);
-            Number oldValue = previousDataset.getValue(key);
-            if (oldValue == null) {
-                if (greenForIncrease) {
-                    plot.setSectionPaint(key, Color.GREEN);
-                } else {
-                    plot.setSectionPaint(key, Color.RED);
-                }
-                if (showDifference) {
-                    // suppresses compiler warning
-                    assert series != null;
-                    series.setValue(key + " (+100%)", newValue);
-                }
-            } else {
-                double percentChange = (newValue.doubleValue() / oldValue.doubleValue() - 1.0) * 100.0;
-                double shade = (Math.abs(percentChange) >= percentDiffForMaxScale ? 255 : Math.abs(percentChange) * colorPerPercent);
-                if (greenForIncrease && newValue.doubleValue() > oldValue.doubleValue() || !greenForIncrease && newValue.doubleValue() < oldValue.doubleValue()) {
-                    plot.setSectionPaint(key, new Color(0, (int) shade, 0));
-                } else {
-                    plot.setSectionPaint(key, new Color((int) shade, 0, 0));
-                }
-                if (showDifference) {
-                    // suppresses compiler warning
-                    assert series != null;
-                    series.setValue(key + " (" + (percentChange >= 0 ? "+" : "") + NumberFormat.getPercentInstance().format(percentChange / 100.0) + ")", newValue);
-                }
-            }
-        }
-        if (showDifference) {
-            plot.setDataset(series);
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        if (subTitle) {
-            TextTitle subtitle = new TextTitle("Bright " + (greenForIncrease ? "red" : "green") + "=change >=-" + percentDiffForMaxScale + "%, Bright " + (!greenForIncrease ? "red" : "green") + "=change >=+" + percentDiffForMaxScale + "%", new Font("SansSerif", Font.PLAIN, 10));
-            chart.addSubtitle(subtitle);
-        }
-        currentTheme.apply(chart);
-        return chart;
+    public void setCategoryMargin(double margin) {
+        this.categoryMargin = margin;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a ring chart with default settings.
-     * <P>
-     * The chart object returned by this method uses a {@link RingPlot}
-     * instance as the plot.
+     * Returns the maximum number of lines to use for each category label.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param locale  the locale ({@code null} not permitted).
+     * @return The maximum number of lines.
      *
-     * @return A ring chart.
+     * @see #setMaximumCategoryLabelLines(int)
      */
-    public static JFreeChart createRingChart(String title, PieDataset dataset, boolean legend, boolean tooltips, Locale locale) {
-        RingPlot plot = new RingPlot(dataset);
-        plot.setLabelGenerator(new StandardPieSectionLabelGenerator(locale));
-        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
-        if (tooltips) {
-            plot.setToolTipGenerator(new StandardPieToolTipGenerator(locale));
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public int getMaximumCategoryLabelLines() {
+        return this.maximumCategoryLabelLines;
     }
 
     /**
-     * Creates a ring chart with default settings.
-     * <P>
-     * The chart object returned by this method uses a {@link RingPlot}
-     * instance as the plot.
+     * Sets the maximum number of lines to use for each category label and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @param lines  the maximum number of lines.
      *
-     * @return A ring chart.
+     * @see #getMaximumCategoryLabelLines()
      */
-    public static JFreeChart createRingChart(String title, PieDataset dataset, boolean legend, boolean tooltips, boolean urls) {
-        RingPlot plot = new RingPlot(dataset);
-        plot.setLabelGenerator(new StandardPieSectionLabelGenerator());
-        plot.setInsets(new RectangleInsets(0.0, 5.0, 5.0, 5.0));
-        if (tooltips) {
-            plot.setToolTipGenerator(new StandardPieToolTipGenerator());
-        }
-        if (urls) {
-            plot.setURLGenerator(new StandardPieURLGenerator());
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public void setMaximumCategoryLabelLines(int lines) {
+        this.maximumCategoryLabelLines = lines;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a chart that displays multiple pie plots.  The chart object
-     * returned by this method uses a {@link MultiplePiePlot} instance as the
-     * plot.
+     * Returns the category label width ratio.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param order  the order that the data is extracted (by row or by column)
-     *               ({@code null} not permitted).
-     * @param legend  include a legend?
-     * @param tooltips  generate tooltips?
-     * @param urls  generate URLs?
+     * @return The ratio.
      *
-     * @return A chart.
+     * @see #setMaximumCategoryLabelWidthRatio(float)
      */
-    public static JFreeChart createMultiplePieChart(String title, CategoryDataset dataset, TableOrder order, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(order, "order");
-        MultiplePiePlot plot = new MultiplePiePlot(dataset);
-        plot.setDataExtractOrder(order);
-        plot.setBackgroundPaint(null);
-        plot.setOutlineStroke(null);
-        if (tooltips) {
-            PieToolTipGenerator tooltipGenerator = new StandardPieToolTipGenerator();
-            PiePlot pp = (PiePlot) plot.getPieChart().getPlot();
-            pp.setToolTipGenerator(tooltipGenerator);
-        }
-        if (urls) {
-            PieURLGenerator urlGenerator = new StandardPieURLGenerator();
-            PiePlot pp = (PiePlot) plot.getPieChart().getPlot();
-            pp.setURLGenerator(urlGenerator);
-        }
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public float getMaximumCategoryLabelWidthRatio() {
+        return this.maximumCategoryLabelWidthRatio;
     }
 
     /**
-     * Creates a bar chart with a vertical orientation.  The chart object
-     * returned by this method uses a {@link CategoryPlot} instance as the
-     * plot, with a {@link CategoryAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link BarRenderer} as the
-     * renderer.
+     * Sets the maximum category label width ratio and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis
-     *                        ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param ratio  the ratio.
      *
-     * @return A bar chart.
+     * @see #getMaximumCategoryLabelWidthRatio()
      */
-    public static JFreeChart createBarChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
-        return createBarChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    public void setMaximumCategoryLabelWidthRatio(float ratio) {
+        this.maximumCategoryLabelWidthRatio = ratio;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a bar chart.  The chart object returned by this method uses a
-     * {@link CategoryPlot} instance as the plot, with a {@link CategoryAxis}
-     * for the domain axis, a {@link NumberAxis} as the range axis, and a
-     * {@link BarRenderer} as the renderer.
+     * Returns the offset between the axis and the category labels (before
+     * label positioning is taken into account).
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis
-     *                        ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} not permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @return The offset (in Java2D units).
      *
-     * @return A bar chart.
+     * @see #setCategoryLabelPositionOffset(int)
      */
-    public static JFreeChart createBarChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
-        BarRenderer renderer = new BarRenderer();
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            ItemLabelPosition position1 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE3, TextAnchor.CENTER_LEFT);
-            renderer.setDefaultPositiveItemLabelPosition(position1);
-            ItemLabelPosition position2 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE9, TextAnchor.CENTER_RIGHT);
-            renderer.setDefaultNegativeItemLabelPosition(position2);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            ItemLabelPosition position1 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE12, TextAnchor.BOTTOM_CENTER);
-            renderer.setDefaultPositiveItemLabelPosition(position1);
-            ItemLabelPosition position2 = new ItemLabelPosition(ItemLabelAnchor.OUTSIDE6, TextAnchor.TOP_CENTER);
-            renderer.setDefaultNegativeItemLabelPosition(position2);
-        }
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
-        }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public int getCategoryLabelPositionOffset() {
+        return this.categoryLabelPositionOffset;
     }
 
     /**
-     * Creates a stacked bar chart with default settings.  The chart object
-     * returned by this method uses a {@link CategoryPlot} instance as the
-     * plot, with a {@link CategoryAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link StackedBarRenderer}
-     * as the renderer.
+     * Sets the offset between the axis and the category labels (before label
+     * positioning is taken into account) and sends a change event to all
+     * registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param domainAxisLabel  the label for the category axis
-     *                         ({@code null} permitted).
-     * @param rangeAxisLabel  the label for the value axis
-     *                        ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param offset  the offset (in Java2D units).
      *
-     * @return A stacked bar chart.
+     * @see #getCategoryLabelPositionOffset()
      */
-    public static JFreeChart createStackedBarChart(String title, String domainAxisLabel, String rangeAxisLabel, CategoryDataset dataset) {
-        return createStackedBarChart(title, domainAxisLabel, rangeAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    public void setCategoryLabelPositionOffset(int offset) {
+        this.categoryLabelPositionOffset = offset;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a stacked bar chart with default settings.  The chart object
-     * returned by this method uses a {@link CategoryPlot} instance as the
-     * plot, with a {@link CategoryAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link StackedBarRenderer}
-     * as the renderer.
+     * Returns the category label position specification (this contains label
+     * positioning info for all four possible axis locations).
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param domainAxisLabel  the label for the category axis
-     *                         ({@code null} permitted).
-     * @param rangeAxisLabel  the label for the value axis
-     *                        ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the orientation of the chart (horizontal or
-     *                     vertical) ({@code null} not permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @return The positions (never {@code null}).
      *
-     * @return A stacked bar chart.
+     * @see #setCategoryLabelPositions(CategoryLabelPositions)
      */
-    public static JFreeChart createStackedBarChart(String title, String domainAxisLabel, String rangeAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        CategoryAxis categoryAxis = new CategoryAxis(domainAxisLabel);
-        ValueAxis valueAxis = new NumberAxis(rangeAxisLabel);
-        StackedBarRenderer renderer = new StackedBarRenderer();
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
-        }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public CategoryLabelPositions getCategoryLabelPositions() {
+        return this.categoryLabelPositions;
     }
 
     /**
-     * Creates an area chart with default settings.  The chart object returned
-     * by this method uses a {@link CategoryPlot} instance as the plot, with a
-     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and an {@link AreaRenderer} as the renderer.
+     * Sets the category label position specification for the axis and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param positions  the positions ({@code null} not permitted).
      *
-     * @return An area chart.
+     * @see #getCategoryLabelPositions()
      */
-    public static JFreeChart createAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
-        return createAreaChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    public void setCategoryLabelPositions(CategoryLabelPositions positions) {
+        Args.nullNotPermitted(positions, "positions");
+        this.categoryLabelPositions = positions;
+        fireChangeEvent();
     }
 
     /**
-     * Creates an area chart with default settings.  The chart object returned
-     * by this method uses a {@link CategoryPlot} instance as the plot, with a
-     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and an {@link AreaRenderer} as the renderer.
+     * Returns the font for the tick label for the given category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation ({@code null} not
-     *                     permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @param category  the category ({@code null} not permitted).
      *
-     * @return An area chart.
+     * @return The font (never {@code null}).
+     *
+     * @see #setTickLabelFont(Comparable, Font)
      */
-    public static JFreeChart createAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        categoryAxis.setCategoryMargin(0.0);
-        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
-        AreaRenderer renderer = new AreaRenderer();
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
+    public Font getTickLabelFont(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        Font result = this.tickLabelFontMap.get(category);
+        // if there is no specific font, use the general one...
+        if (result == null) {
+            result = getTickLabelFont();
         }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+        return result;
     }
 
     /**
-     * Creates a stacked area chart with default settings.  The chart object
-     * returned by this method uses a {@link CategoryPlot} instance as the
-     * plot, with a {@link CategoryAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link StackedAreaRenderer}
-     * as the renderer.
+     * Sets the font for the tick label for the specified category and sends
+     * an {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param category  the category ({@code null} not permitted).
+     * @param font  the font ({@code null} permitted).
      *
-     * @return A stacked area chart.
+     * @see #getTickLabelFont(Comparable)
      */
-    public static JFreeChart createStackedAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
-        return createStackedAreaChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates a stacked area chart with default settings.  The chart object
-     * returned by this method uses a {@link CategoryPlot} instance as the
-     * plot, with a {@link CategoryAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link StackedAreaRenderer}
-     * as the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} not permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A stacked area chart.
-     */
-    public static JFreeChart createStackedAreaChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        categoryAxis.setCategoryMargin(0.0);
-        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
-        StackedAreaRenderer renderer = new StackedAreaRenderer();
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
-        }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a line chart with default settings.  The chart object returned
-     * by this method uses a {@link CategoryPlot} instance as the plot, with a
-     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and a {@link LineAndShapeRenderer} as the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return A line chart.
-     */
-    public static JFreeChart createLineChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset) {
-        return createLineChart(title, categoryAxisLabel, valueAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates a line chart with default settings.  The chart object returned
-     * by this method uses a {@link CategoryPlot} instance as the plot, with a
-     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and a {@link LineAndShapeRenderer} as the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the chart orientation (horizontal or vertical)
-     *                     ({@code null} not permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A line chart.
-     */
-    public static JFreeChart createLineChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
-        LineAndShapeRenderer renderer = new LineAndShapeRenderer(true, false);
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardCategoryToolTipGenerator());
-        }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a Gantt chart using the supplied attributes plus default values
-     * where required.  The chart object returned by this method uses a
-     * {@link CategoryPlot} instance as the plot, with a {@link CategoryAxis}
-     * for the domain axis, a {@link DateAxis} as the range axis, and a
-     * {@link GanttRenderer} as the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param dateAxisLabel  the label for the date axis
-     *                       ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return A Gantt chart.
-     */
-    public static JFreeChart createGanttChart(String title, String categoryAxisLabel, String dateAxisLabel, IntervalCategoryDataset dataset) {
-        return createGanttChart(title, categoryAxisLabel, dateAxisLabel, dataset, true, true, false);
-    }
-
-    /**
-     * Creates a Gantt chart using the supplied attributes plus default values
-     * where required.  The chart object returned by this method uses a
-     * {@link CategoryPlot} instance as the plot, with a {@link CategoryAxis}
-     * for the domain axis, a {@link DateAxis} as the range axis, and a
-     * {@link GanttRenderer} as the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param dateAxisLabel  the label for the date axis
-     *                       ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A Gantt chart.
-     */
-    public static JFreeChart createGanttChart(String title, String categoryAxisLabel, String dateAxisLabel, IntervalCategoryDataset dataset, boolean legend, boolean tooltips, boolean urls) {
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        DateAxis dateAxis = new DateAxis(dateAxisLabel);
-        CategoryItemRenderer renderer = new GanttRenderer();
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new IntervalCategoryToolTipGenerator("{3} - {4}", DateFormat.getDateInstance()));
-        }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, dateAxis, renderer);
-        plot.setOrientation(PlotOrientation.HORIZONTAL);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a waterfall chart.  The chart object returned by this method
-     * uses a {@link CategoryPlot} instance as the plot, with a
-     * {@link CategoryAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and a {@link WaterfallBarRenderer} as the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  the label for the category axis
-     *                           ({@code null} permitted).
-     * @param valueAxisLabel  the label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A waterfall chart.
-     */
-    public static JFreeChart createWaterfallChart(String title, String categoryAxisLabel, String valueAxisLabel, CategoryDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        categoryAxis.setCategoryMargin(0.0);
-        ValueAxis valueAxis = new NumberAxis(valueAxisLabel);
-        WaterfallBarRenderer renderer = new WaterfallBarRenderer();
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            ItemLabelPosition position = new ItemLabelPosition(ItemLabelAnchor.CENTER, TextAnchor.CENTER, TextAnchor.CENTER, Math.PI / 2.0);
-            renderer.setDefaultPositiveItemLabelPosition(position);
-            renderer.setDefaultNegativeItemLabelPosition(position);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            ItemLabelPosition position = new ItemLabelPosition(ItemLabelAnchor.CENTER, TextAnchor.CENTER, TextAnchor.CENTER, 0.0);
-            renderer.setDefaultPositiveItemLabelPosition(position);
-            renderer.setDefaultNegativeItemLabelPosition(position);
-        }
-        if (tooltips) {
-            StandardCategoryToolTipGenerator generator = new StandardCategoryToolTipGenerator();
-            renderer.setDefaultToolTipGenerator(generator);
-        }
-        if (urls) {
-            renderer.setDefaultItemURLGenerator(new StandardCategoryURLGenerator());
-        }
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        plot.clearRangeMarkers();
-        Marker baseline = new ValueMarker(0.0);
-        baseline.setPaint(Color.BLACK);
-        plot.addRangeMarker(baseline, Layer.FOREGROUND);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a polar plot for the specified dataset (x-values interpreted as
-     * angles in degrees).  The chart object returned by this method uses a
-     * {@link PolarPlot} instance as the plot, with a {@link NumberAxis} for
-     * the radial axis.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param legend  legend required?
-     * @param tooltips  tooltips required?
-     * @param urls  URLs required?
-     *
-     * @return A chart.
-     */
-    public static JFreeChart createPolarChart(String title, XYDataset dataset, boolean legend, boolean tooltips, boolean urls) {
-        PolarPlot plot = new PolarPlot();
-        plot.setDataset(dataset);
-        NumberAxis rangeAxis = new NumberAxis();
-        rangeAxis.setAxisLineVisible(false);
-        rangeAxis.setTickMarksVisible(false);
-        rangeAxis.setTickLabelInsets(new RectangleInsets(0.0, 0.0, 0.0, 0.0));
-        plot.setAxis(rangeAxis);
-        plot.setRenderer(new DefaultPolarItemRenderer());
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a scatter plot with default settings.  The chart object
-     * returned by this method uses an {@link XYPlot} instance as the plot,
-     * with a {@link NumberAxis} for the domain axis, a  {@link NumberAxis}
-     * as the range axis, and an {@link XYLineAndShapeRenderer} as the
-     * renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return A scatter plot.
-     */
-    public static JFreeChart createScatterPlot(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
-        return createScatterPlot(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates a scatter plot with default settings.  The chart object
-     * returned by this method uses an {@link XYPlot} instance as the plot,
-     * with a {@link NumberAxis} for the domain axis, a  {@link NumberAxis}
-     * as the range axis, and an {@link XYLineAndShapeRenderer} as the
-     * renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A scatter plot.
-     */
-    public static JFreeChart createScatterPlot(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        yAxis.setAutoRangeIncludesZero(false);
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
-        XYToolTipGenerator toolTipGenerator = null;
-        if (tooltips) {
-            toolTipGenerator = new StandardXYToolTipGenerator();
-        }
-        XYURLGenerator urlGenerator = null;
-        if (urls) {
-            urlGenerator = new StandardXYURLGenerator();
-        }
-        XYItemRenderer renderer = new XYLineAndShapeRenderer(false, true);
-        renderer.setDefaultToolTipGenerator(toolTipGenerator);
-        renderer.setURLGenerator(urlGenerator);
-        plot.setRenderer(renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates and returns a default instance of an XY bar chart.
-     * <P>
-     * The chart object returned by this method uses an {@link XYPlot} instance
-     * as the plot, with a {@link DateAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link XYBarRenderer} as the
-     * renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param dateAxis  make the domain axis display dates?
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return An XY bar chart.
-     */
-    public static JFreeChart createXYBarChart(String title, String xAxisLabel, boolean dateAxis, String yAxisLabel, IntervalXYDataset dataset) {
-        return createXYBarChart(title, xAxisLabel, dateAxis, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates and returns a default instance of an XY bar chart.
-     * <P>
-     * The chart object returned by this method uses an {@link XYPlot} instance
-     * as the plot, with a {@link DateAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link XYBarRenderer} as the
-     * renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param dateAxis  make the domain axis display dates?
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return An XY bar chart.
-     */
-    public static JFreeChart createXYBarChart(String title, String xAxisLabel, boolean dateAxis, String yAxisLabel, IntervalXYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        ValueAxis domainAxis;
-        if (dateAxis) {
-            domainAxis = new DateAxis(xAxisLabel);
+    public void setTickLabelFont(Comparable category, Font font) {
+        Args.nullNotPermitted(category, "category");
+        if (font == null) {
+            this.tickLabelFontMap.remove(category);
         } else {
-            NumberAxis axis = new NumberAxis(xAxisLabel);
-            axis.setAutoRangeIncludesZero(false);
-            domainAxis = axis;
+            this.tickLabelFontMap.put(category, font);
         }
-        ValueAxis valueAxis = new NumberAxis(yAxisLabel);
-        XYBarRenderer renderer = new XYBarRenderer();
-        if (tooltips) {
-            XYToolTipGenerator tt;
-            if (dateAxis) {
-                tt = StandardXYToolTipGenerator.getTimeSeriesInstance();
-            } else {
-                tt = new StandardXYToolTipGenerator();
-            }
-            renderer.setDefaultToolTipGenerator(tt);
-        }
-        if (urls) {
-            renderer.setURLGenerator(new StandardXYURLGenerator());
-        }
-        XYPlot plot = new XYPlot(dataset, domainAxis, valueAxis, renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+        fireChangeEvent();
     }
 
     /**
-     * Creates an area chart using an {@link XYDataset}.
-     * <P>
-     * The chart object returned by this method uses an {@link XYPlot} instance
-     * as the plot, with a {@link NumberAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link XYAreaRenderer} as
-     * the renderer.
+     * Returns the paint for the tick label for the given category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param category  the category ({@code null} not permitted).
      *
-     * @return An XY area chart.
+     * @return The paint (never {@code null}).
      *
-     * @param <S> the type for series keys.
+     * @see #setTickLabelPaint(Paint)
      */
-    public static <S extends Comparable<S>> JFreeChart createXYAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset<S> dataset) {
-        return createXYAreaChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates an area chart using an {@link XYDataset}.
-     * <P>
-     * The chart object returned by this method uses an {@link XYPlot} instance
-     * as the plot, with a {@link NumberAxis} for the domain axis, a
-     * {@link NumberAxis} as the range axis, and a {@link XYAreaRenderer} as
-     * the renderer.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @param <S> the type for series keys.
-     *
-     * @return An XY area chart.
-     */
-    public static <S extends Comparable<S>> JFreeChart createXYAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset<S> dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        XYPlot<S> plot = new XYPlot<>(dataset, xAxis, yAxis, null);
-        plot.setOrientation(orientation);
-        plot.setForegroundAlpha(0.5f);
-        XYToolTipGenerator tipGenerator = null;
-        if (tooltips) {
-            tipGenerator = new StandardXYToolTipGenerator();
+    public Paint getTickLabelPaint(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        Paint result = this.tickLabelPaintMap.get(category);
+        // if there is no specific paint, use the general one...
+        if (result == null) {
+            result = getTickLabelPaint();
         }
-        XYURLGenerator urlGenerator = null;
-        if (urls) {
-            urlGenerator = new StandardXYURLGenerator();
+        return result;
+    }
+
+    /**
+     * Sets the paint for the tick label for the specified category and sends
+     * an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getTickLabelPaint(Comparable)
+     */
+    public void setTickLabelPaint(Comparable category, Paint paint) {
+        Args.nullNotPermitted(category, "category");
+        if (paint == null) {
+            this.tickLabelPaintMap.remove(category);
+        } else {
+            this.tickLabelPaintMap.put(category, paint);
         }
-        plot.setRenderer(new XYAreaRenderer(XYAreaRenderer.AREA, tipGenerator, urlGenerator));
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+        fireChangeEvent();
     }
 
     /**
-     * Creates a stacked XY area plot.  The chart object returned by this
-     * method uses an {@link XYPlot} instance as the plot, with a
-     * {@link NumberAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and a {@link StackedXYAreaRenderer2} as the renderer.
+     * Adds a tooltip to the specified category and sends an
+     * {@link AxisChangeEvent} to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param category  the category ({@code null} not permitted).
+     * @param tooltip  the tooltip text ({@code null} permitted).
      *
-     * @return A stacked XY area chart.
+     * @see #removeCategoryLabelToolTip(Comparable)
      */
-    public static JFreeChart createStackedXYAreaChart(String title, String xAxisLabel, String yAxisLabel, TableXYDataset dataset) {
-        return createStackedXYAreaChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    public void addCategoryLabelToolTip(Comparable category, String tooltip) {
+        Args.nullNotPermitted(category, "category");
+        this.categoryLabelToolTips.put(category, tooltip);
+        fireChangeEvent();
     }
 
     /**
-     * Creates a stacked XY area plot.  The chart object returned by this
-     * method uses an {@link XYPlot} instance as the plot, with a
-     * {@link NumberAxis} for the domain axis, a {@link NumberAxis} as the
-     * range axis, and a {@link StackedXYAreaRenderer2} as the renderer.
+     * Returns the tool tip text for the label belonging to the specified
+     * category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @param category  the category ({@code null} not permitted).
      *
-     * @return A stacked XY area chart.
+     * @return The tool tip text (possibly {@code null}).
+     *
+     * @see #addCategoryLabelToolTip(Comparable, String)
+     * @see #removeCategoryLabelToolTip(Comparable)
      */
-    public static JFreeChart createStackedXYAreaChart(String title, String xAxisLabel, String yAxisLabel, TableXYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        xAxis.setLowerMargin(0.0);
-        xAxis.setUpperMargin(0.0);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        XYToolTipGenerator toolTipGenerator = null;
-        if (tooltips) {
-            toolTipGenerator = new StandardXYToolTipGenerator();
+    public String getCategoryLabelToolTip(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        return this.categoryLabelToolTips.get(category);
+    }
+
+    /**
+     * Removes the tooltip for the specified category and, if there was a value
+     * associated with that category, sends an {@link AxisChangeEvent} to all
+     * registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @see #addCategoryLabelToolTip(Comparable, String)
+     * @see #clearCategoryLabelToolTips()
+     */
+    public void removeCategoryLabelToolTip(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        if (this.categoryLabelToolTips.remove(category) != null) {
+            fireChangeEvent();
         }
-        XYURLGenerator urlGenerator = null;
-        if (urls) {
-            urlGenerator = new StandardXYURLGenerator();
+    }
+
+    /**
+     * Clears the category label tooltips and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
+     *
+     * @see #addCategoryLabelToolTip(Comparable, String)
+     * @see #removeCategoryLabelToolTip(Comparable)
+     */
+    public void clearCategoryLabelToolTips() {
+        this.categoryLabelToolTips.clear();
+        fireChangeEvent();
+    }
+
+    /**
+     * Adds a URL (to be used in image maps) to the specified category and
+     * sends an {@link AxisChangeEvent} to all registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     * @param url  the URL text ({@code null} permitted).
+     *
+     * @see #removeCategoryLabelURL(Comparable)
+     */
+    public void addCategoryLabelURL(Comparable category, String url) {
+        Args.nullNotPermitted(category, "category");
+        this.categoryLabelURLs.put(category, url);
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the URL for the label belonging to the specified category.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @return The URL text (possibly {@code null}).
+     *
+     * @see #addCategoryLabelURL(Comparable, String)
+     * @see #removeCategoryLabelURL(Comparable)
+     */
+    public String getCategoryLabelURL(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        return this.categoryLabelURLs.get(category);
+    }
+
+    /**
+     * Removes the URL for the specified category and, if there was a URL
+     * associated with that category, sends an {@link AxisChangeEvent} to all
+     * registered listeners.
+     *
+     * @param category  the category ({@code null} not permitted).
+     *
+     * @see #addCategoryLabelURL(Comparable, String)
+     * @see #clearCategoryLabelURLs()
+     */
+    public void removeCategoryLabelURL(Comparable category) {
+        Args.nullNotPermitted(category, "category");
+        if (this.categoryLabelURLs.remove(category) != null) {
+            fireChangeEvent();
         }
-        StackedXYAreaRenderer2 renderer = new StackedXYAreaRenderer2(toolTipGenerator, urlGenerator);
-        renderer.setOutline(true);
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
-        plot.setOrientation(orientation);
-        // forces recalculation of the axis range
-        plot.setRangeAxis(yAxis);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
     }
 
     /**
-     * Creates a line chart (based on an {@link XYDataset}) with default
-     * settings.
+     * Clears the category label URLs and sends an {@link AxisChangeEvent}
+     * to all registered listeners.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return The chart.
+     * @see #addCategoryLabelURL(Comparable, String)
+     * @see #removeCategoryLabelURL(Comparable)
      */
-    public static JFreeChart createXYLineChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
-        return createXYLineChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    public void clearCategoryLabelURLs() {
+        this.categoryLabelURLs.clear();
+        fireChangeEvent();
     }
 
     /**
-     * Creates a line chart (based on an {@link XYDataset}) with default
-     * settings.
+     * Returns the Java 2D coordinate for a category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
+     * @param anchor  the anchor point ({@code null} not permitted).
+     * @param category  the category index.
+     * @param categoryCount  the category count.
+     * @param area  the data area.
+     * @param edge  the location of the axis.
      *
-     * @return The chart.
+     * @return The coordinate.
      */
-    public static JFreeChart createXYLineChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        XYItemRenderer renderer = new XYLineAndShapeRenderer(true, false);
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
-        plot.setOrientation(orientation);
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+    public double getCategoryJava2DCoordinate(CategoryAnchor anchor, int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        Args.nullNotPermitted(anchor, "anchor");
+        double result = 0.0;
+        switch(anchor) {
+            case START:
+                result = getCategoryStart(category, categoryCount, area, edge);
+                break;
+            case MIDDLE:
+                result = getCategoryMiddle(category, categoryCount, area, edge);
+                break;
+            case END:
+                result = getCategoryEnd(category, categoryCount, area, edge);
+                break;
+            default:
+                throw new IllegalStateException("Unexpected anchor value.");
         }
-        if (urls) {
-            renderer.setURLGenerator(new StandardXYURLGenerator());
+        return result;
+    }
+
+    /**
+     * Returns the starting coordinate for the specified category.
+     *
+     * @param category  the category.
+     * @param categoryCount  the number of categories.
+     * @param area  the data area.
+     * @param edge  the axis location.
+     *
+     * @return The coordinate.
+     *
+     * @see #getCategoryMiddle(int, int, Rectangle2D, RectangleEdge)
+     * @see #getCategoryEnd(int, int, Rectangle2D, RectangleEdge)
+     */
+    public double getCategoryStart(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        double result = 0.0;
+        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
+            result = area.getX() + area.getWidth() * getLowerMargin();
+        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
+            result = area.getMinY() + area.getHeight() * getLowerMargin();
         }
-        JFreeChart chart = null;
-        chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+        double categorySize = calculateCategorySize(categoryCount, area, edge);
+        double categoryGapWidth = calculateCategoryGapSize(categoryCount, area, edge);
+        result = result + category * (categorySize + categoryGapWidth);
+        return result;
     }
 
     /**
-     * Creates a stepped XY plot with default settings.
+     * Returns the middle coordinate for the specified category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param category  the category.
+     * @param categoryCount  the number of categories.
+     * @param area  the data area.
+     * @param edge  the axis location.
      *
-     * @return A chart.
+     * @return The coordinate.
+     *
+     * @see #getCategoryStart(int, int, Rectangle2D, RectangleEdge)
+     * @see #getCategoryEnd(int, int, Rectangle2D, RectangleEdge)
      */
-    public static JFreeChart createXYStepChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
-        return createXYStepChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates a stepped XY plot with default settings.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A chart.
-     */
-    public static JFreeChart createXYStepChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        DateAxis xAxis = new DateAxis(xAxisLabel);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        yAxis.setStandardTickUnits(NumberAxis.createIntegerTickUnits());
-        XYToolTipGenerator toolTipGenerator = null;
-        if (tooltips) {
-            toolTipGenerator = new StandardXYToolTipGenerator();
+    public double getCategoryMiddle(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        if (category < 0 || category >= categoryCount) {
+            throw new IllegalArgumentException("Invalid category index: " + category);
         }
-        XYURLGenerator urlGenerator = null;
-        if (urls) {
-            urlGenerator = new StandardXYURLGenerator();
-        }
-        XYItemRenderer renderer = new XYStepRenderer(toolTipGenerator, urlGenerator);
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
-        plot.setRenderer(renderer);
-        plot.setOrientation(orientation);
-        plot.setDomainCrosshairVisible(false);
-        plot.setRangeCrosshairVisible(false);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+        return getCategoryStart(category, categoryCount, area, edge) + calculateCategorySize(categoryCount, area, edge) / 2;
     }
 
     /**
-     * Creates a filled stepped XY plot with default settings.
+     * Returns the end coordinate for the specified category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
+     * @param category  the category.
+     * @param categoryCount  the number of categories.
+     * @param area  the data area.
+     * @param edge  the axis location.
      *
-     * @return A chart.
+     * @return The coordinate.
+     *
+     * @see #getCategoryStart(int, int, Rectangle2D, RectangleEdge)
+     * @see #getCategoryMiddle(int, int, Rectangle2D, RectangleEdge)
      */
-    public static JFreeChart createXYStepAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset) {
-        return createXYStepAreaChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
+    public double getCategoryEnd(int category, int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        return getCategoryStart(category, categoryCount, area, edge) + calculateCategorySize(categoryCount, area, edge);
     }
 
     /**
-     * Creates a filled stepped XY plot with default settings.
+     * A convenience method that returns the axis coordinate for the centre of
+     * a category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A chart.
-     */
-    public static JFreeChart createXYStepAreaChart(String title, String xAxisLabel, String yAxisLabel, XYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        XYToolTipGenerator toolTipGenerator = null;
-        if (tooltips) {
-            toolTipGenerator = new StandardXYToolTipGenerator();
-        }
-        XYURLGenerator urlGenerator = null;
-        if (urls) {
-            urlGenerator = new StandardXYURLGenerator();
-        }
-        XYItemRenderer renderer = new XYStepAreaRenderer(XYStepAreaRenderer.AREA_AND_SHAPES, toolTipGenerator, urlGenerator);
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
-        plot.setRenderer(renderer);
-        plot.setOrientation(orientation);
-        plot.setDomainCrosshairVisible(false);
-        plot.setRangeCrosshairVisible(false);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates and returns a time series chart.  A time series chart is an
-     * {@link XYPlot} with a {@link DateAxis} for the x-axis and a
-     * {@link NumberAxis} for the y-axis.  The default renderer is an
-     * {@link XYLineAndShapeRenderer}.
-     * <P>
-     * A convenient dataset to use with this chart is a
-     * {@link org.jfree.data.time.TimeSeriesCollection}.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param timeAxisLabel  a label for the time axis ({@code null}
-     *                       permitted).
-     * @param valueAxisLabel  a label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return A time series chart.
-     */
-    public static JFreeChart createTimeSeriesChart(String title, String timeAxisLabel, String valueAxisLabel, XYDataset dataset) {
-        return createTimeSeriesChart(title, timeAxisLabel, valueAxisLabel, dataset, true, true, false);
-    }
-
-    /**
-     * Creates and returns a time series chart.  A time series chart is an
-     * {@link XYPlot} with a {@link DateAxis} for the x-axis and a
-     * {@link NumberAxis} for the y-axis.  The default renderer is an
-     * {@link XYLineAndShapeRenderer}.
-     * <P>
-     * A convenient dataset to use with this chart is a
-     * {@link org.jfree.data.time.TimeSeriesCollection}.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param timeAxisLabel  a label for the time axis ({@code null}
-     *                       permitted).
-     * @param valueAxisLabel  a label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A time series chart.
-     */
-    public static JFreeChart createTimeSeriesChart(String title, String timeAxisLabel, String valueAxisLabel, XYDataset dataset, boolean legend, boolean tooltips, boolean urls) {
-        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
-        // reduce the default margins
-        timeAxis.setLowerMargin(0.02);
-        timeAxis.setUpperMargin(0.02);
-        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
-        // override default
-        valueAxis.setAutoRangeIncludesZero(false);
-        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, null);
-        XYToolTipGenerator toolTipGenerator = null;
-        if (tooltips) {
-            toolTipGenerator = StandardXYToolTipGenerator.getTimeSeriesInstance();
-        }
-        XYURLGenerator urlGenerator = null;
-        if (urls) {
-            urlGenerator = new StandardXYURLGenerator();
-        }
-        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
-        renderer.setDefaultToolTipGenerator(toolTipGenerator);
-        renderer.setURLGenerator(urlGenerator);
-        plot.setRenderer(renderer);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates and returns a default instance of a candlesticks chart.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param timeAxisLabel  a label for the time axis ({@code null}
-     *                       permitted).
-     * @param valueAxisLabel  a label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     *
-     * @return A candlestick chart.
-     */
-    public static JFreeChart createCandlestickChart(String title, String timeAxisLabel, String valueAxisLabel, OHLCDataset dataset, boolean legend) {
-        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
-        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
-        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, null);
-        plot.setRenderer(new CandlestickRenderer());
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates and returns a default instance of a high-low-open-close chart.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param timeAxisLabel  a label for the time axis ({@code null}
-     *                       permitted).
-     * @param valueAxisLabel  a label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     *
-     * @return A high-low-open-close chart.
-     */
-    public static JFreeChart createHighLowChart(String title, String timeAxisLabel, String valueAxisLabel, OHLCDataset dataset, boolean legend) {
-        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
-        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
-        HighLowRenderer renderer = new HighLowRenderer();
-        renderer.setDefaultToolTipGenerator(new HighLowItemLabelGenerator());
-        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, renderer);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a bubble chart with default settings.  The chart is composed of
-     * an {@link XYPlot}, with a {@link NumberAxis} for the domain axis,
-     * a {@link NumberAxis} for the range axis, and an {@link XYBubbleRenderer}
-     * to draw the data items.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     *
-     * @return A bubble chart.
-     */
-    public static JFreeChart createBubbleChart(String title, String xAxisLabel, String yAxisLabel, XYZDataset dataset) {
-        return createBubbleChart(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates a bubble chart with default settings.  The chart is composed of
-     * an {@link XYPlot}, with a {@link NumberAxis} for the domain axis,
-     * a {@link NumberAxis} for the range axis, and an {@link XYBubbleRenderer}
-     * to draw the data items.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the X-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the Y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param orientation  the orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  a flag specifying whether a legend is required.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A bubble chart.
-     */
-    public static JFreeChart createBubbleChart(String title, String xAxisLabel, String yAxisLabel, XYZDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        NumberAxis yAxis = new NumberAxis(yAxisLabel);
-        yAxis.setAutoRangeIncludesZero(false);
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, null);
-        XYItemRenderer renderer = new XYBubbleRenderer(XYBubbleRenderer.SCALE_ON_RANGE_AXIS);
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardXYZToolTipGenerator());
-        }
-        if (urls) {
-            renderer.setURLGenerator(new StandardXYZURLGenerator());
-        }
-        plot.setRenderer(renderer);
-        plot.setOrientation(orientation);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a histogram chart.  This chart is constructed with an
-     * {@link XYPlot} using an {@link XYBarRenderer}.  The domain and range
-     * axes are {@link NumberAxis} instances.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  the x-axis label ({@code null} permitted).
-     * @param yAxisLabel  the y-axis label ({@code null} permitted).
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return A chart.
-     */
-    public static JFreeChart createHistogram(String title, String xAxisLabel, String yAxisLabel, IntervalXYDataset dataset) {
-        return createHistogram(title, xAxisLabel, yAxisLabel, dataset, PlotOrientation.VERTICAL, true, true, false);
-    }
-
-    /**
-     * Creates a histogram chart.  This chart is constructed with an
-     * {@link XYPlot} using an {@link XYBarRenderer}.  The domain and range
-     * axes are {@link NumberAxis} instances.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  the x axis label ({@code null} permitted).
-     * @param yAxisLabel  the y axis label ({@code null} permitted).
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param orientation  the orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted).
-     * @param legend  create a legend?
-     * @param tooltips  display tooltips?
-     * @param urls  generate URLs?
-     *
-     * @return The chart.
-     */
-    public static JFreeChart createHistogram(String title, String xAxisLabel, String yAxisLabel, IntervalXYDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        NumberAxis xAxis = new NumberAxis(xAxisLabel);
-        xAxis.setAutoRangeIncludesZero(false);
-        ValueAxis yAxis = new NumberAxis(yAxisLabel);
-        XYItemRenderer renderer = new XYBarRenderer();
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
-        }
-        if (urls) {
-            renderer.setURLGenerator(new StandardXYURLGenerator());
-        }
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
-        plot.setOrientation(orientation);
-        plot.setDomainZeroBaselineVisible(true);
-        plot.setRangeZeroBaselineVisible(true);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates and returns a default instance of a box and whisker chart
-     * based on data from a {@link BoxAndWhiskerCategoryDataset}.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param categoryAxisLabel  a label for the category axis
-     *     ({@code null} permitted).
-     * @param valueAxisLabel  a label for the value axis ({@code null}
+     * @param category  the category key ({@code null} not permitted).
+     * @param categories  the categories ({@code null} not permitted).
+     * @param area  the data area ({@code null} not permitted).
+     * @param edge  the edge along which the axis lies ({@code null} not
      *     permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
      *
-     * @return A box and whisker chart.
+     * @return The centre coordinate.
+     *
+     * @see #getCategorySeriesMiddle(Comparable, Comparable, CategoryDataset,
+     *     double, Rectangle2D, RectangleEdge)
      */
-    public static JFreeChart createBoxAndWhiskerChart(String title, String categoryAxisLabel, String valueAxisLabel, BoxAndWhiskerCategoryDataset dataset, boolean legend) {
-        CategoryAxis categoryAxis = new CategoryAxis(categoryAxisLabel);
-        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
-        valueAxis.setAutoRangeIncludesZero(false);
-        BoxAndWhiskerRenderer renderer = new BoxAndWhiskerRenderer();
-        renderer.setDefaultToolTipGenerator(new BoxAndWhiskerToolTipGenerator());
-        CategoryPlot plot = new CategoryPlot(dataset, categoryAxis, valueAxis, renderer);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public double getCategoryMiddle(Comparable category, List categories, Rectangle2D area, RectangleEdge edge) {
+        Args.nullNotPermitted(categories, "categories");
+        int categoryIndex = categories.indexOf(category);
+        int categoryCount = categories.size();
+        return getCategoryMiddle(categoryIndex, categoryCount, area, edge);
     }
 
     /**
-     * Creates and returns a default instance of a box and whisker chart.
+     * Returns the middle coordinate (in Java2D space) for a series within a
+     * category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param timeAxisLabel  a label for the time axis ({@code null}
-     *                       permitted).
-     * @param valueAxisLabel  a label for the value axis ({@code null}
-     *                        permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag specifying whether a legend is required.
+     * @param category  the category ({@code null} not permitted).
+     * @param seriesKey  the series key ({@code null} not permitted).
+     * @param dataset  the dataset ({@code null} not permitted).
+     * @param itemMargin  the item margin (0.0 &lt;= itemMargin &lt; 1.0);
+     * @param area  the area ({@code null} not permitted).
+     * @param edge  the edge ({@code null} not permitted).
      *
-     * @return A box and whisker chart.
+     * @return The coordinate in Java2D space.
      */
-    public static JFreeChart createBoxAndWhiskerChart(String title, String timeAxisLabel, String valueAxisLabel, BoxAndWhiskerXYDataset dataset, boolean legend) {
-        ValueAxis timeAxis = new DateAxis(timeAxisLabel);
-        NumberAxis valueAxis = new NumberAxis(valueAxisLabel);
-        valueAxis.setAutoRangeIncludesZero(false);
-        XYBoxAndWhiskerRenderer renderer = new XYBoxAndWhiskerRenderer(10.0);
-        XYPlot plot = new XYPlot(dataset, timeAxis, valueAxis, renderer);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
-    }
-
-    /**
-     * Creates a wind plot with default settings.
-     *
-     * @param title  the chart title ({@code null} permitted).
-     * @param xAxisLabel  a label for the x-axis ({@code null} permitted).
-     * @param yAxisLabel  a label for the y-axis ({@code null} permitted).
-     * @param dataset  the dataset for the chart ({@code null} permitted).
-     * @param legend  a flag that controls whether a legend is created.
-     * @param tooltips  configure chart to generate tool tips?
-     * @param urls  configure chart to generate URLs?
-     *
-     * @return A wind plot.
-     */
-    public static JFreeChart createWindPlot(String title, String xAxisLabel, String yAxisLabel, WindDataset dataset, boolean legend, boolean tooltips, boolean urls) {
-        ValueAxis xAxis = new DateAxis(xAxisLabel);
-        ValueAxis yAxis = new NumberAxis(yAxisLabel);
-        yAxis.setRange(-12.0, 12.0);
-        WindItemRenderer renderer = new WindItemRenderer();
-        if (tooltips) {
-            renderer.setDefaultToolTipGenerator(new StandardXYToolTipGenerator());
+    public double getCategorySeriesMiddle(Comparable category, Comparable seriesKey, CategoryDataset dataset, double itemMargin, Rectangle2D area, RectangleEdge edge) {
+        int categoryIndex = dataset.getColumnIndex(category);
+        int categoryCount = dataset.getColumnCount();
+        int seriesIndex = dataset.getRowIndex(seriesKey);
+        int seriesCount = dataset.getRowCount();
+        double start = getCategoryStart(categoryIndex, categoryCount, area, edge);
+        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
+        double width = end - start;
+        if (seriesCount == 1) {
+            return start + width / 2.0;
+        } else {
+            double gap = (width * itemMargin) / (seriesCount - 1);
+            double ww = (width * (1 - itemMargin)) / seriesCount;
+            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
         }
-        if (urls) {
-            renderer.setURLGenerator(new StandardXYURLGenerator());
-        }
-        XYPlot plot = new XYPlot(dataset, xAxis, yAxis, renderer);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
     }
 
     /**
-     * Creates a wafer map chart.
+     * Returns the middle coordinate (in Java2D space) for a series within a
+     * category.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param orientation  the plot orientation (horizontal or vertical)
-     *                     ({@code null} NOT permitted.
-     * @param legend  display a legend?
-     * @param tooltips  generate tooltips?
-     * @param urls  generate URLs?
+     * @param categoryIndex  the category index.
+     * @param categoryCount  the category count.
+     * @param seriesIndex the series index.
+     * @param seriesCount the series count.
+     * @param itemMargin  the item margin (0.0 &lt;= itemMargin &lt; 1.0);
+     * @param area  the area ({@code null} not permitted).
+     * @param edge  the edge ({@code null} not permitted).
      *
-     * @return A wafer map chart.
+     * @return The coordinate in Java2D space.
      */
-    public static JFreeChart createWaferMapChart(String title, WaferMapDataset dataset, PlotOrientation orientation, boolean legend, boolean tooltips, boolean urls) {
-        Args.nullNotPermitted(orientation, "orientation");
-        WaferMapPlot plot = new WaferMapPlot(dataset);
-        WaferMapRenderer renderer = new WaferMapRenderer();
-        plot.setRenderer(renderer);
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, legend);
-        currentTheme.apply(chart);
-        return chart;
+    public double getCategorySeriesMiddle(int categoryIndex, int categoryCount, int seriesIndex, int seriesCount, double itemMargin, Rectangle2D area, RectangleEdge edge) {
+        double start = getCategoryStart(categoryIndex, categoryCount, area, edge);
+        double end = getCategoryEnd(categoryIndex, categoryCount, area, edge);
+        double width = end - start;
+        if (seriesCount == 1) {
+            return start + width / 2.0;
+        } else {
+            double gap = (width * itemMargin) / (seriesCount - 1);
+            double ww = (width * (1 - itemMargin)) / seriesCount;
+            return start + (seriesIndex * (ww + gap)) + ww / 2.0;
+        }
+    }
+
+    /**
+     * Calculates the size (width or height, depending on the location of the
+     * axis) of a category.
+     *
+     * @param categoryCount  the number of categories.
+     * @param area  the area within which the categories will be drawn.
+     * @param edge  the axis location.
+     *
+     * @return The category size.
+     */
+    protected double calculateCategorySize(int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        double result;
+        double available = 0.0;
+        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
+            available = area.getWidth();
+        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
+            available = area.getHeight();
+        }
+        if (categoryCount > 1) {
+            result = available * (1 - getLowerMargin() - getUpperMargin() - getCategoryMargin());
+            result = result / categoryCount;
+        } else {
+            result = available * (1 - getLowerMargin() - getUpperMargin());
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the size (width or height, depending on the location of the
+     * axis) of a category gap.
+     *
+     * @param categoryCount  the number of categories.
+     * @param area  the area within which the categories will be drawn.
+     * @param edge  the axis location.
+     *
+     * @return The category gap width.
+     */
+    protected double calculateCategoryGapSize(int categoryCount, Rectangle2D area, RectangleEdge edge) {
+        double result = 0.0;
+        double available = 0.0;
+        if ((edge == RectangleEdge.TOP) || (edge == RectangleEdge.BOTTOM)) {
+            available = area.getWidth();
+        } else if ((edge == RectangleEdge.LEFT) || (edge == RectangleEdge.RIGHT)) {
+            available = area.getHeight();
+        }
+        if (categoryCount > 1) {
+            result = available * getCategoryMargin() / (categoryCount - 1);
+        }
+        return result;
+    }
+
+    /**
+     * Estimates the space required for the axis, given a specific drawing area.
+     *
+     * @param g2  the graphics device (used to obtain font information).
+     * @param plot  the plot that the axis belongs to.
+     * @param plotArea  the area within which the axis should be drawn.
+     * @param edge  the axis location ({@code null} not permitted).
+     * @param space  the space already reserved.
+     *
+     * @return The space required to draw the axis.
+     */
+    @Override
+    public AxisSpace reserveSpace(Graphics2D g2, Plot plot, Rectangle2D plotArea, RectangleEdge edge, AxisSpace space) {
+        // create a new space object if one wasn't supplied...
+        if (space == null) {
+            space = new AxisSpace();
+        }
+        // if the axis is not visible, no additional space is required...
+        if (!isVisible()) {
+            return space;
+        }
+        // calculate the max size of the tick labels (if visible)...
+        double tickLabelHeight = 0.0;
+        double tickLabelWidth = 0.0;
+        if (isTickLabelsVisible()) {
+            g2.setFont(getTickLabelFont());
+            AxisState state = new AxisState();
+            // we call refresh ticks just to get the maximum width or height
+            refreshTicks(g2, state, plotArea, edge);
+            switch(edge) {
+                case TOP:
+                    tickLabelHeight = state.getMax();
+                    break;
+                case BOTTOM:
+                    tickLabelHeight = state.getMax();
+                    break;
+                case LEFT:
+                    tickLabelWidth = state.getMax();
+                    break;
+                case RIGHT:
+                    tickLabelWidth = state.getMax();
+                    break;
+                default:
+                    throw new IllegalStateException("Unexpected RectangleEdge value.");
+            }
+        }
+        // get the axis label size and update the space object...
+        Rectangle2D labelEnclosure = getLabelEnclosure(g2, edge);
+        double labelHeight, labelWidth;
+        if (RectangleEdge.isTopOrBottom(edge)) {
+            labelHeight = labelEnclosure.getHeight();
+            space.add(labelHeight + tickLabelHeight + this.categoryLabelPositionOffset, edge);
+        } else if (RectangleEdge.isLeftOrRight(edge)) {
+            labelWidth = labelEnclosure.getWidth();
+            space.add(labelWidth + tickLabelWidth + this.categoryLabelPositionOffset, edge);
+        }
+        return space;
+    }
+
+    /**
+     * Configures the axis against the current plot.
+     */
+    @Override
+    public void configure() {
+        // nothing required
+    }
+
+    /**
+     * Draws the axis on a Java 2D graphics device (such as the screen or a
+     * printer).
+     *
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param cursor  the cursor location.
+     * @param plotArea  the area within which the axis should be drawn
+     *                  ({@code null} not permitted).
+     * @param dataArea  the area within which the plot is being drawn
+     *                  ({@code null} not permitted).
+     * @param edge  the location of the axis ({@code null} not permitted).
+     * @param plotState  collects information about the plot
+     *                   ({@code null} permitted).
+     *
+     * @return The axis state (never {@code null}).
+     */
+    @Override
+    public AxisState draw(Graphics2D g2, double cursor, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, PlotRenderingInfo plotState) {
+        // if the axis is not visible, don't draw it...
+        if (!isVisible()) {
+            return new AxisState(cursor);
+        }
+        if (isAxisLineVisible()) {
+            drawAxisLine(g2, cursor, dataArea, edge);
+        }
+        AxisState state = new AxisState(cursor);
+        if (isTickMarksVisible()) {
+            drawTickMarks(g2, cursor, dataArea, edge, state);
+        }
+        createAndAddEntity(cursor, state, dataArea, edge, plotState);
+        // draw the category labels and axis label
+        state = drawCategoryLabels(g2, plotArea, dataArea, edge, state, plotState);
+        if (getAttributedLabel() != null) {
+            state = drawAttributedLabel(getAttributedLabel(), g2, plotArea, dataArea, edge, state);
+        } else {
+            state = drawLabel(getLabel(), g2, plotArea, dataArea, edge, state);
+        }
+        return state;
+    }
+
+    /**
+     * Draws the category labels and returns the updated axis state.
+     *
+     * @param g2  the graphics device ({@code null} not permitted).
+     * @param plotArea  the plot area ({@code null} not permitted).
+     * @param dataArea  the area inside the axes ({@code null} not
+     *                  permitted).
+     * @param edge  the axis location ({@code null} not permitted).
+     * @param state  the axis state ({@code null} not permitted).
+     * @param plotState  collects information about the plot ({@code null}
+     *                   permitted).
+     *
+     * @return The updated axis state (never {@code null}).
+     */
+    protected AxisState drawCategoryLabels(Graphics2D g2, Rectangle2D plotArea, Rectangle2D dataArea, RectangleEdge edge, AxisState state, PlotRenderingInfo plotState) {
+        Args.nullNotPermitted(state, "state");
+        if (!isTickLabelsVisible()) {
+            return state;
+        }
+        List ticks = refreshTicks(g2, state, plotArea, edge);
+        state.setTicks(ticks);
+        int categoryIndex = 0;
+        for (Object o : ticks) {
+            CategoryTick tick = (CategoryTick) o;
+            g2.setFont(getTickLabelFont(tick.getCategory()));
+            g2.setPaint(getTickLabelPaint(tick.getCategory()));
+            CategoryLabelPosition position = this.categoryLabelPositions.getLabelPosition(edge);
+            double x0 = 0.0;
+            double x1 = 0.0;
+            double y0 = 0.0;
+            double y1 = 0.0;
+            if (edge == RectangleEdge.TOP) {
+                x0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                x1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                y1 = state.getCursor() - this.categoryLabelPositionOffset;
+                y0 = y1 - state.getMax();
+            } else if (edge == RectangleEdge.BOTTOM) {
+                x0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                x1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                y0 = state.getCursor() + this.categoryLabelPositionOffset;
+                y1 = y0 + state.getMax();
+            } else if (edge == RectangleEdge.LEFT) {
+                y0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                y1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                x1 = state.getCursor() - this.categoryLabelPositionOffset;
+                x0 = x1 - state.getMax();
+            } else if (edge == RectangleEdge.RIGHT) {
+                y0 = getCategoryStart(categoryIndex, ticks.size(), dataArea, edge);
+                y1 = getCategoryEnd(categoryIndex, ticks.size(), dataArea, edge);
+                x0 = state.getCursor() + this.categoryLabelPositionOffset;
+                x1 = x0 - state.getMax();
+            }
+            Rectangle2D area = new Rectangle2D.Double(x0, y0, (x1 - x0), (y1 - y0));
+            Point2D anchorPoint = position.getCategoryAnchor().getAnchorPoint(area);
+            TextBlock block = tick.getLabel();
+            block.draw(g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getLabelAnchor(), (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getAngle());
+            Shape bounds = block.calculateBounds(g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getLabelAnchor(), (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getAngle());
+            if (plotState != null && plotState.getOwner() != null) {
+                EntityCollection entities = plotState.getOwner().getEntityCollection();
+                if (entities != null) {
+                    String tooltip = getCategoryLabelToolTip(tick.getCategory());
+                    String url = getCategoryLabelURL(tick.getCategory());
+                    entities.add(new CategoryLabelEntity(tick.getCategory(), bounds, tooltip, url));
+                }
+            }
+            categoryIndex++;
+        }
+        if (edge.equals(RectangleEdge.TOP)) {
+            double h = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorUp(h);
+        } else if (edge.equals(RectangleEdge.BOTTOM)) {
+            double h = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorDown(h);
+        } else if (edge == RectangleEdge.LEFT) {
+            double w = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorLeft(w);
+        } else if (edge == RectangleEdge.RIGHT) {
+            double w = state.getMax() + this.categoryLabelPositionOffset;
+            state.cursorRight(w);
+        }
+        return state;
+    }
+
+    /**
+     * Creates a temporary list of ticks that can be used when drawing the axis.
+     *
+     * @param g2  the graphics device (used to get font measurements).
+     * @param state  the axis state.
+     * @param dataArea  the area inside the axes.
+     * @param edge  the location of the axis.
+     *
+     * @return A list of ticks.
+     */
+    @Override
+    public List refreshTicks(Graphics2D g2, AxisState state, Rectangle2D dataArea, RectangleEdge edge) {
+        // FIXME generics
+        List ticks = new java.util.ArrayList();
+        // sanity check for data area...
+        if (dataArea.getHeight() <= 0.0 || dataArea.getWidth() < 0.0) {
+            return ticks;
+        }
+        CategoryPlot plot = (CategoryPlot) getPlot();
+        List categories = plot.getCategoriesForAxis(this);
+        double max = 0.0;
+        if (categories != null) {
+            CategoryLabelPosition position = this.categoryLabelPositions.getLabelPosition(edge);
+            float r = this.maximumCategoryLabelWidthRatio;
+            if (r <= 0.0) {
+                r = position.getWidthRatio();
+            }
+            float l;
+            if (position.getWidthType() == CategoryLabelWidthType.CATEGORY) {
+                l = (float) calculateCategorySize(categories.size(), dataArea, edge);
+            } else {
+                if (RectangleEdge.isLeftOrRight(edge)) {
+                    l = (float) dataArea.getWidth();
+                } else {
+                    l = (float) dataArea.getHeight();
+                }
+            }
+            int categoryIndex = 0;
+            for (Object o : categories) {
+                Comparable category = (Comparable) o;
+                g2.setFont(getTickLabelFont(category));
+                TextBlock label = createLabel(category, l * r, edge, g2);
+                if (edge == RectangleEdge.TOP || edge == RectangleEdge.BOTTOM) {
+                    max = Math.max(max, calculateCategoryLabelHeight(label, position, getTickLabelInsets(), g2));
+                } else if (edge == RectangleEdge.LEFT || edge == RectangleEdge.RIGHT) {
+                    max = Math.max(max, calculateCategoryLabelWidth(label, position, getTickLabelInsets(), g2));
+                }
+                Tick tick = new CategoryTick(category, label, position.getLabelAnchor(), position.getRotationAnchor(), position.getAngle());
+                ticks.add(tick);
+                categoryIndex = categoryIndex + 1;
+            }
+        }
+        state.setMax(max);
+        return ticks;
+    }
+
+    /**
+     * Draws the tick marks.
+     *
+     * @param g2  the graphics target.
+     * @param cursor  the cursor position (an offset when drawing multiple axes)
+     * @param dataArea  the area for plotting the data.
+     * @param edge  the location of the axis.
+     * @param state  the axis state.
+     */
+    public void drawTickMarks(Graphics2D g2, double cursor, Rectangle2D dataArea, RectangleEdge edge, AxisState state) {
+        Plot p = getPlot();
+        if (p == null) {
+            return;
+        }
+        CategoryPlot plot = (CategoryPlot) p;
+        double il = getTickMarkInsideLength();
+        double ol = getTickMarkOutsideLength();
+        Line2D line = new Line2D.Double();
+        List<Comparable> categories = plot.getCategoriesForAxis(this);
+        g2.setPaint(getTickMarkPaint());
+        g2.setStroke(getTickMarkStroke());
+        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        if (edge.equals(RectangleEdge.TOP)) {
+            for (Comparable category : categories) {
+                double x = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(x, cursor, x, cursor + il);
+                g2.draw(line);
+                line.setLine(x, cursor, x, cursor - ol);
+                g2.draw(line);
+            }
+            state.cursorUp(ol);
+        } else if (edge.equals(RectangleEdge.BOTTOM)) {
+            for (Comparable category : categories) {
+                double x = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(x, cursor, x, cursor - il);
+                g2.draw(line);
+                line.setLine(x, cursor, x, cursor + ol);
+                g2.draw(line);
+            }
+            state.cursorDown(ol);
+        } else if (edge.equals(RectangleEdge.LEFT)) {
+            for (Comparable category : categories) {
+                double y = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(cursor, y, cursor + il, y);
+                g2.draw(line);
+                line.setLine(cursor, y, cursor - ol, y);
+                g2.draw(line);
+            }
+            state.cursorLeft(ol);
+        } else if (edge.equals(RectangleEdge.RIGHT)) {
+            for (Comparable category : categories) {
+                double y = getCategoryMiddle(category, categories, dataArea, edge);
+                line.setLine(cursor, y, cursor - il, y);
+                g2.draw(line);
+                line.setLine(cursor, y, cursor + ol, y);
+                g2.draw(line);
+            }
+            state.cursorRight(ol);
+        }
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+    }
+
+    /**
+     * Creates a label.
+     *
+     * @param category  the category.
+     * @param width  the available width.
+     * @param edge  the edge on which the axis appears.
+     * @param g2  the graphics device.
+     *
+     * @return A label.
+     */
+    protected TextBlock createLabel(Comparable category, float width, RectangleEdge edge, Graphics2D g2) {
+        TextBlock label = TextUtils.createTextBlock(category.toString(), getTickLabelFont(category), getTickLabelPaint(category), width, this.maximumCategoryLabelLines, new G2TextMeasurer(g2));
+        return label;
+    }
+
+    /**
+     * Calculates the width of a category label when rendered.
+     *
+     * @param label  the text block ({@code null} not permitted).
+     * @param position  the position.
+     * @param insets  the label insets.
+     * @param g2  the graphics device.
+     *
+     * @return The width.
+     */
+    protected double calculateCategoryLabelWidth(TextBlock label, CategoryLabelPosition position, RectangleInsets insets, Graphics2D g2) {
+        Size2D size = label.calculateDimensions(g2);
+        Rectangle2D box = new Rectangle2D.Double(0.0, 0.0, size.getWidth(), size.getHeight());
+        Shape rotatedBox = ShapeUtils.rotateShape(box, position.getAngle(), 0.0f, 0.0f);
+        double w = rotatedBox.getBounds2D().getWidth() + insets.getLeft() + insets.getRight();
+        return w;
+    }
+
+    /**
+     * Calculates the height of a category label when rendered.
+     *
+     * @param block  the text block ({@code null} not permitted).
+     * @param position  the label position ({@code null} not permitted).
+     * @param insets  the label insets ({@code null} not permitted).
+     * @param g2  the graphics device ({@code null} not permitted).
+     *
+     * @return The height.
+     */
+    protected double calculateCategoryLabelHeight(TextBlock block, CategoryLabelPosition position, RectangleInsets insets, Graphics2D g2) {
+        Size2D size = block.calculateDimensions(g2);
+        Rectangle2D box = new Rectangle2D.Double(0.0, 0.0, size.getWidth(), size.getHeight());
+        Shape rotatedBox = ShapeUtils.rotateShape(box, position.getAngle(), 0.0f, 0.0f);
+        double h = rotatedBox.getBounds2D().getHeight() + insets.getTop() + insets.getBottom();
+        return h;
+    }
+
+    /**
+     * Creates a clone of the axis.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if some component of the axis does
+     *         not support cloning.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        CategoryAxis clone = (CategoryAxis) super.clone();
+        clone.tickLabelFontMap = new HashMap<>(this.tickLabelFontMap);
+        clone.tickLabelPaintMap = new HashMap<>(this.tickLabelPaintMap);
+        clone.categoryLabelToolTips = new HashMap<>(this.categoryLabelToolTips);
+        clone.categoryLabelURLs = new HashMap<>(this.categoryLabelToolTips);
+        return clone;
+    }
+
+    /**
+     * Tests this axis for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof CategoryAxis)) {
+            return false;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        CategoryAxis that = (CategoryAxis) obj;
+        if (that.lowerMargin != this.lowerMargin) {
+            return false;
+        }
+        if (that.upperMargin != this.upperMargin) {
+            return false;
+        }
+        if (that.categoryMargin != this.categoryMargin) {
+            return false;
+        }
+        if (that.maximumCategoryLabelWidthRatio != this.maximumCategoryLabelWidthRatio) {
+            return false;
+        }
+        if (that.categoryLabelPositionOffset != this.categoryLabelPositionOffset) {
+            return false;
+        }
+        if (!Objects.equals(that.categoryLabelPositions, this.categoryLabelPositions)) {
+            return false;
+        }
+        if (!Objects.equals(that.categoryLabelToolTips, this.categoryLabelToolTips)) {
+            return false;
+        }
+        if (!Objects.equals(this.categoryLabelURLs, that.categoryLabelURLs)) {
+            return false;
+        }
+        if (!Objects.equals(this.tickLabelFontMap, that.tickLabelFontMap)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.tickLabelPaintMap, that.tickLabelPaintMap)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this object.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        writePaintMap(this.tickLabelPaintMap, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.tickLabelPaintMap = readPaintMap(stream);
+    }
+
+    /**
+     * Reads a {@code Map} of ({@code Comparable}, {@code Paint})
+     * elements from a stream.
+     *
+     * @param in  the input stream.
+     *
+     * @return The map.
+     *
+     * @throws IOException
+     * @throws ClassNotFoundException
+     *
+     * @see #writePaintMap(Map, ObjectOutputStream)
+     */
+    private Map readPaintMap(ObjectInputStream in) throws IOException, ClassNotFoundException {
+        boolean isNull = in.readBoolean();
+        if (isNull) {
+            return null;
+        }
+        Map result = new HashMap();
+        int count = in.readInt();
+        for (int i = 0; i < count; i++) {
+            Comparable category = (Comparable) in.readObject();
+            Paint paint = SerialUtils.readPaint(in);
+            result.put(category, paint);
+        }
+        return result;
+    }
+
+    /**
+     * Writes a map of ({@code Comparable}, {@code Paint})
+     * elements to a stream.
+     *
+     * @param map  the map ({@code null} permitted).
+     *
+     * @param out
+     * @throws IOException
+     *
+     * @see #readPaintMap(ObjectInputStream)
+     */
+    private void writePaintMap(Map map, ObjectOutputStream out) throws IOException {
+        if (map == null) {
+            out.writeBoolean(true);
+        } else {
+            out.writeBoolean(false);
+            Set keys = map.keySet();
+            int count = keys.size();
+            out.writeInt(count);
+            for (Object o : keys) {
+                Comparable key = (Comparable) o;
+                out.writeObject(key);
+                SerialUtils.writePaint((Paint) map.get(key), out);
+            }
+        }
     }
 }
 /* ======================================================
@@ -6757,39 +6391,231 @@ public abstract class ChartFactory {
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -----------------------------
- * CategoryToolTipGenerator.java
- * -----------------------------
- * (C) Copyright 2001-present, by David Gilbert.
+ * --------------------
+ * AttrStringUtils.java
+ * --------------------
+ * (C) Copyright 2013-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
- *
+ * 
  */
 /**
- * A <i>category tool tip generator</i> is an object that can be assigned to a
- * {@link org.jfree.chart.renderer.category.CategoryItemRenderer} and that
- * assumes responsibility for creating text items to be used as tooltips for the
- * items in a {@link org.jfree.chart.plot.CategoryPlot}.
- * <p>
- * To assist with cloning charts, classes that implement this interface should
- * also implement the {@link PublicCloneable} interface.
+ * Some {@code AttributedString} utilities.
  *
- * @param <R> the row key type.
- * @param <C> the column key type.
+ * @since 1.0.16
  */
-interface CategoryToolTipGenerator<R extends Comparable<R>, C extends Comparable<C>> {
+public class AttrStringUtils {
+
+    private AttrStringUtils() {
+        // no need to instantiate this class
+    }
 
     /**
-     * Generates the tool tip text for an item in a dataset.  Note: in the
-     * current dataset implementation, each row is a series, and each column
-     * contains values for a particular category.
+     * Returns the bounds for the attributed string.
      *
-     * @param dataset  the dataset ({@code null} not permitted).
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
+     * @param text  the attributed string ({@code null} not permitted).
+     * @param g2  the graphics target ({@code null} not permitted).
      *
-     * @return The tooltip text (possibly {@code null}).
+     * @return The bounds (never {@code null}).
+     *
+     * @since 1.0.18
      */
-    String generateToolTip(CategoryDataset<R, C> dataset, int row, int column);
+    public static Rectangle2D getTextBounds(AttributedString text, Graphics2D g2) {
+        TextLayout tl = new TextLayout(text.getIterator(), g2.getFontRenderContext());
+        return tl.getBounds();
+    }
+
+    /**
+     * Draws the attributed string at {@code (x, y)}, rotated by the
+     * specified angle about {@code (x, y)}.
+     *
+     * @param text  the attributed string ({@code null} not permitted).
+     * @param g2  the graphics output target.
+     * @param angle  the angle.
+     * @param x  the x-coordinate.
+     * @param y  the y-coordinate.
+     *
+     * @since 1.0.16
+     */
+    public static void drawRotatedString(AttributedString text, Graphics2D g2, double angle, float x, float y) {
+        drawRotatedString(text, g2, x, y, angle, x, y);
+    }
+
+    /**
+     * Draws the attributed string at {@code (textX, textY)}, rotated by
+     * the specified angle about {@code (rotateX, rotateY)}.
+     *
+     * @param text  the attributed string ({@code null} not permitted).
+     * @param g2  the graphics output target.
+     * @param textX  the x-coordinate for the text.
+     * @param textY  the y-coordinate for the text.
+     * @param angle  the rotation angle (in radians).
+     * @param rotateX  the x-coordinate for the rotation point.
+     * @param rotateY  the y-coordinate for the rotation point.
+     *
+     * @since 1.0.16
+     */
+    public static void drawRotatedString(AttributedString text, Graphics2D g2, float textX, float textY, double angle, float rotateX, float rotateY) {
+        Args.nullNotPermitted(text, "text");
+        AffineTransform saved = g2.getTransform();
+        AffineTransform rotate = AffineTransform.getRotateInstance(angle, rotateX, rotateY);
+        g2.transform(rotate);
+        TextLayout tl = new TextLayout(text.getIterator(), g2.getFontRenderContext());
+        tl.draw(g2, textX, textY);
+        g2.setTransform(saved);
+    }
+
+    /**
+     * Draws the string anchored to {@code (x, y)}, rotated by the
+     * specified angle about {@code (rotationX, rotationY)}.
+     *
+     * @param text  the text ({@code null} not permitted).
+     * @param g2  the graphics target.
+     * @param x  the x-coordinate for the text location.
+     * @param y  the y-coordinate for the text location.
+     * @param textAnchor  the text anchor point.
+     * @param angle  the rotation (in radians).
+     * @param rotationX  the x-coordinate for the rotation point.
+     * @param rotationY  the y-coordinate for the rotation point.
+     *
+     * @since 1.0.16
+     */
+    public static void drawRotatedString(AttributedString text, Graphics2D g2, float x, float y, TextAnchor textAnchor, double angle, float rotationX, float rotationY) {
+        Args.nullNotPermitted(text, "text");
+        float[] textAdj = deriveTextBoundsAnchorOffsets(g2, text, textAnchor, null);
+        drawRotatedString(text, g2, x + textAdj[0], y + textAdj[1], angle, rotationX, rotationY);
+    }
+
+    /**
+     * Draws a rotated string.
+     *
+     * @param text  the text to draw.
+     * @param g2  the graphics target.
+     * @param x  the x-coordinate for the text location.
+     * @param y  the y-coordinate for the text location.
+     * @param textAnchor  the text anchor point.
+     * @param angle  the rotation (in radians).
+     * @param rotationAnchor  the rotation anchor point.
+     *
+     * @since 1.0.16
+     */
+    public static void drawRotatedString(AttributedString text, Graphics2D g2, float x, float y, TextAnchor textAnchor, double angle, TextAnchor rotationAnchor) {
+        Args.nullNotPermitted(text, "text");
+        float[] textAdj = deriveTextBoundsAnchorOffsets(g2, text, textAnchor, null);
+        float[] rotateAdj = deriveRotationAnchorOffsets(g2, text, rotationAnchor);
+        drawRotatedString(text, g2, x + textAdj[0], y + textAdj[1], angle, x + textAdj[0] + rotateAdj[0], y + textAdj[1] + rotateAdj[1]);
+    }
+
+    private static float[] deriveTextBoundsAnchorOffsets(Graphics2D g2, AttributedString text, TextAnchor anchor, Rectangle2D textBounds) {
+        TextLayout layout = new TextLayout(text.getIterator(), g2.getFontRenderContext());
+        Rectangle2D bounds = layout.getBounds();
+        float[] result = new float[3];
+        float ascent = layout.getAscent();
+        result[2] = -ascent;
+        float halfAscent = ascent / 2.0f;
+        float descent = layout.getDescent();
+        float leading = layout.getLeading();
+        float xAdj = 0.0f;
+        float yAdj = 0.0f;
+        if (isHorizontalCenter(anchor)) {
+            xAdj = (float) -bounds.getWidth() / 2.0f;
+        } else if (isHorizontalRight(anchor)) {
+            xAdj = (float) -bounds.getWidth();
+        }
+        if (isTop(anchor)) {
+            //yAdj = -descent - leading + (float) bounds.getHeight();
+            yAdj = (float) bounds.getHeight();
+        } else if (isHalfAscent(anchor)) {
+            yAdj = halfAscent;
+        } else if (isHalfHeight(anchor)) {
+            yAdj = -descent - leading + (float) (bounds.getHeight() / 2.0);
+        } else if (isBaseline(anchor)) {
+            yAdj = 0.0f;
+        } else if (isBottom(anchor)) {
+            yAdj = -descent - leading;
+        }
+        if (textBounds != null) {
+            textBounds.setRect(bounds);
+        }
+        result[0] = xAdj;
+        result[1] = yAdj;
+        return result;
+    }
+
+    /**
+     * A utility method that calculates the rotation anchor offsets for a
+     * string.  These offsets are relative to the text starting coordinate
+     * (BASELINE_LEFT).
+     *
+     * @param g2  the graphics device.
+     * @param text  the text.
+     * @param anchor  the anchor point.
+     *
+     * @return  The offsets.
+     */
+    private static float[] deriveRotationAnchorOffsets(Graphics2D g2, AttributedString text, TextAnchor anchor) {
+        float[] result = new float[2];
+        TextLayout layout = new TextLayout(text.getIterator(), g2.getFontRenderContext());
+        Rectangle2D bounds = layout.getBounds();
+        float ascent = layout.getAscent();
+        float halfAscent = ascent / 2.0f;
+        float descent = layout.getDescent();
+        float leading = layout.getLeading();
+        float xAdj = 0.0f;
+        float yAdj = 0.0f;
+        if (isHorizontalLeft(anchor)) {
+            xAdj = 0.0f;
+        } else if (isHorizontalCenter(anchor)) {
+            xAdj = (float) bounds.getWidth() / 2.0f;
+        } else if (isHorizontalRight(anchor)) {
+            xAdj = (float) bounds.getWidth();
+        }
+        if (isTop(anchor)) {
+            yAdj = descent + leading - (float) bounds.getHeight();
+        } else if (isHalfHeight(anchor)) {
+            yAdj = descent + leading - (float) (bounds.getHeight() / 2.0);
+        } else if (isHalfAscent(anchor)) {
+            yAdj = -halfAscent;
+        } else if (isBaseline(anchor)) {
+            yAdj = 0.0f;
+        } else if (isBottom(anchor)) {
+            yAdj = descent + leading;
+        }
+        result[0] = xAdj;
+        result[1] = yAdj;
+        return result;
+    }
+
+    private static boolean isTop(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.TOP_LEFT) || anchor.equals(TextAnchor.TOP_CENTER) || anchor.equals(TextAnchor.TOP_RIGHT);
+    }
+
+    private static boolean isBaseline(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.BASELINE_LEFT) || anchor.equals(TextAnchor.BASELINE_CENTER) || anchor.equals(TextAnchor.BASELINE_RIGHT);
+    }
+
+    private static boolean isHalfAscent(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.HALF_ASCENT_LEFT) || anchor.equals(TextAnchor.HALF_ASCENT_CENTER) || anchor.equals(TextAnchor.HALF_ASCENT_RIGHT);
+    }
+
+    private static boolean isHalfHeight(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.CENTER_LEFT) || anchor.equals(TextAnchor.CENTER) || anchor.equals(TextAnchor.CENTER_RIGHT);
+    }
+
+    private static boolean isBottom(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.BOTTOM_LEFT) || anchor.equals(TextAnchor.BOTTOM_CENTER) || anchor.equals(TextAnchor.BOTTOM_RIGHT);
+    }
+
+    private static boolean isHorizontalLeft(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.TOP_LEFT) || anchor.equals(TextAnchor.CENTER_LEFT) || anchor.equals(TextAnchor.HALF_ASCENT_LEFT) || anchor.equals(TextAnchor.BASELINE_LEFT) || anchor.equals(TextAnchor.BOTTOM_LEFT);
+    }
+
+    private static boolean isHorizontalCenter(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.TOP_CENTER) || anchor.equals(TextAnchor.CENTER) || anchor.equals(TextAnchor.HALF_ASCENT_CENTER) || anchor.equals(TextAnchor.BASELINE_CENTER) || anchor.equals(TextAnchor.BOTTOM_CENTER);
+    }
+
+    private static boolean isHorizontalRight(TextAnchor anchor) {
+        return anchor.equals(TextAnchor.TOP_RIGHT) || anchor.equals(TextAnchor.CENTER_RIGHT) || anchor.equals(TextAnchor.HALF_ASCENT_RIGHT) || anchor.equals(TextAnchor.BASELINE_RIGHT) || anchor.equals(TextAnchor.BOTTOM_RIGHT);
+    }
 }

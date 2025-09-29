@@ -25,761 +25,874 @@ package LOC.b;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * --------------
- * TextTitle.java
- * --------------
- * (C) Copyright 2000-present, by David Berry and Contributors.
+ * ---------------------------
+ * SlidingCategoryDataset.java
+ * ---------------------------
+ * (C) Copyright 2008-present, by David Gilbert.
  *
- * Original Author:  David Berry;
- * Contributor(s):   David Gilbert;
- *                   Nicolas Brodu;
- *                   Peter Kolb - patch 2603321;
+ * Original Author:  David Gilbert;
+ * Contributor(s):   -;
+ *
  */
 /**
- * A chart title that displays a text string with automatic wrapping as
- * required.
+ * A {@link CategoryDataset} implementation that presents a subset of the
+ * categories in an underlying dataset.  The index of the first "visible"
+ * category can be modified, which provides a means of "sliding" through
+ * the categories in the underlying dataset.
+ *
+ * @param <R> the row key type.
+ * @param <C> the column key type.
  */
-class TextTitle extends Title implements Serializable, Cloneable, PublicCloneable {
+public class SlidingCategoryDataset<R extends Comparable<R>, C extends Comparable<C>> extends AbstractDataset implements CategoryDataset<R, C> {
 
     /**
-     * For serialization.
+     * The underlying dataset.
      */
-    private static final long serialVersionUID = 8372008692127477443L;
+    private CategoryDataset<R, C> underlying;
 
     /**
-     * The default font.
+     * The index of the first category to present.
      */
-    public static final Font DEFAULT_FONT = new Font("SansSerif", Font.BOLD, 12);
+    private int firstCategoryIndex;
 
     /**
-     * The default text color.
+     * The maximum number of categories to present.
      */
-    public static final Paint DEFAULT_TEXT_PAINT = Color.BLACK;
+    private int maximumCategoryCount;
 
     /**
-     * The title text.
+     * Creates a new instance.
+     *
+     * @param underlying  the underlying dataset ({@code null} not
+     *     permitted).
+     * @param firstColumn  the index of the first visible column from the
+     *     underlying dataset.
+     * @param maxColumns  the maximumColumnCount.
      */
-    private String text;
-
-    /**
-     * The font used to display the title.
-     */
-    private Font font;
-
-    /**
-     * The text alignment.
-     */
-    private HorizontalAlignment textAlignment;
-
-    /**
-     * The paint used to display the title text.
-     */
-    private transient Paint paint;
-
-    /**
-     * The background paint.
-     */
-    private transient Paint backgroundPaint;
-
-    /**
-     * The tool tip text (can be {@code null}).
-     */
-    private String toolTipText;
-
-    /**
-     * The URL text (can be {@code null}).
-     */
-    private String urlText;
-
-    /**
-     * The content.
-     */
-    private TextBlock content;
-
-    /**
-     * A flag that controls whether the title expands to fit the available
-     * space..
-     */
-    private boolean expandToFitSpace = false;
-
-    /**
-     * The maximum number of lines to display.
-     */
-    private int maximumLinesToDisplay = Integer.MAX_VALUE;
-
-    /**
-     * Creates a new title, using default attributes where necessary.
-     */
-    public TextTitle() {
-        this("");
+    public SlidingCategoryDataset(CategoryDataset<R, C> underlying, int firstColumn, int maxColumns) {
+        this.underlying = underlying;
+        this.firstCategoryIndex = firstColumn;
+        this.maximumCategoryCount = maxColumns;
     }
 
     /**
-     * Creates a new title, using default attributes where necessary.
+     * Returns the underlying dataset that was supplied to the constructor.
      *
-     * @param text  the title text ({@code null} not permitted).
+     * @return The underlying dataset (never {@code null}).
      */
-    public TextTitle(String text) {
-        this(text, TextTitle.DEFAULT_FONT, TextTitle.DEFAULT_TEXT_PAINT, Title.DEFAULT_POSITION, Title.DEFAULT_HORIZONTAL_ALIGNMENT, Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING);
+    public CategoryDataset<R, C> getUnderlyingDataset() {
+        return this.underlying;
     }
 
     /**
-     * Creates a new title, using default attributes where necessary.
+     * Returns the index of the first visible category.
      *
-     * @param text  the title text ({@code null} not permitted).
-     * @param font  the title font ({@code null} not permitted).
+     * @return The index.
+     *
+     * @see #setFirstCategoryIndex(int)
      */
-    public TextTitle(String text, Font font) {
-        this(text, font, TextTitle.DEFAULT_TEXT_PAINT, Title.DEFAULT_POSITION, Title.DEFAULT_HORIZONTAL_ALIGNMENT, Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING);
+    public int getFirstCategoryIndex() {
+        return this.firstCategoryIndex;
     }
 
     /**
-     * Creates a new title with the specified attributes.
+     * Sets the index of the first category that should be used from the
+     * underlying dataset, and sends a {@link DatasetChangeEvent} to all
+     * registered listeners.
      *
-     * @param text  the text for the title ({@code null} not permitted).
-     * @param font  the title font ({@code null} not permitted).
-     * @param paint  the title paint ({@code null} not permitted).
-     * @param position  the title position ({@code null} not permitted).
-     * @param horizontalAlignment  the horizontal alignment ({@code null}
-     *                             not permitted).
-     * @param verticalAlignment  the vertical alignment ({@code null} not
-     *                           permitted).
-     * @param padding  the space to leave around the outside of the title.
+     * @param first  the index.
+     *
+     * @see #getFirstCategoryIndex()
      */
-    public TextTitle(String text, Font font, Paint paint, RectangleEdge position, HorizontalAlignment horizontalAlignment, VerticalAlignment verticalAlignment, RectangleInsets padding) {
-        super(position, horizontalAlignment, verticalAlignment, padding);
-        Args.nullNotPermitted(text, "text");
-        Args.nullNotPermitted(font, "font");
-        Args.nullNotPermitted(paint, "paint");
-        this.text = text;
-        this.font = font;
-        this.paint = paint;
-        // the textAlignment and the horizontalAlignment are separate things,
-        // but it makes sense for the default textAlignment to match the
-        // title's horizontal alignment...
-        this.textAlignment = horizontalAlignment;
-        this.backgroundPaint = null;
-        this.content = null;
-        this.toolTipText = null;
-        this.urlText = null;
-    }
-
-    /**
-     * Returns the title text.
-     *
-     * @return The text (never {@code null}).
-     *
-     * @see #setText(String)
-     */
-    public String getText() {
-        return this.text;
-    }
-
-    /**
-     * Sets the title to the specified text and sends a
-     * {@link TitleChangeEvent} to all registered listeners.
-     *
-     * @param text  the text ({@code null} not permitted).
-     */
-    public void setText(String text) {
-        Args.nullNotPermitted(text, "text");
-        if (!this.text.equals(text)) {
-            this.text = text;
-            notifyListeners(new TitleChangeEvent(this));
+    public void setFirstCategoryIndex(int first) {
+        if (first < 0 || first >= this.underlying.getColumnCount()) {
+            throw new IllegalArgumentException("Invalid index.");
         }
+        this.firstCategoryIndex = first;
+        fireDatasetChanged();
     }
 
     /**
-     * Returns the text alignment.  This controls how the text is aligned
-     * within the title's bounds, whereas the title's horizontal alignment
-     * controls how the title's bounding rectangle is aligned within the
-     * drawing space.
+     * Returns the maximum category count.
      *
-     * @return The text alignment.
+     * @return The maximum category count.
+     *
+     * @see #setMaximumCategoryCount(int)
      */
-    public HorizontalAlignment getTextAlignment() {
-        return this.textAlignment;
+    public int getMaximumCategoryCount() {
+        return this.maximumCategoryCount;
     }
 
     /**
-     * Sets the text alignment and sends a {@link TitleChangeEvent} to
-     * all registered listeners.
-     *
-     * @param alignment  the alignment ({@code null} not permitted).
-     */
-    public void setTextAlignment(HorizontalAlignment alignment) {
-        Args.nullNotPermitted(alignment, "alignment");
-        this.textAlignment = alignment;
-        notifyListeners(new TitleChangeEvent(this));
-    }
-
-    /**
-     * Returns the font used to display the title string.
-     *
-     * @return The font (never {@code null}).
-     *
-     * @see #setFont(Font)
-     */
-    public Font getFont() {
-        return this.font;
-    }
-
-    /**
-     * Sets the font used to display the title string.  Registered listeners
-     * are notified that the title has been modified.
-     *
-     * @param font  the new font ({@code null} not permitted).
-     *
-     * @see #getFont()
-     */
-    public void setFont(Font font) {
-        Args.nullNotPermitted(font, "font");
-        if (!this.font.equals(font)) {
-            this.font = font;
-            notifyListeners(new TitleChangeEvent(this));
-        }
-    }
-
-    /**
-     * Returns the paint used to display the title string.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setPaint(Paint)
-     */
-    public Paint getPaint() {
-        return this.paint;
-    }
-
-    /**
-     * Sets the paint used to display the title string.  Registered listeners
-     * are notified that the title has been modified.
-     *
-     * @param paint  the new paint ({@code null} not permitted).
-     *
-     * @see #getPaint()
-     */
-    public void setPaint(Paint paint) {
-        Args.nullNotPermitted(paint, "paint");
-        if (!this.paint.equals(paint)) {
-            this.paint = paint;
-            notifyListeners(new TitleChangeEvent(this));
-        }
-    }
-
-    /**
-     * Returns the background paint (defaults to {@code null} which makes the
-     * background transparent).
-     *
-     * @return The paint (possibly {@code null}).
-     */
-    public Paint getBackgroundPaint() {
-        return this.backgroundPaint;
-    }
-
-    /**
-     * Sets the background paint and sends a {@link TitleChangeEvent} to all
-     * registered listeners.  If you set this attribute to {@code null},
-     * no background is painted (which makes the title background transparent).
-     *
-     * @param paint  the background paint ({@code null} permitted).
-     */
-    public void setBackgroundPaint(Paint paint) {
-        this.backgroundPaint = paint;
-        notifyListeners(new TitleChangeEvent(this));
-    }
-
-    /**
-     * Returns the tool tip text.
-     *
-     * @return The tool tip text (possibly {@code null}).
-     */
-    public String getToolTipText() {
-        return this.toolTipText;
-    }
-
-    /**
-     * Sets the tool tip text to the specified text and sends a
-     * {@link TitleChangeEvent} to all registered listeners.
-     *
-     * @param text  the text ({@code null} permitted).
-     */
-    public void setToolTipText(String text) {
-        this.toolTipText = text;
-        notifyListeners(new TitleChangeEvent(this));
-    }
-
-    /**
-     * Returns the URL text.
-     *
-     * @return The URL text (possibly {@code null}).
-     */
-    public String getURLText() {
-        return this.urlText;
-    }
-
-    /**
-     * Sets the URL text to the specified text and sends a
-     * {@link TitleChangeEvent} to all registered listeners.
-     *
-     * @param text  the text ({@code null} permitted).
-     */
-    public void setURLText(String text) {
-        this.urlText = text;
-        notifyListeners(new TitleChangeEvent(this));
-    }
-
-    /**
-     * Returns the flag that controls whether the title expands to fit
-     * the available space.
-     *
-     * @return The flag.
-     */
-    public boolean getExpandToFitSpace() {
-        return this.expandToFitSpace;
-    }
-
-    /**
-     * Sets the flag that controls whether the title expands to fit the
-     * available space, and sends a {@link TitleChangeEvent} to all registered
-     * listeners.
-     *
-     * @param expand  the flag.
-     */
-    public void setExpandToFitSpace(boolean expand) {
-        this.expandToFitSpace = expand;
-        notifyListeners(new TitleChangeEvent(this));
-    }
-
-    /**
-     * Returns the maximum number of lines to display.
-     *
-     * @return The maximum.
-     *
-     * @see #setMaximumLinesToDisplay(int)
-     */
-    public int getMaximumLinesToDisplay() {
-        return this.maximumLinesToDisplay;
-    }
-
-    /**
-     * Sets the maximum number of lines to display and sends a
-     * {@link TitleChangeEvent} to all registered listeners.
+     * Sets the maximum category count and sends a {@link DatasetChangeEvent}
+     * to all registered listeners.
      *
      * @param max  the maximum.
      *
-     * @see #getMaximumLinesToDisplay()
+     * @see #getMaximumCategoryCount()
      */
-    public void setMaximumLinesToDisplay(int max) {
-        this.maximumLinesToDisplay = max;
-        notifyListeners(new TitleChangeEvent(this));
+    public void setMaximumCategoryCount(int max) {
+        if (max < 0) {
+            throw new IllegalArgumentException("Requires 'max' >= 0.");
+        }
+        this.maximumCategoryCount = max;
+        fireDatasetChanged();
     }
 
     /**
-     * Arranges the contents of the block, within the given constraints, and
-     * returns the block size.
+     * Returns the index of the last column for this dataset, or -1.
      *
-     * @param g2  the graphics device.
-     * @param constraint  the constraint ({@code null} not permitted).
+     * @return The index.
+     */
+    private int lastCategoryIndex() {
+        if (this.maximumCategoryCount == 0) {
+            return -1;
+        }
+        return Math.min(this.firstCategoryIndex + this.maximumCategoryCount, this.underlying.getColumnCount()) - 1;
+    }
+
+    /**
+     * Returns the index for the specified column key.
      *
-     * @return The block size (in Java2D units, never {@code null}).
+     * @param key  the key.
+     *
+     * @return The column index, or -1 if the key is not recognised.
      */
     @Override
-    public Size2D arrange(Graphics2D g2, RectangleConstraint constraint) {
-        RectangleConstraint cc = toContentConstraint(constraint);
-        LengthConstraintType w = cc.getWidthConstraintType();
-        LengthConstraintType h = cc.getHeightConstraintType();
-        Size2D contentSize = null;
-        if (w == LengthConstraintType.NONE) {
-            if (h == LengthConstraintType.NONE) {
-                contentSize = arrangeNN(g2);
-            } else if (h == LengthConstraintType.RANGE) {
-                throw new RuntimeException("Not yet implemented.");
-            } else if (h == LengthConstraintType.FIXED) {
-                throw new RuntimeException("Not yet implemented.");
-            }
-        } else if (w == LengthConstraintType.RANGE) {
-            if (h == LengthConstraintType.NONE) {
-                contentSize = arrangeRN(g2, cc.getWidthRange());
-            } else if (h == LengthConstraintType.RANGE) {
-                contentSize = arrangeRR(g2, cc.getWidthRange(), cc.getHeightRange());
-            } else if (h == LengthConstraintType.FIXED) {
-                throw new RuntimeException("Not yet implemented.");
-            }
-        } else if (w == LengthConstraintType.FIXED) {
-            if (h == LengthConstraintType.NONE) {
-                contentSize = arrangeFN(g2, cc.getWidth());
-            } else if (h == LengthConstraintType.RANGE) {
-                throw new RuntimeException("Not yet implemented.");
-            } else if (h == LengthConstraintType.FIXED) {
-                throw new RuntimeException("Not yet implemented.");
-            }
+    public int getColumnIndex(C key) {
+        int index = this.underlying.getColumnIndex(key);
+        if (index >= this.firstCategoryIndex && index <= lastCategoryIndex()) {
+            return index - this.firstCategoryIndex;
         }
-        // suppress compiler warning
-        assert contentSize != null;
-        return new Size2D(calculateTotalWidth(contentSize.getWidth()), calculateTotalHeight(contentSize.getHeight()));
+        // we didn't find the key
+        return -1;
     }
 
     /**
-     * Arranges the content for this title assuming no bounds on the width
-     * or the height, and returns the required size.  This will reflect the
-     * fact that a text title positioned on the left or right of a chart will
-     * be rotated by 90 degrees.
+     * Returns the column key for a given index.
      *
-     * @param g2  the graphics target.
+     * @param column  the column index (zero-based).
      *
-     * @return The content size.
+     * @return The column key.
+     *
+     * @throws IndexOutOfBoundsException if {@code row} is out of bounds.
      */
-    protected Size2D arrangeNN(Graphics2D g2) {
-        Range max = new Range(0.0, Float.MAX_VALUE);
-        return arrangeRR(g2, max, max);
+    @Override
+    public C getColumnKey(int column) {
+        return this.underlying.getColumnKey(column + this.firstCategoryIndex);
     }
 
     /**
-     * Arranges the content for this title assuming a fixed width and no bounds
-     * on the height, and returns the required size.  This will reflect the
-     * fact that a text title positioned on the left or right of a chart will
-     * be rotated by 90 degrees.
+     * Returns the column keys.
      *
-     * @param g2  the graphics target.
-     * @param w  the width.
+     * @return The keys.
      *
-     * @return The content size.
+     * @see #getColumnKey(int)
      */
-    protected Size2D arrangeFN(Graphics2D g2, double w) {
-        RectangleEdge position = getPosition();
-        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
-            float maxWidth = (float) w;
-            g2.setFont(this.font);
-            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
-            this.content.setLineAlignment(this.textAlignment);
-            Size2D contentSize = this.content.calculateDimensions(g2);
-            if (this.expandToFitSpace) {
-                return new Size2D(maxWidth, contentSize.getHeight());
-            } else {
-                return contentSize;
-            }
-        } else if (position == RectangleEdge.LEFT || position == RectangleEdge.RIGHT) {
-            float maxWidth = Float.MAX_VALUE;
-            g2.setFont(this.font);
-            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
-            this.content.setLineAlignment(this.textAlignment);
-            Size2D contentSize = this.content.calculateDimensions(g2);
-            // transpose the dimensions, because the title is rotated
-            if (this.expandToFitSpace) {
-                return new Size2D(contentSize.getHeight(), maxWidth);
-            } else {
-                return new Size2D(contentSize.height, contentSize.width);
-            }
+    @Override
+    public List<C> getColumnKeys() {
+        List result = new java.util.ArrayList();
+        int last = lastCategoryIndex();
+        for (int i = this.firstCategoryIndex; i <= last; i++) {
+            result.add(this.underlying.getColumnKey(i));
+        }
+        return Collections.unmodifiableList(result);
+    }
+
+    /**
+     * Returns the row index for a given key.
+     *
+     * @param key  the row key.
+     *
+     * @return The row index, or {@code -1} if the key is unrecognised.
+     */
+    @Override
+    public int getRowIndex(R key) {
+        return this.underlying.getRowIndex(key);
+    }
+
+    /**
+     * Returns the row key for a given index.
+     *
+     * @param row  the row index (zero-based).
+     *
+     * @return The row key.
+     *
+     * @throws IndexOutOfBoundsException if {@code row} is out of bounds.
+     */
+    @Override
+    public R getRowKey(int row) {
+        return this.underlying.getRowKey(row);
+    }
+
+    /**
+     * Returns the row keys.
+     *
+     * @return The keys.
+     */
+    @Override
+    public List<R> getRowKeys() {
+        return this.underlying.getRowKeys();
+    }
+
+    /**
+     * Returns the value for a pair of keys.
+     *
+     * @param rowKey  the row key ({@code null} not permitted).
+     * @param columnKey  the column key ({@code null} not permitted).
+     *
+     * @return The value (possibly {@code null}).
+     *
+     * @throws UnknownKeyException if either key is not defined in the dataset.
+     */
+    @Override
+    public Number getValue(R rowKey, C columnKey) {
+        int r = getRowIndex(rowKey);
+        int c = getColumnIndex(columnKey);
+        if (c == -1) {
+            throw new UnknownKeyException("Unknown columnKey: " + columnKey);
+        } else if (r == -1) {
+            throw new UnknownKeyException("Unknown rowKey: " + rowKey);
         } else {
-            throw new RuntimeException("Unrecognised exception.");
+            return this.underlying.getValue(r, c + this.firstCategoryIndex);
         }
     }
 
     /**
-     * Arranges the content for this title assuming a range constraint for the
-     * width and no bounds on the height, and returns the required size.  This
-     * will reflect the fact that a text title positioned on the left or right
-     * of a chart will be rotated by 90 degrees.
+     * Returns the number of columns in the table.
      *
-     * @param g2  the graphics target.
-     * @param widthRange  the range for the width.
-     *
-     * @return The content size.
+     * @return The column count.
      */
-    protected Size2D arrangeRN(Graphics2D g2, Range widthRange) {
-        Size2D s = arrangeNN(g2);
-        if (widthRange.contains(s.getWidth())) {
-            return s;
-        }
-        double ww = widthRange.constrain(s.getWidth());
-        return arrangeFN(g2, ww);
-    }
-
-    /**
-     * Returns the content size for the title.  This will reflect the fact that
-     * a text title positioned on the left or right of a chart will be rotated
-     * 90 degrees.
-     *
-     * @param g2  the graphics device.
-     * @param widthRange  the width range.
-     * @param heightRange  the height range.
-     *
-     * @return The content size.
-     */
-    protected Size2D arrangeRR(Graphics2D g2, Range widthRange, Range heightRange) {
-        RectangleEdge position = getPosition();
-        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
-            float maxWidth = (float) widthRange.getUpperBound();
-            g2.setFont(this.font);
-            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
-            this.content.setLineAlignment(this.textAlignment);
-            Size2D contentSize = this.content.calculateDimensions(g2);
-            if (this.expandToFitSpace) {
-                return new Size2D(maxWidth, contentSize.getHeight());
-            } else {
-                return contentSize;
-            }
-        } else if (position == RectangleEdge.LEFT || position == RectangleEdge.RIGHT) {
-            float maxWidth = (float) heightRange.getUpperBound();
-            g2.setFont(this.font);
-            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
-            this.content.setLineAlignment(this.textAlignment);
-            Size2D contentSize = this.content.calculateDimensions(g2);
-            // transpose the dimensions, because the title is rotated
-            if (this.expandToFitSpace) {
-                return new Size2D(contentSize.getHeight(), maxWidth);
-            } else {
-                return new Size2D(contentSize.height, contentSize.width);
-            }
+    @Override
+    public int getColumnCount() {
+        int last = lastCategoryIndex();
+        if (last == -1) {
+            return 0;
         } else {
-            throw new RuntimeException("Unrecognised exception.");
+            return Math.max(last - this.firstCategoryIndex + 1, 0);
         }
     }
 
     /**
-     * Draws the title on a Java 2D graphics device (such as the screen or a
-     * printer).
+     * Returns the number of rows in the table.
      *
-     * @param g2  the graphics device.
-     * @param area  the area allocated for the title.
+     * @return The row count.
      */
     @Override
-    public void draw(Graphics2D g2, Rectangle2D area) {
-        draw(g2, area, null);
+    public int getRowCount() {
+        return this.underlying.getRowCount();
     }
 
     /**
-     * Draws the block within the specified area.
+     * Returns a value from the table.
      *
-     * @param g2  the graphics device.
-     * @param area  the area.
-     * @param params  if this is an instance of {@link EntityBlockParams} it
-     *                is used to determine whether an
-     *                {@link EntityCollection} is returned by this method.
+     * @param row  the row index (zero-based).
+     * @param column  the column index (zero-based).
      *
-     * @return An {@link EntityCollection} containing a chart entity for the
-     *         title, or {@code null}.
+     * @return The value (possibly {@code null}).
      */
     @Override
-    public Object draw(Graphics2D g2, Rectangle2D area, Object params) {
-        if (this.content == null) {
-            return null;
-        }
-        area = trimMargin(area);
-        drawBorder(g2, area);
-        if (this.text.equals("")) {
-            return null;
-        }
-        ChartEntity entity = null;
-        if (params instanceof EntityBlockParams) {
-            EntityBlockParams p = (EntityBlockParams) params;
-            if (p.getGenerateEntities()) {
-                entity = new TitleEntity(area, this, this.toolTipText, this.urlText);
-            }
-        }
-        area = trimBorder(area);
-        if (this.backgroundPaint != null) {
-            g2.setPaint(this.backgroundPaint);
-            g2.fill(area);
-        }
-        area = trimPadding(area);
-        RectangleEdge position = getPosition();
-        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
-            drawHorizontal(g2, area);
-        } else if (position == RectangleEdge.LEFT || position == RectangleEdge.RIGHT) {
-            drawVertical(g2, area);
-        }
-        BlockResult result = new BlockResult();
-        if (entity != null) {
-            StandardEntityCollection sec = new StandardEntityCollection();
-            sec.add(entity);
-            result.setEntityCollection(sec);
-        }
-        return result;
+    public Number getValue(int row, int column) {
+        return this.underlying.getValue(row, column + this.firstCategoryIndex);
     }
 
     /**
-     * Draws a the title horizontally within the specified area.  This method
-     * will be called from the {@link #draw(Graphics2D, Rectangle2D) draw}
-     * method.
-     *
-     * @param g2  the graphics device.
-     * @param area  the area for the title.
-     */
-    protected void drawHorizontal(Graphics2D g2, Rectangle2D area) {
-        Rectangle2D titleArea = (Rectangle2D) area.clone();
-        g2.setFont(this.font);
-        g2.setPaint(this.paint);
-        TextBlockAnchor anchor = null;
-        float x = 0.0f;
-        HorizontalAlignment horizontalAlignment = getHorizontalAlignment();
-        if (horizontalAlignment == HorizontalAlignment.LEFT) {
-            x = (float) titleArea.getX();
-            anchor = TextBlockAnchor.TOP_LEFT;
-        } else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
-            x = (float) titleArea.getMaxX();
-            anchor = TextBlockAnchor.TOP_RIGHT;
-        } else if (horizontalAlignment == HorizontalAlignment.CENTER) {
-            x = (float) titleArea.getCenterX();
-            anchor = TextBlockAnchor.TOP_CENTER;
-        }
-        float y = 0.0f;
-        RectangleEdge position = getPosition();
-        if (position == RectangleEdge.TOP) {
-            y = (float) titleArea.getY();
-        } else if (position == RectangleEdge.BOTTOM) {
-            y = (float) titleArea.getMaxY();
-            if (horizontalAlignment == HorizontalAlignment.LEFT) {
-                anchor = TextBlockAnchor.BOTTOM_LEFT;
-            } else if (horizontalAlignment == HorizontalAlignment.CENTER) {
-                anchor = TextBlockAnchor.BOTTOM_CENTER;
-            } else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
-                anchor = TextBlockAnchor.BOTTOM_RIGHT;
-            }
-        }
-        this.content.draw(g2, x, y, anchor);
-    }
-
-    /**
-     * Draws a the title vertically within the specified area.  This method
-     * will be called from the {@link #draw(Graphics2D, Rectangle2D) draw}
-     * method.
-     *
-     * @param g2  the graphics device.
-     * @param area  the area for the title.
-     */
-    protected void drawVertical(Graphics2D g2, Rectangle2D area) {
-        Rectangle2D titleArea = (Rectangle2D) area.clone();
-        g2.setFont(this.font);
-        g2.setPaint(this.paint);
-        TextBlockAnchor anchor = null;
-        float y = 0.0f;
-        VerticalAlignment verticalAlignment = getVerticalAlignment();
-        if (verticalAlignment == VerticalAlignment.TOP) {
-            y = (float) titleArea.getY();
-            anchor = TextBlockAnchor.TOP_RIGHT;
-        } else if (verticalAlignment == VerticalAlignment.BOTTOM) {
-            y = (float) titleArea.getMaxY();
-            anchor = TextBlockAnchor.TOP_LEFT;
-        } else if (verticalAlignment == VerticalAlignment.CENTER) {
-            y = (float) titleArea.getCenterY();
-            anchor = TextBlockAnchor.TOP_CENTER;
-        }
-        float x = 0.0f;
-        RectangleEdge position = getPosition();
-        if (position == RectangleEdge.LEFT) {
-            x = (float) titleArea.getX();
-        } else if (position == RectangleEdge.RIGHT) {
-            x = (float) titleArea.getMaxX();
-            if (verticalAlignment == VerticalAlignment.TOP) {
-                anchor = TextBlockAnchor.BOTTOM_RIGHT;
-            } else if (verticalAlignment == VerticalAlignment.CENTER) {
-                anchor = TextBlockAnchor.BOTTOM_CENTER;
-            } else if (verticalAlignment == VerticalAlignment.BOTTOM) {
-                anchor = TextBlockAnchor.BOTTOM_LEFT;
-            }
-        }
-        this.content.draw(g2, x, y, anchor, x, y, -Math.PI / 2.0);
-    }
-
-    /**
-     * Tests this title for equality with another object.
+     * Tests this {@code SlidingCategoryDataset} for equality with an
+     * arbitrary object.
      *
      * @param obj  the object ({@code null} permitted).
      *
-     * @return {@code true} or {@code false}.
+     * @return A boolean.
      */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof TextTitle)) {
+        if (!(obj instanceof SlidingCategoryDataset)) {
             return false;
         }
-        TextTitle that = (TextTitle) obj;
-        if (!Objects.equals(this.text, that.text)) {
+        SlidingCategoryDataset that = (SlidingCategoryDataset) obj;
+        if (this.firstCategoryIndex != that.firstCategoryIndex) {
             return false;
         }
-        if (!Objects.equals(this.font, that.font)) {
+        if (this.maximumCategoryCount != that.maximumCategoryCount) {
             return false;
         }
-        if (!PaintUtils.equal(this.paint, that.paint)) {
+        if (!this.underlying.equals(that.underlying)) {
             return false;
         }
-        if (this.textAlignment != that.textAlignment) {
-            return false;
-        }
-        if (!PaintUtils.equal(this.backgroundPaint, that.backgroundPaint)) {
-            return false;
-        }
-        if (this.maximumLinesToDisplay != that.maximumLinesToDisplay) {
-            return false;
-        }
-        if (this.expandToFitSpace != that.expandToFitSpace) {
-            return false;
-        }
-        if (!Objects.equals(this.toolTipText, that.toolTipText)) {
-            return false;
-        }
-        if (!Objects.equals(this.urlText, that.urlText)) {
-            return false;
-        }
-        return super.equals(obj);
+        return true;
     }
 
-    /**
-     * Returns a hash code.
-     *
-     * @return A hash code.
-     */
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        result = 29 * result + (this.text != null ? this.text.hashCode() : 0);
-        result = 29 * result + (this.font != null ? this.font.hashCode() : 0);
-        result = 29 * result + (this.paint != null ? this.paint.hashCode() : 0);
-        result = 29 * result + (this.backgroundPaint != null ? this.backgroundPaint.hashCode() : 0);
-        return result;
+        int hash = 7;
+        hash = 43 * hash + Objects.hashCode(this.underlying);
+        hash = 43 * hash + this.firstCategoryIndex;
+        hash = 43 * hash + this.maximumCategoryCount;
+        return hash;
     }
 
     /**
-     * Returns a clone of this object.
+     * Returns an independent copy of the dataset.  Note that:
+     * <ul>
+     * <li>the underlying dataset is only cloned if it implements the
+     * {@link PublicCloneable} interface;</li>
+     * <li>the listeners registered with this dataset are not carried over to
+     * the cloned dataset.</li>
+     * </ul>
      *
-     * @return A clone.
+     * @return An independent copy of the dataset.
      *
-     * @throws CloneNotSupportedException never.
+     * @throws CloneNotSupportedException if the dataset cannot be cloned for
+     *         any reason.
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        return super.clone();
+        SlidingCategoryDataset<R, C> clone = (SlidingCategoryDataset) super.clone();
+        if (this.underlying instanceof PublicCloneable) {
+            PublicCloneable pc = (PublicCloneable) this.underlying;
+            clone.underlying = (CategoryDataset) pc.clone();
+        }
+        return clone;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ----------------------
+ * DefaultPlotEditor.java
+ * ----------------------
+ * (C) Copyright 2005-present, by David Gilbert and Contributors.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Andrzej Porebski;
+ *                   Arnaud Lelievre;
+ *                   Daniel Gredler;
+ *
+ */
+/**
+ * A panel for editing the properties of a {@link Plot}.
+ */
+class DefaultPlotEditor extends JPanel implements ActionListener {
+
+    /**
+     * Orientation constants.
+     */
+    private final static String[] orientationNames = { "Vertical", "Horizontal" };
+
+    private final static int ORIENTATION_VERTICAL = 0;
+
+    private final static int ORIENTATION_HORIZONTAL = 1;
+
+    /**
+     * The paint (color) used to fill the background of the plot.
+     */
+    private PaintSample backgroundPaintSample;
+
+    /**
+     * The stroke used to draw the outline of the plot.
+     */
+    private StrokeSample outlineStrokeSample;
+
+    /**
+     * The paint (color) used to draw the outline of the plot.
+     */
+    private PaintSample outlinePaintSample;
+
+    /**
+     * A panel used to display/edit the properties of the domain axis (if any).
+     */
+    private DefaultAxisEditor domainAxisPropertyPanel;
+
+    /**
+     * A panel used to display/edit the properties of the range axis (if any).
+     */
+    private DefaultAxisEditor rangeAxisPropertyPanel;
+
+    /**
+     * An array of stroke samples to choose from.
+     */
+    private StrokeSample[] availableStrokeSamples;
+
+    /**
+     * The insets for the plot.
+     */
+    private RectangleInsets plotInsets;
+
+    /**
+     * The orientation for the plot (for <tt>CategoryPlot</tt>s and
+     * <tt>XYPlot</tt>s).
+     */
+    private PlotOrientation plotOrientation;
+
+    /**
+     * The orientation combo box (for <tt>CategoryPlot</tt>s and
+     * <tt>XYPlot</tt>s).
+     */
+    private JComboBox orientationCombo;
+
+    /**
+     * whether to draw lines between each data point (for
+     * <tt>LineAndShapeRenderer</tt>s and <tt>StandardXYItemRenderer</tt>s).
+     */
+    private Boolean drawLines;
+
+    /**
+     * The checkbox for whether to draw lines between each data point.
+     */
+    private JCheckBox drawLinesCheckBox;
+
+    /**
+     * whether to draw shapes at each data point (for
+     * <tt>LineAndShapeRenderer</tt>s and <tt>StandardXYItemRenderer</tt>s).
+     */
+    private Boolean drawShapes;
+
+    /**
+     * The checkbox for whether to draw shapes at each data point.
+     */
+    private JCheckBox drawShapesCheckBox;
+
+    /**
+     * The resourceBundle for the localization.
+     */
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.editor.LocalizationBundle");
+
+    /**
+     * Standard constructor - constructs a panel for editing the properties of
+     * the specified plot.
+     * <P>
+     * In designing the panel, we need to be aware that subclasses of Plot will
+     * need to implement subclasses of PlotPropertyEditPanel - so we need to
+     * leave one or two 'slots' where the subclasses can extend the user
+     * interface.
+     *
+     * @param plot  the plot, which should be changed.
+     */
+    public DefaultPlotEditor(Plot plot) {
+        JPanel panel = createPlotPanel(plot);
+        add(panel);
     }
 
     /**
-     * Provides serialization support.
+     * Creates a panel for the plot.
      *
-     * @param stream  the output stream.
+     * @param plot  the plot.
      *
-     * @throws IOException  if there is an I/O error.
+     * @return The panel.
      */
-    private void writeObject(ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
-        SerialUtils.writePaint(this.paint, stream);
-        SerialUtils.writePaint(this.backgroundPaint, stream);
+    protected JPanel createPlotPanel(Plot plot) {
+        this.plotInsets = plot.getInsets();
+        this.backgroundPaintSample = new PaintSample(plot.getBackgroundPaint());
+        this.outlineStrokeSample = new StrokeSample(plot.getOutlineStroke());
+        this.outlinePaintSample = new PaintSample(plot.getOutlinePaint());
+        if (plot instanceof CategoryPlot) {
+            this.plotOrientation = ((CategoryPlot) plot).getOrientation();
+        } else if (plot instanceof XYPlot) {
+            this.plotOrientation = ((XYPlot) plot).getOrientation();
+        }
+        if (plot instanceof CategoryPlot) {
+            CategoryItemRenderer renderer = ((CategoryPlot) plot).getRenderer();
+            if (renderer instanceof LineAndShapeRenderer) {
+                LineAndShapeRenderer r = (LineAndShapeRenderer) renderer;
+                this.drawLines = r.getDefaultLinesVisible();
+                this.drawShapes = r.getDefaultShapesVisible();
+            }
+        } else if (plot instanceof XYPlot) {
+            XYItemRenderer renderer = ((XYPlot) plot).getRenderer();
+            if (renderer instanceof StandardXYItemRenderer) {
+                StandardXYItemRenderer r = (StandardXYItemRenderer) renderer;
+                this.drawLines = r.getPlotLines();
+                this.drawShapes = r.getBaseShapesVisible();
+            }
+        }
+        setLayout(new BorderLayout());
+        this.availableStrokeSamples = new StrokeSample[4];
+        this.availableStrokeSamples[0] = new StrokeSample(null);
+        this.availableStrokeSamples[1] = new StrokeSample(new BasicStroke(1.0f));
+        this.availableStrokeSamples[2] = new StrokeSample(new BasicStroke(2.0f));
+        this.availableStrokeSamples[3] = new StrokeSample(new BasicStroke(3.0f));
+        // create a panel for the settings...
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBorder(BorderFactory.createTitledBorder(BorderFactory.createEtchedBorder(), plot.getPlotType() + localizationResources.getString(":")));
+        JPanel general = new JPanel(new BorderLayout());
+        general.setBorder(BorderFactory.createTitledBorder(localizationResources.getString("General")));
+        JPanel interior = new JPanel(new LCBLayout(7));
+        interior.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        //        interior.add(new JLabel(localizationResources.getString("Insets")));
+        //        JButton button = new JButton(
+        //            localizationResources.getString("Edit...")
+        //        );
+        //        button.setActionCommand("Insets");
+        //        button.addActionListener(this);
+        //
+        //        this.insetsTextField = new InsetsTextField(this.plotInsets);
+        //        this.insetsTextField.setEnabled(false);
+        //        interior.add(this.insetsTextField);
+        //        interior.add(button);
+        interior.add(new JLabel(localizationResources.getString("Outline_stroke")));
+        JButton button = new JButton(localizationResources.getString("Select..."));
+        button.setActionCommand("OutlineStroke");
+        button.addActionListener(this);
+        interior.add(this.outlineStrokeSample);
+        interior.add(button);
+        interior.add(new JLabel(localizationResources.getString("Outline_Paint")));
+        button = new JButton(localizationResources.getString("Select..."));
+        button.setActionCommand("OutlinePaint");
+        button.addActionListener(this);
+        interior.add(this.outlinePaintSample);
+        interior.add(button);
+        interior.add(new JLabel(localizationResources.getString("Background_paint")));
+        button = new JButton(localizationResources.getString("Select..."));
+        button.setActionCommand("BackgroundPaint");
+        button.addActionListener(this);
+        interior.add(this.backgroundPaintSample);
+        interior.add(button);
+        if (this.plotOrientation != null) {
+            boolean isVertical = this.plotOrientation.equals(PlotOrientation.VERTICAL);
+            int index = isVertical ? ORIENTATION_VERTICAL : ORIENTATION_HORIZONTAL;
+            interior.add(new JLabel(localizationResources.getString("Orientation")));
+            this.orientationCombo = new JComboBox(orientationNames);
+            this.orientationCombo.setSelectedIndex(index);
+            this.orientationCombo.setActionCommand("Orientation");
+            this.orientationCombo.addActionListener(this);
+            interior.add(new JPanel());
+            interior.add(this.orientationCombo);
+        }
+        if (this.drawLines != null) {
+            interior.add(new JLabel(localizationResources.getString("Draw_lines")));
+            this.drawLinesCheckBox = new JCheckBox();
+            this.drawLinesCheckBox.setSelected(this.drawLines);
+            this.drawLinesCheckBox.setActionCommand("DrawLines");
+            this.drawLinesCheckBox.addActionListener(this);
+            interior.add(new JPanel());
+            interior.add(this.drawLinesCheckBox);
+        }
+        if (this.drawShapes != null) {
+            interior.add(new JLabel(localizationResources.getString("Draw_shapes")));
+            this.drawShapesCheckBox = new JCheckBox();
+            this.drawShapesCheckBox.setSelected(this.drawShapes);
+            this.drawShapesCheckBox.setActionCommand("DrawShapes");
+            this.drawShapesCheckBox.addActionListener(this);
+            interior.add(new JPanel());
+            interior.add(this.drawShapesCheckBox);
+        }
+        general.add(interior, BorderLayout.NORTH);
+        JPanel appearance = new JPanel(new BorderLayout());
+        appearance.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        appearance.add(general, BorderLayout.NORTH);
+        JTabbedPane tabs = createPlotTabs(plot);
+        tabs.add(localizationResources.getString("Appearance"), appearance);
+        panel.add(tabs);
+        return panel;
     }
 
     /**
-     * Provides serialization support.
+     * Creates a tabbed pane for the plot.
      *
-     * @param stream  the input stream.
+     * @param plot  the plot.
      *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
+     * @return A tabbed pane.
      */
-    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-        this.paint = SerialUtils.readPaint(stream);
-        this.backgroundPaint = SerialUtils.readPaint(stream);
+    protected JTabbedPane createPlotTabs(Plot plot) {
+        JTabbedPane tabs = new JTabbedPane();
+        tabs.setBorder(BorderFactory.createEmptyBorder(0, 5, 0, 5));
+        Axis domainAxis = null;
+        if (plot instanceof CategoryPlot) {
+            domainAxis = ((CategoryPlot) plot).getDomainAxis();
+        } else if (plot instanceof XYPlot) {
+            domainAxis = ((XYPlot) plot).getDomainAxis();
+        }
+        this.domainAxisPropertyPanel = DefaultAxisEditor.getInstance(domainAxis);
+        if (this.domainAxisPropertyPanel != null) {
+            this.domainAxisPropertyPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+            tabs.add(localizationResources.getString("Domain_Axis"), this.domainAxisPropertyPanel);
+        }
+        Axis rangeAxis = null;
+        if (plot instanceof CategoryPlot) {
+            rangeAxis = ((CategoryPlot) plot).getRangeAxis();
+        } else if (plot instanceof XYPlot) {
+            rangeAxis = ((XYPlot) plot).getRangeAxis();
+        } else if (plot instanceof PolarPlot) {
+            rangeAxis = ((PolarPlot) plot).getAxis();
+        }
+        this.rangeAxisPropertyPanel = DefaultAxisEditor.getInstance(rangeAxis);
+        if (this.rangeAxisPropertyPanel != null) {
+            this.rangeAxisPropertyPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+            tabs.add(localizationResources.getString("Range_Axis"), this.rangeAxisPropertyPanel);
+        }
+        return tabs;
+    }
+
+    /**
+     * Returns the current plot insets.
+     *
+     * @return The current plot insets.
+     */
+    public RectangleInsets getPlotInsets() {
+        if (this.plotInsets == null) {
+            this.plotInsets = new RectangleInsets(0.0, 0.0, 0.0, 0.0);
+        }
+        return this.plotInsets;
+    }
+
+    /**
+     * Returns the current background paint.
+     *
+     * @return The current background paint.
+     */
+    public Paint getBackgroundPaint() {
+        return this.backgroundPaintSample.getPaint();
+    }
+
+    /**
+     * Returns the current outline stroke.
+     *
+     * @return The current outline stroke (possibly {@code null}).
+     */
+    public Stroke getOutlineStroke() {
+        return this.outlineStrokeSample.getStroke();
+    }
+
+    /**
+     * Returns the current outline paint.
+     *
+     * @return The current outline paint.
+     */
+    public Paint getOutlinePaint() {
+        return this.outlinePaintSample.getPaint();
+    }
+
+    /**
+     * Returns a reference to the panel for editing the properties of the
+     * domain axis.
+     *
+     * @return A reference to a panel.
+     */
+    public DefaultAxisEditor getDomainAxisPropertyEditPanel() {
+        return this.domainAxisPropertyPanel;
+    }
+
+    /**
+     * Returns a reference to the panel for editing the properties of the
+     * range axis.
+     *
+     * @return A reference to a panel.
+     */
+    public DefaultAxisEditor getRangeAxisPropertyEditPanel() {
+        return this.rangeAxisPropertyPanel;
+    }
+
+    /**
+     * Handles user actions generated within the panel.
+     * @param event     the event
+     */
+    @Override
+    public void actionPerformed(ActionEvent event) {
+        String command = event.getActionCommand();
+        if (command.equals("BackgroundPaint")) {
+            attemptBackgroundPaintSelection();
+        } else if (command.equals("OutlineStroke")) {
+            attemptOutlineStrokeSelection();
+        } else if (command.equals("OutlinePaint")) {
+            attemptOutlinePaintSelection();
+        } else //        else if (command.equals("Insets")) {
+        //            editInsets();
+        //        }
+        if (command.equals("Orientation")) {
+            attemptOrientationSelection();
+        } else if (command.equals("DrawLines")) {
+            attemptDrawLinesSelection();
+        } else if (command.equals("DrawShapes")) {
+            attemptDrawShapesSelection();
+        }
+    }
+
+    /**
+     * Allow the user to change the background paint.
+     */
+    private void attemptBackgroundPaintSelection() {
+        Color c;
+        c = JColorChooser.showDialog(this, localizationResources.getString("Background_Color"), Color.BLUE);
+        if (c != null) {
+            this.backgroundPaintSample.setPaint(c);
+        }
+    }
+
+    /**
+     * Allow the user to change the outline stroke.
+     */
+    private void attemptOutlineStrokeSelection() {
+        StrokeChooserPanel panel = new StrokeChooserPanel(this.outlineStrokeSample, this.availableStrokeSamples);
+        int result = JOptionPane.showConfirmDialog(this, panel, localizationResources.getString("Stroke_Selection"), JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (result == JOptionPane.OK_OPTION) {
+            this.outlineStrokeSample.setStroke(panel.getSelectedStroke());
+        }
+    }
+
+    /**
+     * Allow the user to change the outline paint.  We use JColorChooser, so
+     * the user can only choose colors (a subset of all possible paints).
+     */
+    private void attemptOutlinePaintSelection() {
+        Color c;
+        c = JColorChooser.showDialog(this, localizationResources.getString("Outline_Color"), Color.BLUE);
+        if (c != null) {
+            this.outlinePaintSample.setPaint(c);
+        }
+    }
+
+    //    /**
+    //     * Allow the user to edit the individual insets' values.
+    //     */
+    //    private void editInsets() {
+    //        InsetsChooserPanel panel = new InsetsChooserPanel(this.plotInsets);
+    //        int result = JOptionPane.showConfirmDialog(
+    //            this, panel, localizationResources.getString("Edit_Insets"),
+    //            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE
+    //        );
+    //
+    //        if (result == JOptionPane.OK_OPTION) {
+    //            this.plotInsets = panel.getInsets();
+    //            this.insetsTextField.setInsets(this.plotInsets);
+    //        }
+    //
+    //    }
+    //
+    /**
+     * Allow the user to modify the plot orientation if this is an editor for a
+     * <tt>CategoryPlot</tt> or a <tt>XYPlot</tt>.
+     */
+    private void attemptOrientationSelection() {
+        int index = this.orientationCombo.getSelectedIndex();
+        if (index == ORIENTATION_VERTICAL) {
+            this.plotOrientation = PlotOrientation.VERTICAL;
+        } else {
+            this.plotOrientation = PlotOrientation.HORIZONTAL;
+        }
+    }
+
+    /**
+     * Allow the user to modify whether lines are drawn between data
+     * points by <tt>LineAndShapeRenderer</tt>s and
+     * <tt>StandardXYItemRenderer</tt>s.
+     */
+    private void attemptDrawLinesSelection() {
+        this.drawLines = this.drawLinesCheckBox.isSelected();
+    }
+
+    /**
+     * Allow the user to modify whether shapes are drawn at data points
+     * by <tt>LineAndShapeRenderer</tt>s and <tt>StandardXYItemRenderer</tt>s.
+     */
+    private void attemptDrawShapesSelection() {
+        this.drawShapes = this.drawShapesCheckBox.isSelected();
+    }
+
+    /**
+     * Updates the plot properties to match the properties defined on the panel.
+     *
+     * @param plot  The plot.
+     */
+    public void updatePlotProperties(Plot plot) {
+        // set the plot properties...
+        plot.setOutlinePaint(getOutlinePaint());
+        plot.setOutlineStroke(getOutlineStroke());
+        plot.setBackgroundPaint(getBackgroundPaint());
+        plot.setInsets(getPlotInsets());
+        // then the axis properties...
+        if (this.domainAxisPropertyPanel != null) {
+            Axis domainAxis = null;
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                domainAxis = p.getDomainAxis();
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                domainAxis = p.getDomainAxis();
+            }
+            if (domainAxis != null) {
+                this.domainAxisPropertyPanel.setAxisProperties(domainAxis);
+            }
+        }
+        if (this.rangeAxisPropertyPanel != null) {
+            Axis rangeAxis = null;
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                rangeAxis = p.getRangeAxis();
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                rangeAxis = p.getRangeAxis();
+            } else if (plot instanceof PolarPlot) {
+                PolarPlot p = (PolarPlot) plot;
+                rangeAxis = p.getAxis();
+            }
+            if (rangeAxis != null) {
+                this.rangeAxisPropertyPanel.setAxisProperties(rangeAxis);
+            }
+        }
+        if (this.plotOrientation != null) {
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                p.setOrientation(this.plotOrientation);
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                p.setOrientation(this.plotOrientation);
+            }
+        }
+        if (this.drawLines != null) {
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                CategoryItemRenderer r = p.getRenderer();
+                if (r instanceof LineAndShapeRenderer) {
+                    ((LineAndShapeRenderer) r).setDefaultLinesVisible(this.drawLines);
+                }
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                XYItemRenderer r = p.getRenderer();
+                if (r instanceof StandardXYItemRenderer) {
+                    ((StandardXYItemRenderer) r).setPlotLines(this.drawLines);
+                }
+            }
+        }
+        if (this.drawShapes != null) {
+            if (plot instanceof CategoryPlot) {
+                CategoryPlot p = (CategoryPlot) plot;
+                CategoryItemRenderer r = p.getRenderer();
+                if (r instanceof LineAndShapeRenderer) {
+                    ((LineAndShapeRenderer) r).setDefaultShapesVisible(this.drawShapes);
+                }
+            } else if (plot instanceof XYPlot) {
+                XYPlot p = (XYPlot) plot;
+                XYItemRenderer r = p.getRenderer();
+                if (r instanceof StandardXYItemRenderer) {
+                    ((StandardXYItemRenderer) r).setBaseShapesVisible(this.drawShapes);
+                }
+            }
+        }
     }
 }

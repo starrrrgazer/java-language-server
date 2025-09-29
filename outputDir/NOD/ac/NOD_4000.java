@@ -22,1025 +22,1552 @@ package NOD.ac;
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
  *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------------------------
- * AbstractCategoryItemRenderer.java
- * ---------------------------------
- * (C) Copyright 2002-present, by David Gilbert.
+ * --------------
+ * PolarPlot.java
+ * --------------
+ * (C) Copyright 2004-present, by Solution Engineering, Inc. and Contributors.
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   Richard Atkinson;
- *                   Peter Kolb (patch 2497611);
+ * Original Author:  Daniel Bridenbecker, Solution Engineering, Inc.;
+ * Contributor(s):   David Gilbert;
+ *                   Martin Hoeller (patches 1871902 and 2850344);
  * 
  */
 /**
- * An abstract base class that you can use to implement a new
- * {@link CategoryItemRenderer}.  When you create a new
- * {@link CategoryItemRenderer} you are not required to extend this class,
- * but it makes the job easier.
+ * Plots data that is in (theta, radius) pairs where theta equal to zero is
+ * due north and increases clockwise.
  */
-public abstract class AbstractCategoryItemRenderer extends AbstractRenderer implements CategoryItemRenderer, Cloneable, PublicCloneable, Serializable {
+public class PolarPlot extends Plot implements ValueAxisPlot, Zoomable, RendererChangeListener, Cloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 1247553218442497391L;
+    private static final long serialVersionUID = 3794383185924179525L;
 
     /**
-     * The plot that the renderer is assigned to.
+     * The default margin.
      */
-    private CategoryPlot plot;
+    private static final int DEFAULT_MARGIN = 20;
 
     /**
-     * A list of item label generators (one per series).
+     * The annotation margin.
      */
-    private Map<Integer, CategoryItemLabelGenerator> itemLabelGeneratorMap;
+    private static final double ANNOTATION_MARGIN = 7.0;
 
     /**
-     * The default item label generator.
+     * The default angle tick unit size.
      */
-    private CategoryItemLabelGenerator defaultItemLabelGenerator;
+    public static final double DEFAULT_ANGLE_TICK_UNIT_SIZE = 45.0;
 
     /**
-     * A list of tool tip generators (one per series).
+     * The default angle offset.
      */
-    private Map<Integer, CategoryToolTipGenerator> toolTipGeneratorMap;
+    public static final double DEFAULT_ANGLE_OFFSET = -90.0;
 
     /**
-     * The default tool tip generator.
+     * The default grid line stroke.
      */
-    private CategoryToolTipGenerator defaultToolTipGenerator;
+    public static final Stroke DEFAULT_GRIDLINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0.0f, new float[] { 2.0f, 2.0f }, 0.0f);
 
     /**
-     * A list of item label generators (one per series).
+     * The default grid line paint.
      */
-    private Map<Integer, CategoryURLGenerator> itemURLGeneratorMap;
+    public static final Paint DEFAULT_GRIDLINE_PAINT = Color.GRAY;
 
     /**
-     * The default item label generator.
+     * The resourceBundle for the localization.
      */
-    private CategoryURLGenerator defaultItemURLGenerator;
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.plot.LocalizationBundle");
 
     /**
-     * The legend item label generator.
+     * The angles that are marked with gridlines.
      */
-    private CategorySeriesLabelGenerator legendItemLabelGenerator;
+    private List<ValueTick> angleTicks;
 
     /**
-     * The legend item tool tip generator.
+     * The range axis (used for the y-values).
      */
-    private CategorySeriesLabelGenerator legendItemToolTipGenerator;
+    private Map<Integer, ValueAxis> axes;
 
     /**
-     * The legend item URL generator.
+     * The axis locations.
      */
-    private CategorySeriesLabelGenerator legendItemURLGenerator;
+    private final Map<Integer, PolarAxisLocation> axisLocations;
 
     /**
-     * The number of rows in the dataset (temporary record).
+     * Storage for the datasets.
      */
-    private transient int rowCount;
+    private Map<Integer, XYDataset> datasets;
 
     /**
-     * The number of columns in the dataset (temporary record).
+     * Storage for the renderers.
      */
-    private transient int columnCount;
+    private Map<Integer, PolarItemRenderer> renderers;
 
     /**
-     * Creates a new renderer with no tool tip generator and no URL generator.
-     * The defaults (no tool tip or URL generators) have been chosen to
-     * minimise the processing required to generate a default chart.  If you
-     * require tool tips or URLs, then you can easily add the required
-     * generators.
+     * The tick unit that controls the spacing between the angular grid lines.
      */
-    protected AbstractCategoryItemRenderer() {
-        this.itemLabelGeneratorMap = new HashMap<>();
-        this.toolTipGeneratorMap = new HashMap<>();
-        this.itemURLGeneratorMap = new HashMap<>();
-        this.legendItemLabelGenerator = new StandardCategorySeriesLabelGenerator();
+    private TickUnit angleTickUnit;
+
+    /**
+     * An offset for the angles, to start with 0 degrees at north, east, south
+     * or west.
+     */
+    private double angleOffset;
+
+    /**
+     * A flag indicating if the angles increase counterclockwise or clockwise.
+     */
+    private boolean counterClockwise;
+
+    /**
+     * A flag that controls whether the angle labels are visible.
+     */
+    private boolean angleLabelsVisible = true;
+
+    /**
+     * The font used to display the angle labels - never null.
+     */
+    private Font angleLabelFont = new Font("SansSerif", Font.PLAIN, 12);
+
+    /**
+     * The paint used to display the angle labels.
+     */
+    private transient Paint angleLabelPaint = Color.BLACK;
+
+    /**
+     * A flag that controls whether the angular grid-lines are visible.
+     */
+    private boolean angleGridlinesVisible;
+
+    /**
+     * The stroke used to draw the angular grid-lines.
+     */
+    private transient Stroke angleGridlineStroke;
+
+    /**
+     * The paint used to draw the angular grid-lines.
+     */
+    private transient Paint angleGridlinePaint;
+
+    /**
+     * A flag that controls whether the radius grid-lines are visible.
+     */
+    private boolean radiusGridlinesVisible;
+
+    /**
+     * The stroke used to draw the radius grid-lines.
+     */
+    private transient Stroke radiusGridlineStroke;
+
+    /**
+     * The paint used to draw the radius grid-lines.
+     */
+    private transient Paint radiusGridlinePaint;
+
+    /**
+     * A flag that controls whether the radial minor grid-lines are visible.
+     */
+    private boolean radiusMinorGridlinesVisible;
+
+    /**
+     * The annotations for the plot.
+     */
+    private List<String> cornerTextItems = new ArrayList<>();
+
+    /**
+     * The actual margin in pixels.
+     */
+    private int margin;
+
+    /**
+     * An optional collection of legend items that can be returned by the
+     * getLegendItems() method.
+     */
+    private LegendItemCollection fixedLegendItems;
+
+    /**
+     * Storage for the mapping between datasets/renderers and range axes.  The
+     * keys in the map are Integer objects, corresponding to the dataset
+     * index.  The values in the map are List&lt;Integer&gt; instances (corresponding
+     * to the axis indices).  If the map contains no
+     * entry for a dataset, it is assumed to map to the primary domain axis
+     * (index = 0).
+     */
+    private final Map<Integer, List<Integer>> datasetToAxesMap;
+
+    /**
+     * Default constructor.
+     */
+    public PolarPlot() {
+        this(null, null, null);
     }
 
     /**
-     * Returns the number of passes through the dataset required by the
-     * renderer.  This method returns {@code 1}, subclasses should
-     * override if they need more passes.
+     * Creates a new plot.
      *
-     * @return The pass count.
+     * @param dataset  the dataset ({@code null} permitted).
+     * @param radiusAxis  the radius axis ({@code null} permitted).
+     * @param renderer  the renderer ({@code null} permitted).
      */
-    @Override
-    public int getPassCount() {
-        return 1;
-    }
-
-    /**
-     * Returns the plot that the renderer has been assigned to (where
-     * {@code null} indicates that the renderer is not currently assigned
-     * to a plot).
-     *
-     * @return The plot (possibly {@code null}).
-     *
-     * @see #setPlot(CategoryPlot)
-     */
-    @Override
-    public CategoryPlot getPlot() {
-        return this.plot;
-    }
-
-    /**
-     * Sets the plot that the renderer has been assigned to.  This method is
-     * usually called by the {@link CategoryPlot}, in normal usage you
-     * shouldn't need to call this method directly.
-     *
-     * @param plot  the plot ({@code null} not permitted).
-     *
-     * @see #getPlot()
-     */
-    @Override
-    public void setPlot(CategoryPlot plot) {
-        Args.nullNotPermitted(plot, "plot");
-        this.plot = plot;
-    }
-
-    // ITEM LABEL GENERATOR
-    /**
-     * Returns the item label generator for a data item.  This implementation
-     * simply passes control to the {@link #getSeriesItemLabelGenerator(int)}
-     * method.  If, for some reason, you want a different generator for
-     * individual items, you can override this method.
-     *
-     * @param row  the row index (zero based).
-     * @param column  the column index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public CategoryItemLabelGenerator getItemLabelGenerator(int row, int column) {
-        return getSeriesItemLabelGenerator(row);
-    }
-
-    /**
-     * Returns the item label generator for a series.
-     *
-     * @param series  the series index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelGenerator(int, CategoryItemLabelGenerator)
-     */
-    @Override
-    public CategoryItemLabelGenerator getSeriesItemLabelGenerator(int series) {
-        // otherwise look up the generator table
-        CategoryItemLabelGenerator generator = this.itemLabelGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultItemLabelGenerator;
+    public PolarPlot(XYDataset dataset, ValueAxis radiusAxis, PolarItemRenderer renderer) {
+        super();
+        this.datasets = new HashMap<>();
+        this.datasets.put(0, dataset);
+        if (dataset != null) {
+            dataset.addChangeListener(this);
         }
-        return generator;
+        this.angleTickUnit = new NumberTickUnit(DEFAULT_ANGLE_TICK_UNIT_SIZE);
+        this.axes = new HashMap<>();
+        this.datasetToAxesMap = new TreeMap<>();
+        this.axes.put(0, radiusAxis);
+        if (radiusAxis != null) {
+            radiusAxis.setPlot(this);
+            radiusAxis.addChangeListener(this);
+        }
+        // define the default locations for up to 8 axes...
+        this.axisLocations = new HashMap<>();
+        this.axisLocations.put(0, PolarAxisLocation.EAST_ABOVE);
+        this.axisLocations.put(1, PolarAxisLocation.NORTH_LEFT);
+        this.axisLocations.put(2, PolarAxisLocation.WEST_BELOW);
+        this.axisLocations.put(3, PolarAxisLocation.SOUTH_RIGHT);
+        this.axisLocations.put(4, PolarAxisLocation.EAST_BELOW);
+        this.axisLocations.put(5, PolarAxisLocation.NORTH_RIGHT);
+        this.axisLocations.put(6, PolarAxisLocation.WEST_ABOVE);
+        this.axisLocations.put(7, PolarAxisLocation.SOUTH_LEFT);
+        this.renderers = new HashMap<>();
+        this.renderers.put(0, renderer);
+        if (renderer != null) {
+            renderer.setPlot(this);
+            renderer.addChangeListener(this);
+        }
+        this.angleOffset = DEFAULT_ANGLE_OFFSET;
+        this.counterClockwise = false;
+        this.angleGridlinesVisible = true;
+        this.angleGridlineStroke = DEFAULT_GRIDLINE_STROKE;
+        this.angleGridlinePaint = DEFAULT_GRIDLINE_PAINT;
+        this.radiusGridlinesVisible = true;
+        this.radiusMinorGridlinesVisible = true;
+        this.radiusGridlineStroke = DEFAULT_GRIDLINE_STROKE;
+        this.radiusGridlinePaint = DEFAULT_GRIDLINE_PAINT;
+        this.margin = DEFAULT_MARGIN;
     }
 
     /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Returns the plot type as a string.
      *
-     * @param series  the series index (zero based).
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getSeriesItemLabelGenerator(int)
+     * @return A short string describing the type of plot.
      */
     @Override
-    public void setSeriesItemLabelGenerator(int series, CategoryItemLabelGenerator generator) {
-        setSeriesItemLabelGenerator(series, generator, true);
+    public String getPlotType() {
+        return PolarPlot.localizationResources.getString("Polar_Plot");
     }
 
     /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Returns the primary axis for the plot.
      *
-     * @param series  the series index (zero based).
-     * @param generator  the generator ({@code null} permitted).
+     * @return The primary axis (possibly {@code null}).
+     *
+     * @see #setAxis(ValueAxis)
+     */
+    public ValueAxis getAxis() {
+        return getAxis(0);
+    }
+
+    /**
+     * Returns an axis for the plot.
+     *
+     * @param index  the axis index.
+     *
+     * @return The axis ({@code null} possible).
+     *
+     * @see #setAxis(int, ValueAxis)
+     */
+    public ValueAxis getAxis(int index) {
+        return this.axes.get(index);
+    }
+
+    /**
+     * Sets the primary axis for the plot and sends a {@link PlotChangeEvent}
+     * to all registered listeners.
+     *
+     * @param axis  the new primary axis ({@code null} permitted).
+     */
+    public void setAxis(ValueAxis axis) {
+        setAxis(0, axis);
+    }
+
+    /**
+     * Sets an axis for the plot and sends a {@link PlotChangeEvent} to all
+     * registered listeners.
+     *
+     * @param index  the axis index.
+     * @param axis  the axis ({@code null} permitted).
+     *
+     * @see #getAxis(int)
+     */
+    public void setAxis(int index, ValueAxis axis) {
+        setAxis(index, axis, true);
+    }
+
+    /**
+     * Sets an axis for the plot and, if requested, sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param index  the axis index.
+     * @param axis  the axis ({@code null} permitted).
      * @param notify  notify listeners?
      *
-     * @see #getSeriesItemLabelGenerator(int)
+     * @see #getAxis(int)
      */
-    @Override
-    public void setSeriesItemLabelGenerator(int series, CategoryItemLabelGenerator generator, boolean notify) {
-        this.itemLabelGeneratorMap.put(series, generator);
+    public void setAxis(int index, ValueAxis axis, boolean notify) {
+        ValueAxis existing = getAxis(index);
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+        if (axis != null) {
+            axis.setPlot(this);
+        }
+        this.axes.put(index, axis);
+        if (axis != null) {
+            axis.configure();
+            axis.addChangeListener(this);
+        }
         if (notify) {
             fireChangeEvent();
         }
     }
 
     /**
-     * Returns the default item label generator.
+     * Returns the location of the primary axis.
      *
-     * @return The generator (possibly {@code null}).
+     * @return The location (never {@code null}).
      *
-     * @see #setDefaultItemLabelGenerator(CategoryItemLabelGenerator)
+     * @see #setAxisLocation(PolarAxisLocation)
      */
-    @Override
-    public CategoryItemLabelGenerator getDefaultItemLabelGenerator() {
-        return this.defaultItemLabelGenerator;
+    public PolarAxisLocation getAxisLocation() {
+        return getAxisLocation(0);
     }
 
     /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Returns the location for an axis.
      *
-     * @param generator  the generator ({@code null} permitted).
+     * @param index  the axis index.
      *
-     * @see #getDefaultItemLabelGenerator()
+     * @return The location (possibly {@code null}).
+     *
+     * @see #setAxisLocation(int, PolarAxisLocation)
      */
-    @Override
-    public void setDefaultItemLabelGenerator(CategoryItemLabelGenerator generator) {
-        setDefaultItemLabelGenerator(generator, true);
+    public PolarAxisLocation getAxisLocation(int index) {
+        return this.axisLocations.get(index);
     }
 
     /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the location of the primary axis and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
      *
-     * @param generator  the generator ({@code null} permitted).
+     * @param location  the location ({@code null} not permitted).
+     *
+     * @see #getAxisLocation()
+     */
+    public void setAxisLocation(PolarAxisLocation location) {
+        // delegate argument checks...
+        setAxisLocation(0, location, true);
+    }
+
+    /**
+     * Sets the location of the primary axis and, if requested, sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param location  the location ({@code null} not permitted).
      * @param notify  notify listeners?
      *
-     * @see #getDefaultItemLabelGenerator()
+     * @see #getAxisLocation()
      */
-    @Override
-    public void setDefaultItemLabelGenerator(CategoryItemLabelGenerator generator, boolean notify) {
-        this.defaultItemLabelGenerator = generator;
+    public void setAxisLocation(PolarAxisLocation location, boolean notify) {
+        // delegate...
+        setAxisLocation(0, location, notify);
+    }
+
+    /**
+     * Sets the location for an axis and sends a {@link PlotChangeEvent}
+     * to all registered listeners.
+     *
+     * @param index  the axis index.
+     * @param location  the location ({@code null} not permitted).
+     *
+     * @see #getAxisLocation(int)
+     */
+    public void setAxisLocation(int index, PolarAxisLocation location) {
+        // delegate...
+        setAxisLocation(index, location, true);
+    }
+
+    /**
+     * Sets the axis location for an axis and, if requested, sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param index  the axis index.
+     * @param location  the location ({@code null} not permitted).
+     * @param notify  notify listeners?
+     */
+    public void setAxisLocation(int index, PolarAxisLocation location, boolean notify) {
+        Args.nullNotPermitted(location, "location");
+        this.axisLocations.put(index, location);
         if (notify) {
             fireChangeEvent();
         }
     }
 
-    // TOOL TIP GENERATOR
     /**
-     * Returns the tool tip generator that should be used for the specified
-     * item.  This method looks up the generator using the "three-layer"
-     * approach outlined in the general description of this interface.  You
-     * can override this method if you want to return a different generator per
-     * item.
+     * Returns the number of domain axes.
      *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
+     * @return The axis count.
+     */
+    public int getAxisCount() {
+        return this.axes.size();
+    }
+
+    /**
+     * Returns the primary dataset for the plot.
      *
-     * @return The generator (possibly {@code null}).
+     * @return The primary dataset (possibly {@code null}).
+     *
+     * @see #setDataset(XYDataset)
+     */
+    public XYDataset getDataset() {
+        return getDataset(0);
+    }
+
+    /**
+     * Returns the dataset with the specified index, if any.
+     *
+     * @param index  the dataset index.
+     *
+     * @return The dataset (possibly {@code null}).
+     *
+     * @see #setDataset(int, XYDataset)
+     */
+    public XYDataset getDataset(int index) {
+        return this.datasets.get(index);
+    }
+
+    /**
+     * Sets the primary dataset for the plot, replacing the existing dataset
+     * if there is one, and sends a {@code link PlotChangeEvent} to all
+     * registered listeners.
+     *
+     * @param dataset  the dataset ({@code null} permitted).
+     *
+     * @see #getDataset()
+     */
+    public void setDataset(XYDataset dataset) {
+        setDataset(0, dataset);
+    }
+
+    /**
+     * Sets a dataset for the plot, replacing the existing dataset at the same
+     * index if there is one, and sends a {@code link PlotChangeEvent} to all
+     * registered listeners.
+     *
+     * @param index  the dataset index.
+     * @param dataset  the dataset ({@code null} permitted).
+     *
+     * @see #getDataset(int)
+     */
+    public void setDataset(int index, XYDataset dataset) {
+        XYDataset existing = getDataset(index);
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+        this.datasets.put(index, dataset);
+        if (dataset != null) {
+            dataset.addChangeListener(this);
+        }
+        // send a dataset change event to self...
+        DatasetChangeEvent event = new DatasetChangeEvent(this, dataset);
+        datasetChanged(event);
+    }
+
+    /**
+     * Returns the number of datasets.
+     *
+     * @return The number of datasets.
+     */
+    public int getDatasetCount() {
+        return this.datasets.size();
+    }
+
+    /**
+     * Returns the index of the specified dataset, or {@code -1} if the
+     * dataset does not belong to the plot.
+     *
+     * @param dataset  the dataset ({@code null} not permitted).
+     *
+     * @return The index.
+     */
+    public int indexOf(XYDataset dataset) {
+        for (Entry<Integer, XYDataset> entry : this.datasets.entrySet()) {
+            if (entry.getValue() == dataset) {
+                return entry.getKey();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the primary renderer.
+     *
+     * @return The renderer (possibly {@code null}).
+     *
+     * @see #setRenderer(PolarItemRenderer)
+     */
+    public PolarItemRenderer getRenderer() {
+        return getRenderer(0);
+    }
+
+    /**
+     * Returns the renderer at the specified index, if there is one.
+     *
+     * @param index  the renderer index.
+     *
+     * @return The renderer (possibly {@code null}).
+     *
+     * @see #setRenderer(int, PolarItemRenderer)
+     */
+    public PolarItemRenderer getRenderer(int index) {
+        return this.renderers.get(index);
+    }
+
+    /**
+     * Sets the primary renderer, and notifies all listeners of a change to the
+     * plot.  If the renderer is set to {@code null}, no data items will
+     * be drawn for the corresponding dataset.
+     *
+     * @param renderer  the new renderer ({@code null} permitted).
+     *
+     * @see #getRenderer()
+     */
+    public void setRenderer(PolarItemRenderer renderer) {
+        setRenderer(0, renderer);
+    }
+
+    /**
+     * Sets a renderer and sends a {@link PlotChangeEvent} to all
+     * registered listeners.
+     *
+     * @param index  the index.
+     * @param renderer  the renderer.
+     *
+     * @see #getRenderer(int)
+     */
+    public void setRenderer(int index, PolarItemRenderer renderer) {
+        setRenderer(index, renderer, true);
+    }
+
+    /**
+     * Sets a renderer and, if requested, sends a {@link PlotChangeEvent} to
+     * all registered listeners.
+     *
+     * @param index  the index.
+     * @param renderer  the renderer.
+     * @param notify  notify listeners?
+     *
+     * @see #getRenderer(int)
+     */
+    public void setRenderer(int index, PolarItemRenderer renderer, boolean notify) {
+        PolarItemRenderer existing = getRenderer(index);
+        if (existing != null) {
+            existing.removeChangeListener(this);
+        }
+        this.renderers.put(index, renderer);
+        if (renderer != null) {
+            renderer.setPlot(this);
+            renderer.addChangeListener(this);
+        }
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the tick unit that controls the spacing of the angular grid
+     * lines.
+     *
+     * @return The tick unit (never {@code null}).
+     */
+    public TickUnit getAngleTickUnit() {
+        return this.angleTickUnit;
+    }
+
+    /**
+     * Sets the tick unit that controls the spacing of the angular grid
+     * lines, and sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param unit  the tick unit ({@code null} not permitted).
+     */
+    public void setAngleTickUnit(TickUnit unit) {
+        Args.nullNotPermitted(unit, "unit");
+        this.angleTickUnit = unit;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the offset that is used for all angles.
+     *
+     * @return The offset for the angles.
+     */
+    public double getAngleOffset() {
+        return this.angleOffset;
+    }
+
+    /**
+     * Sets the offset that is used for all angles and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     * <p>
+     * This is useful to let 0 degrees be at the north, east, south or west
+     * side of the chart.
+     *
+     * @param offset The offset
+     */
+    public void setAngleOffset(double offset) {
+        this.angleOffset = offset;
+        fireChangeEvent();
+    }
+
+    /**
+     * Get the direction for growing angle degrees.
+     *
+     * @return {@code true} if angle increases counterclockwise,
+     *         {@code false} otherwise.
+     */
+    public boolean isCounterClockwise() {
+        return this.counterClockwise;
+    }
+
+    /**
+     * Sets the flag for increasing angle degrees direction.
+     *
+     * {@code true} for counterclockwise, {@code false} for
+     * clockwise.
+     *
+     * @param counterClockwise The flag.
+     */
+    public void setCounterClockwise(boolean counterClockwise) {
+        this.counterClockwise = counterClockwise;
+    }
+
+    /**
+     * Returns a flag that controls whether the angle labels are visible.
+     *
+     * @return A boolean.
+     *
+     * @see #setAngleLabelsVisible(boolean)
+     */
+    public boolean isAngleLabelsVisible() {
+        return this.angleLabelsVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the angle labels are visible,
+     * and sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param visible  the flag.
+     *
+     * @see #isAngleLabelsVisible()
+     */
+    public void setAngleLabelsVisible(boolean visible) {
+        if (this.angleLabelsVisible != visible) {
+            this.angleLabelsVisible = visible;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the font used to display the angle labels.
+     *
+     * @return A font (never {@code null}).
+     *
+     * @see #setAngleLabelFont(Font)
+     */
+    public Font getAngleLabelFont() {
+        return this.angleLabelFont;
+    }
+
+    /**
+     * Sets the font used to display the angle labels and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param font  the font ({@code null} not permitted).
+     *
+     * @see #getAngleLabelFont()
+     */
+    public void setAngleLabelFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.angleLabelFont = font;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint used to display the angle labels.
+     *
+     * @return A paint (never {@code null}).
+     *
+     * @see #setAngleLabelPaint(Paint)
+     */
+    public Paint getAngleLabelPaint() {
+        return this.angleLabelPaint;
+    }
+
+    /**
+     * Sets the paint used to display the angle labels and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     */
+    public void setAngleLabelPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.angleLabelPaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns {@code true} if the angular gridlines are visible, and
+     * {@code false} otherwise.
+     *
+     * @return {@code true} or {@code false}.
+     *
+     * @see #setAngleGridlinesVisible(boolean)
+     */
+    public boolean isAngleGridlinesVisible() {
+        return this.angleGridlinesVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the angular grid-lines are
+     * visible.
+     * <p>
+     * If the flag value is changed, a {@link PlotChangeEvent} is sent to all
+     * registered listeners.
+     *
+     * @param visible  the new value of the flag.
+     *
+     * @see #isAngleGridlinesVisible()
+     */
+    public void setAngleGridlinesVisible(boolean visible) {
+        if (this.angleGridlinesVisible != visible) {
+            this.angleGridlinesVisible = visible;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the stroke for the grid-lines (if any) plotted against the
+     * angular axis.
+     *
+     * @return The stroke (possibly {@code null}).
+     *
+     * @see #setAngleGridlineStroke(Stroke)
+     */
+    public Stroke getAngleGridlineStroke() {
+        return this.angleGridlineStroke;
+    }
+
+    /**
+     * Sets the stroke for the grid lines plotted against the angular axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     * <p>
+     * If you set this to {@code null}, no grid lines will be drawn.
+     *
+     * @param stroke  the stroke ({@code null} permitted).
+     *
+     * @see #getAngleGridlineStroke()
+     */
+    public void setAngleGridlineStroke(Stroke stroke) {
+        this.angleGridlineStroke = stroke;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the grid lines (if any) plotted against the
+     * angular axis.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setAngleGridlinePaint(Paint)
+     */
+    public Paint getAngleGridlinePaint() {
+        return this.angleGridlinePaint;
+    }
+
+    /**
+     * Sets the paint for the grid lines plotted against the angular axis.
+     * <p>
+     * If you set this to {@code null}, no grid lines will be drawn.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getAngleGridlinePaint()
+     */
+    public void setAngleGridlinePaint(Paint paint) {
+        this.angleGridlinePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns {@code true} if the radius axis grid is visible, and
+     * {@code false} otherwise.
+     *
+     * @return {@code true} or {@code false}.
+     *
+     * @see #setRadiusGridlinesVisible(boolean)
+     */
+    public boolean isRadiusGridlinesVisible() {
+        return this.radiusGridlinesVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the radius axis grid lines
+     * are visible.
+     * <p>
+     * If the flag value is changed, a {@link PlotChangeEvent} is sent to all
+     * registered listeners.
+     *
+     * @param visible  the new value of the flag.
+     *
+     * @see #isRadiusGridlinesVisible()
+     */
+    public void setRadiusGridlinesVisible(boolean visible) {
+        if (this.radiusGridlinesVisible != visible) {
+            this.radiusGridlinesVisible = visible;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the stroke for the grid lines (if any) plotted against the
+     * radius axis.
+     *
+     * @return The stroke (possibly {@code null}).
+     *
+     * @see #setRadiusGridlineStroke(Stroke)
+     */
+    public Stroke getRadiusGridlineStroke() {
+        return this.radiusGridlineStroke;
+    }
+
+    /**
+     * Sets the stroke for the grid lines plotted against the radius axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     * <p>
+     * If you set this to {@code null}, no grid lines will be drawn.
+     *
+     * @param stroke  the stroke ({@code null} permitted).
+     *
+     * @see #getRadiusGridlineStroke()
+     */
+    public void setRadiusGridlineStroke(Stroke stroke) {
+        this.radiusGridlineStroke = stroke;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the grid lines (if any) plotted against the radius
+     * axis.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setRadiusGridlinePaint(Paint)
+     */
+    public Paint getRadiusGridlinePaint() {
+        return this.radiusGridlinePaint;
+    }
+
+    /**
+     * Sets the paint for the grid lines plotted against the radius axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     * <p>
+     * If you set this to {@code null}, no grid lines will be drawn.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getRadiusGridlinePaint()
+     */
+    public void setRadiusGridlinePaint(Paint paint) {
+        this.radiusGridlinePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Return the current value of the flag indicating if radial minor
+     * grid-lines will be drawn or not.
+     *
+     * @return Returns {@code true} if radial minor grid-lines are drawn.
+     */
+    public boolean isRadiusMinorGridlinesVisible() {
+        return this.radiusMinorGridlinesVisible;
+    }
+
+    /**
+     * Set the flag that determines if radial minor grid-lines will be drawn,
+     * and sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param flag {@code true} to draw the radial minor grid-lines,
+     *             {@code false} to hide them.
+     */
+    public void setRadiusMinorGridlinesVisible(boolean flag) {
+        this.radiusMinorGridlinesVisible = flag;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the margin around the plot area.
+     *
+     * @return The actual margin in pixels.
+     */
+    public int getMargin() {
+        return this.margin;
+    }
+
+    /**
+     * Set the margin around the plot area and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param margin The new margin in pixels.
+     */
+    public void setMargin(int margin) {
+        this.margin = margin;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the fixed legend items, if any.
+     *
+     * @return The legend items (possibly {@code null}).
+     *
+     * @see #setFixedLegendItems(LegendItemCollection)
+     */
+    public LegendItemCollection getFixedLegendItems() {
+        return this.fixedLegendItems;
+    }
+
+    /**
+     * Sets the fixed legend items for the plot.  Leave this set to
+     * {@code null} if you prefer the legend items to be created
+     * automatically.
+     *
+     * @param items  the legend items ({@code null} permitted).
+     *
+     * @see #getFixedLegendItems()
+     */
+    public void setFixedLegendItems(LegendItemCollection items) {
+        this.fixedLegendItems = items;
+        fireChangeEvent();
+    }
+
+    /**
+     * Add text to be displayed in the lower right hand corner and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param text  the text to display ({@code null} not permitted).
+     *
+     * @see #removeCornerTextItem(String)
+     */
+    public void addCornerTextItem(String text) {
+        Args.nullNotPermitted(text, "text");
+        this.cornerTextItems.add(text);
+        fireChangeEvent();
+    }
+
+    /**
+     * Remove the given text from the list of corner text items and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param text  the text to remove ({@code null} ignored).
+     *
+     * @see #addCornerTextItem(String)
+     */
+    public void removeCornerTextItem(String text) {
+        boolean removed = this.cornerTextItems.remove(text);
+        if (removed) {
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Clear the list of corner text items and sends a {@link PlotChangeEvent}
+     * to all registered listeners.
+     *
+     * @see #addCornerTextItem(String)
+     * @see #removeCornerTextItem(String)
+     */
+    public void clearCornerTextItems() {
+        if (!this.cornerTextItems.isEmpty()) {
+            this.cornerTextItems.clear();
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Generates a list of tick values for the angular tick marks.
+     *
+     * @return A list of {@link NumberTick} instances.
+     */
+    protected List<ValueTick> refreshAngleTicks() {
+        List<ValueTick> ticks = new ArrayList<>();
+        for (double currentTickVal = 0.0; currentTickVal < 360.0; currentTickVal += this.angleTickUnit.getSize()) {
+            TextAnchor ta = calculateTextAnchor(currentTickVal);
+            NumberTick tick = new NumberTick(currentTickVal, this.angleTickUnit.valueToString(currentTickVal), ta, TextAnchor.CENTER, 0.0);
+            ticks.add(tick);
+        }
+        return ticks;
+    }
+
+    /**
+     * Calculate the text position for the given degrees.
+     *
+     * @param angleDegrees  the angle in degrees.
+     *
+     * @return The optimal text anchor.
+     */
+    protected TextAnchor calculateTextAnchor(double angleDegrees) {
+        TextAnchor ta = TextAnchor.CENTER;
+        // normalize angle
+        double offset = this.angleOffset;
+        while (offset < 0.0) {
+            offset += 360.0;
+        }
+        double normalizedAngle = (((this.counterClockwise ? -1 : 1) * angleDegrees) + offset) % 360;
+        while (this.counterClockwise && (normalizedAngle < 0.0)) {
+            normalizedAngle += 360.0;
+        }
+        if (normalizedAngle == 0.0) {
+            ta = TextAnchor.CENTER_LEFT;
+        } else if (normalizedAngle > 0.0 && normalizedAngle < 90.0) {
+            ta = TextAnchor.TOP_LEFT;
+        } else if (normalizedAngle == 90.0) {
+            ta = TextAnchor.TOP_CENTER;
+        } else if (normalizedAngle > 90.0 && normalizedAngle < 180.0) {
+            ta = TextAnchor.TOP_RIGHT;
+        } else if (normalizedAngle == 180) {
+            ta = TextAnchor.CENTER_RIGHT;
+        } else if (normalizedAngle > 180.0 && normalizedAngle < 270.0) {
+            ta = TextAnchor.BOTTOM_RIGHT;
+        } else if (normalizedAngle == 270) {
+            ta = TextAnchor.BOTTOM_CENTER;
+        } else if (normalizedAngle > 270.0 && normalizedAngle < 360.0) {
+            ta = TextAnchor.BOTTOM_LEFT;
+        }
+        return ta;
+    }
+
+    /**
+     * Maps a dataset to a particular axis.  All data will be plotted
+     * against axis zero by default, no mapping is required for this case.
+     *
+     * @param index  the dataset index (zero-based).
+     * @param axisIndex  the axis index.
+     */
+    public void mapDatasetToAxis(int index, int axisIndex) {
+        List<Integer> axisIndices = new ArrayList<>(1);
+        axisIndices.add(axisIndex);
+        mapDatasetToAxes(index, axisIndices);
+    }
+
+    /**
+     * Maps the specified dataset to the axes in the list.  Note that the
+     * conversion of data values into Java2D space is always performed using
+     * the first axis in the list.
+     *
+     * @param index  the dataset index (zero-based).
+     * @param axisIndices  the axis indices ({@code null} permitted).
+     */
+    public void mapDatasetToAxes(int index, List<Integer> axisIndices) {
+        if (index < 0) {
+            throw new IllegalArgumentException("Requires 'index' >= 0.");
+        }
+        checkAxisIndices(axisIndices);
+        Integer key = index;
+        this.datasetToAxesMap.put(key, new ArrayList<>(axisIndices));
+        // fake a dataset change event to update axes...
+        datasetChanged(new DatasetChangeEvent(this, getDataset(index)));
+    }
+
+    /**
+     * This method is used to perform argument checking on the list of
+     * axis indices passed to mapDatasetToAxes().
+     *
+     * @param indices  the list of indices ({@code null} permitted).
+     */
+    private void checkAxisIndices(List<Integer> indices) {
+        // axisIndices can be:
+        // 1.  null;
+        // 2.  non-empty, containing only Integer objects that are unique.
+        if (indices == null) {
+            // OK
+            return;
+        }
+        if (indices.isEmpty()) {
+            throw new IllegalArgumentException("Empty list not permitted.");
+        }
+        Set<Integer> set = new HashSet<>();
+        for (Integer i : indices) {
+            if (set.contains(i)) {
+                throw new IllegalArgumentException("Indices must be unique.");
+            }
+            set.add(i);
+        }
+    }
+
+    /**
+     * Returns the axis for a dataset.
+     *
+     * @param index  the dataset index.
+     *
+     * @return The axis.
+     */
+    public ValueAxis getAxisForDataset(int index) {
+        ValueAxis valueAxis;
+        List<Integer> axisIndices = this.datasetToAxesMap.get(index);
+        if (axisIndices != null) {
+            // the first axis in the list is used for data <--> Java2D
+            Integer axisIndex = axisIndices.get(0);
+            valueAxis = getAxis(axisIndex);
+        } else {
+            valueAxis = getAxis(0);
+        }
+        return valueAxis;
+    }
+
+    /**
+     * Returns the index of the given axis.
+     *
+     * @param axis  the axis.
+     *
+     * @return The axis index or -1 if axis is not used in this plot.
+     */
+    public int getAxisIndex(ValueAxis axis) {
+        for (Entry<Integer, ValueAxis> entry : this.axes.entrySet()) {
+            if (axis.equals(entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        // try the parent plot
+        Plot parent = getParent();
+        if (parent instanceof PolarPlot) {
+            PolarPlot p = (PolarPlot) parent;
+            return p.getAxisIndex(axis);
+        }
+        return -1;
+    }
+
+    /**
+     * Returns the index of the specified renderer, or {@code -1} if the
+     * renderer is not assigned to this plot.
+     *
+     * @param renderer  the renderer ({@code null} not permitted).
+     *
+     * @return The renderer index.
+     */
+    public int getIndexOf(PolarItemRenderer renderer) {
+        Args.nullNotPermitted(renderer, "renderer");
+        for (Entry<Integer, PolarItemRenderer> entry : this.renderers.entrySet()) {
+            if (renderer.equals(entry.getValue())) {
+                return entry.getKey();
+            }
+        }
+        return -1;
+    }
+
+    /**
+     * Receives a chart element visitor.  Many plot subclasses will override
+     * this method to handle their subcomponents.
+     *
+     * @param visitor  the visitor ({@code null} not permitted).
      */
     @Override
-    public CategoryToolTipGenerator getToolTipGenerator(int row, int column) {
-        CategoryToolTipGenerator result = getSeriesToolTipGenerator(row);
-        if (result == null) {
-            result = this.defaultToolTipGenerator;
+    public void receive(ChartElementVisitor visitor) {
+        // FIXME: handle axes and renderers
+        visitor.visit(this);
+    }
+
+    /**
+     * Draws the plot on a Java 2D graphics device (such as the screen or a
+     * printer).
+     * <P>
+     * This plot relies on a {@link PolarItemRenderer} to draw each
+     * item in the plot.  This allows the visual representation of the data to
+     * be changed easily.
+     * <P>
+     * The optional info argument collects information about the rendering of
+     * the plot (dimensions, tooltip information etc).  Just pass in
+     * {@code null} if you do not need this information.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area within which the plot (including axes and
+     *              labels) should be drawn.
+     * @param anchor  the anchor point ({@code null} permitted).
+     * @param parentState  ignored.
+     * @param info  collects chart drawing information ({@code null}
+     *              permitted).
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
+        // if the plot area is too small, just return...
+        boolean b1 = (area.getWidth() <= MINIMUM_WIDTH_TO_DRAW);
+        boolean b2 = (area.getHeight() <= MINIMUM_HEIGHT_TO_DRAW);
+        if (b1 || b2) {
+            return;
+        }
+        // record the plot area...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+        // adjust the drawing area for the plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+        Rectangle2D dataArea = area;
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+        // draw the plot background and axes...
+        drawBackground(g2, dataArea);
+        int axisCount = this.axes.size();
+        AxisState state = null;
+        for (int i = 0; i < axisCount; i++) {
+            ValueAxis axis = getAxis(i);
+            if (axis != null) {
+                PolarAxisLocation location = this.axisLocations.get(i);
+                AxisState s = drawAxis(axis, location, g2, dataArea);
+                if (i == 0) {
+                    state = s;
+                }
+            }
+        }
+        // now for each dataset, get the renderer and the appropriate axis
+        // and render the dataset...
+        Shape originalClip = g2.getClip();
+        Composite originalComposite = g2.getComposite();
+        g2.clip(dataArea);
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, getForegroundAlpha()));
+        this.angleTicks = refreshAngleTicks();
+        drawGridlines(g2, dataArea, this.angleTicks, state.getTicks());
+        render(g2, dataArea, info);
+        g2.setClip(originalClip);
+        g2.setComposite(originalComposite);
+        drawOutline(g2, dataArea);
+        drawCornerTextItems(g2, dataArea);
+    }
+
+    /**
+     * Draws the corner text items.
+     *
+     * @param g2  the drawing surface.
+     * @param area  the area.
+     */
+    protected void drawCornerTextItems(Graphics2D g2, Rectangle2D area) {
+        if (this.cornerTextItems.isEmpty()) {
+            return;
+        }
+        g2.setColor(Color.BLACK);
+        double width = 0.0;
+        double height = 0.0;
+        for (String msg : this.cornerTextItems) {
+            FontMetrics fm = g2.getFontMetrics();
+            Rectangle2D bounds = TextUtils.getTextBounds(msg, g2, fm);
+            width = Math.max(width, bounds.getWidth());
+            height += bounds.getHeight();
+        }
+        double xadj = ANNOTATION_MARGIN * 2.0;
+        double yadj = ANNOTATION_MARGIN;
+        width += xadj;
+        height += yadj;
+        double x = area.getMaxX() - width;
+        double y = area.getMaxY() - height;
+        g2.drawRect((int) x, (int) y, (int) width, (int) height);
+        x += ANNOTATION_MARGIN;
+        for (String msg : this.cornerTextItems) {
+            Rectangle2D bounds = TextUtils.getTextBounds(msg, g2, g2.getFontMetrics());
+            y += bounds.getHeight();
+            g2.drawString(msg, (int) x, (int) y);
+        }
+    }
+
+    /**
+     * Draws the axis with the specified index.
+     *
+     * @param axis  the axis.
+     * @param location  the axis location.
+     * @param g2  the graphics target.
+     * @param plotArea  the plot area.
+     *
+     * @return The axis state.
+     */
+    protected AxisState drawAxis(ValueAxis axis, PolarAxisLocation location, Graphics2D g2, Rectangle2D plotArea) {
+        double centerX = plotArea.getCenterX();
+        double centerY = plotArea.getCenterY();
+        double r = Math.min(plotArea.getWidth() / 2.0, plotArea.getHeight() / 2.0) - this.margin;
+        double x = centerX - r;
+        double y = centerY - r;
+        Rectangle2D dataArea = null;
+        AxisState result = null;
+        if (location == PolarAxisLocation.NORTH_RIGHT) {
+            dataArea = new Rectangle2D.Double(x, y, r, r);
+            result = axis.draw(g2, centerX, plotArea, dataArea, RectangleEdge.RIGHT, null);
+        } else if (location == PolarAxisLocation.NORTH_LEFT) {
+            dataArea = new Rectangle2D.Double(centerX, y, r, r);
+            result = axis.draw(g2, centerX, plotArea, dataArea, RectangleEdge.LEFT, null);
+        } else if (location == PolarAxisLocation.SOUTH_LEFT) {
+            dataArea = new Rectangle2D.Double(centerX, centerY, r, r);
+            result = axis.draw(g2, centerX, plotArea, dataArea, RectangleEdge.LEFT, null);
+        } else if (location == PolarAxisLocation.SOUTH_RIGHT) {
+            dataArea = new Rectangle2D.Double(x, centerY, r, r);
+            result = axis.draw(g2, centerX, plotArea, dataArea, RectangleEdge.RIGHT, null);
+        } else if (location == PolarAxisLocation.EAST_ABOVE) {
+            dataArea = new Rectangle2D.Double(centerX, centerY, r, r);
+            result = axis.draw(g2, centerY, plotArea, dataArea, RectangleEdge.TOP, null);
+        } else if (location == PolarAxisLocation.EAST_BELOW) {
+            dataArea = new Rectangle2D.Double(centerX, y, r, r);
+            result = axis.draw(g2, centerY, plotArea, dataArea, RectangleEdge.BOTTOM, null);
+        } else if (location == PolarAxisLocation.WEST_ABOVE) {
+            dataArea = new Rectangle2D.Double(x, centerY, r, r);
+            result = axis.draw(g2, centerY, plotArea, dataArea, RectangleEdge.TOP, null);
+        } else if (location == PolarAxisLocation.WEST_BELOW) {
+            dataArea = new Rectangle2D.Double(x, y, r, r);
+            result = axis.draw(g2, centerY, plotArea, dataArea, RectangleEdge.BOTTOM, null);
         }
         return result;
     }
 
     /**
-     * Returns the tool tip generator for the specified series (a "layer 1"
-     * generator).
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setSeriesToolTipGenerator(int, CategoryToolTipGenerator)
-     */
-    @Override
-    public CategoryToolTipGenerator getSeriesToolTipGenerator(int series) {
-        return this.toolTipGeneratorMap.get(series);
-    }
-
-    /**
-     * Sets the tool tip generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getSeriesToolTipGenerator(int)
-     */
-    @Override
-    public void setSeriesToolTipGenerator(int series, CategoryToolTipGenerator generator) {
-        setSeriesToolTipGenerator(series, generator, true);
-    }
-
-    /**
-     * Sets the tool tip generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getSeriesToolTipGenerator(int)
-     */
-    @Override
-    public void setSeriesToolTipGenerator(int series, CategoryToolTipGenerator generator, boolean notify) {
-        this.toolTipGeneratorMap.put(series, generator);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the default tool tip generator (the "layer 2" generator).
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setDefaultToolTipGenerator(CategoryToolTipGenerator)
-     */
-    @Override
-    public CategoryToolTipGenerator getDefaultToolTipGenerator() {
-        return this.defaultToolTipGenerator;
-    }
-
-    /**
-     * Sets the default tool tip generator and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    @Override
-    public void setDefaultToolTipGenerator(CategoryToolTipGenerator generator) {
-        setDefaultToolTipGenerator(generator, true);
-    }
-
-    /**
-     * Sets the default tool tip generator and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    @Override
-    public void setDefaultToolTipGenerator(CategoryToolTipGenerator generator, boolean notify) {
-        this.defaultToolTipGenerator = generator;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    // URL GENERATOR
-    /**
-     * Returns the URL generator for a data item.  This method just calls the
-     * getSeriesItemURLGenerator method, but you can override this behaviour if
-     * you want to.
-     *
-     * @param row  the row index (zero based).
-     * @param column  the column index (zero based).
-     *
-     * @return The URL generator.
-     */
-    @Override
-    public CategoryURLGenerator getItemURLGenerator(int row, int column) {
-        return getSeriesItemURLGenerator(row);
-    }
-
-    /**
-     * Returns the URL generator for a series.
-     *
-     * @param series  the series index (zero based).
-     *
-     * @return The URL generator for the series.
-     *
-     * @see #setSeriesItemURLGenerator(int, CategoryURLGenerator)
-     */
-    @Override
-    public CategoryURLGenerator getSeriesItemURLGenerator(int series) {
-        // otherwise look up the generator table
-        CategoryURLGenerator generator = this.itemURLGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultItemURLGenerator;
-        }
-        return generator;
-    }
-
-    /**
-     * Sets the URL generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero based).
-     * @param generator  the generator.
-     *
-     * @see #getSeriesItemURLGenerator(int)
-     */
-    @Override
-    public void setSeriesItemURLGenerator(int series, CategoryURLGenerator generator) {
-        setSeriesItemURLGenerator(series, generator, true);
-    }
-
-    /**
-     * Sets the URL generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero based).
-     * @param generator  the generator.
-     * @param notify  notify listeners?
-     *
-     * @see #getSeriesItemURLGenerator(int)
-     */
-    @Override
-    public void setSeriesItemURLGenerator(int series, CategoryURLGenerator generator, boolean notify) {
-        this.itemURLGeneratorMap.put(series, generator);
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the default item URL generator.
-     *
-     * @return The item URL generator.
-     *
-     * @see #setDefaultItemURLGenerator(CategoryURLGenerator)
-     */
-    @Override
-    public CategoryURLGenerator getDefaultItemURLGenerator() {
-        return this.defaultItemURLGenerator;
-    }
-
-    /**
-     * Sets the default item URL generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the item URL generator ({@code null} permitted).
-     *
-     * @see #getDefaultItemURLGenerator()
-     */
-    @Override
-    public void setDefaultItemURLGenerator(CategoryURLGenerator generator) {
-        setDefaultItemURLGenerator(generator, true);
-    }
-
-    /**
-     * Sets the default item URL generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the item URL generator ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getDefaultItemURLGenerator()
-     */
-    @Override
-    public void setDefaultItemURLGenerator(CategoryURLGenerator generator, boolean notify) {
-        this.defaultItemURLGenerator = generator;
-        if (notify) {
-            fireChangeEvent();
-        }
-    }
-
-    /**
-     * Returns the number of rows in the dataset.  This value is updated in the
-     * {@link AbstractCategoryItemRenderer#initialise} method.
-     *
-     * @return The row count.
-     */
-    public int getRowCount() {
-        return this.rowCount;
-    }
-
-    /**
-     * Returns the number of columns in the dataset.  This value is updated in
-     * the {@link AbstractCategoryItemRenderer#initialise} method.
-     *
-     * @return The column count.
-     */
-    public int getColumnCount() {
-        return this.columnCount;
-    }
-
-    /**
-     * Creates a new state instance---this method is called from the
-     * {@link #initialise(Graphics2D, Rectangle2D, CategoryPlot, int,
-     * PlotRenderingInfo)} method.  Subclasses can override this method if
-     * they need to use a subclass of {@link CategoryItemRendererState}.
-     *
-     * @param info  collects plot rendering info ({@code null} permitted).
-     *
-     * @return The new state instance (never {@code null}).
-     */
-    protected CategoryItemRendererState createState(PlotRenderingInfo info) {
-        return new CategoryItemRendererState(info);
-    }
-
-    /**
-     * Initialises the renderer and returns a state object that will be used
-     * for the remainder of the drawing process for a single chart.  The state
-     * object allows for the fact that the renderer may be used simultaneously
-     * by multiple threads (each thread will work with a separate state object).
+     * Draws a representation of the data within the dataArea region, using the
+     * current m_Renderer.
      *
      * @param g2  the graphics device.
-     * @param dataArea  the data area.
-     * @param plot  the plot.
-     * @param rendererIndex  the renderer index.
-     * @param info  an object for returning information about the structure of
-     *              the plot ({@code null} permitted).
-     *
-     * @return The renderer state.
+     * @param dataArea  the region in which the data is to be drawn.
+     * @param info  an optional object for collection dimension
+     *              information ({@code null} permitted).
      */
-    @Override
-    public CategoryItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, CategoryPlot plot, int rendererIndex, PlotRenderingInfo info) {
-        setPlot(plot);
-        CategoryDataset data = plot.getDataset(rendererIndex);
-        if (data != null) {
-            this.rowCount = data.getRowCount();
-            this.columnCount = data.getColumnCount();
-        } else {
-            this.rowCount = 0;
-            this.columnCount = 0;
-        }
-        CategoryItemRendererState state = createState(info);
-        state.setElementHinting(plot.fetchElementHintingFlag());
-        int[] visibleSeriesTemp = new int[this.rowCount];
-        int visibleSeriesCount = 0;
-        for (int row = 0; row < this.rowCount; row++) {
-            if (isSeriesVisible(row)) {
-                visibleSeriesTemp[visibleSeriesCount] = row;
-                visibleSeriesCount++;
+    protected void render(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info) {
+        // now get the data and plot it (the visual representation will depend
+        // on the m_Renderer that has been set)...
+        boolean hasData = false;
+        int datasetCount = this.datasets.size();
+        for (int i = datasetCount - 1; i >= 0; i--) {
+            XYDataset dataset = getDataset(i);
+            if (dataset == null) {
+                continue;
             }
-        }
-        int[] visibleSeries = new int[visibleSeriesCount];
-        System.arraycopy(visibleSeriesTemp, 0, visibleSeries, 0, visibleSeriesCount);
-        state.setVisibleSeriesArray(visibleSeries);
-        return state;
-    }
-
-    /**
-     * Adds a {@code KEY_BEGIN_ELEMENT} hint to the graphics target.  This
-     * hint is recognised by <b>JFreeSVG</b> (in theory it could be used by
-     * other {@code Graphics2D} implementations also).
-     *
-     * @param g2  the graphics target ({@code null} not permitted).
-     * @param rowKey  the row key that identifies the element ({@code null} not
-     *     permitted).
-     * @param columnKey  the column key that identifies the element
-     *     ({@code null} not permitted).
-     */
-    protected void beginElementGroup(Graphics2D g2, Comparable rowKey, Comparable columnKey) {
-        beginElementGroup(g2, new KeyedValues2DItemKey(rowKey, columnKey));
-    }
-
-    /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range (or {@code null} if the dataset is
-     *         {@code null} or empty).
-     */
-    @Override
-    public Range findRangeBounds(CategoryDataset dataset) {
-        return findRangeBounds(dataset, false);
-    }
-
-    /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param includeInterval  include the y-interval if the dataset has one.
-     *
-     * @return The range ({@code null} if the dataset is {@code null} or empty).
-     */
-    protected Range findRangeBounds(CategoryDataset dataset, boolean includeInterval) {
-        if (dataset == null) {
-            return null;
-        }
-        if (getDataBoundsIncludesVisibleSeriesOnly()) {
-            List visibleSeriesKeys = new ArrayList();
-            int seriesCount = dataset.getRowCount();
-            for (int s = 0; s < seriesCount; s++) {
-                if (isSeriesVisible(s)) {
-                    visibleSeriesKeys.add(dataset.getRowKey(s));
+            PolarItemRenderer renderer = getRenderer(i);
+            if (renderer == null) {
+                continue;
+            }
+            if (!DatasetUtils.isEmptyOrNull(dataset)) {
+                hasData = true;
+                int seriesCount = dataset.getSeriesCount();
+                for (int series = 0; series < seriesCount; series++) {
+                    renderer.drawSeries(g2, dataArea, info, this, dataset, series);
                 }
             }
-            return DatasetUtils.findRangeBounds(dataset, visibleSeriesKeys, includeInterval);
-        } else {
-            return DatasetUtils.findRangeBounds(dataset, includeInterval);
+        }
+        if (!hasData) {
+            drawNoDataMessage(g2, dataArea);
         }
     }
 
     /**
-     * Returns the Java2D coordinate for the middle of the specified data item.
-     *
-     * @param rowKey  the row key.
-     * @param columnKey  the column key.
-     * @param dataset  the dataset.
-     * @param axis  the axis.
-     * @param area  the data area.
-     * @param edge  the edge along which the axis lies.
-     *
-     * @return The Java2D coordinate for the middle of the item.
-     */
-    @Override
-    public double getItemMiddle(Comparable<?> rowKey, Comparable<?> columnKey, CategoryDataset<?, ?> dataset, CategoryAxis axis, Rectangle2D area, RectangleEdge edge) {
-        return axis.getCategoryMiddle(columnKey, dataset.getColumnKeys(), area, edge);
-    }
-
-    /**
-     * Draws a background for the data area.  The default implementation just
-     * gets the plot to draw the background, but some renderers will override
-     * this behaviour.
+     * Draws the gridlines for the plot, if they are visible.
      *
      * @param g2  the graphics device.
-     * @param plot  the plot.
      * @param dataArea  the data area.
+     * @param angularTicks  the ticks for the angular axis.
+     * @param radialTicks  the ticks for the radial axis.
      */
-    @Override
-    public void drawBackground(Graphics2D g2, CategoryPlot plot, Rectangle2D dataArea) {
-        plot.drawBackground(g2, dataArea);
-    }
-
-    /**
-     * Draws an outline for the data area.  The default implementation just
-     * gets the plot to draw the outline, but some renderers will override this
-     * behaviour.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the data area.
-     */
-    @Override
-    public void drawOutline(Graphics2D g2, CategoryPlot plot, Rectangle2D dataArea) {
-        plot.drawOutline(g2, dataArea);
-    }
-
-    /**
-     * Draws a grid line against the domain axis.
-     * <P>
-     * Note that this default implementation assumes that the horizontal axis
-     * is the domain axis. If this is not the case, you will need to override
-     * this method.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the area for plotting data.
-     * @param value  the Java2D value at which the grid line should be drawn.
-     */
-    @Override
-    public void drawDomainGridline(Graphics2D g2, CategoryPlot plot, Rectangle2D dataArea, double value) {
-        Line2D line = null;
-        PlotOrientation orientation = plot.getOrientation();
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            line = new Line2D.Double(dataArea.getMinX(), value, dataArea.getMaxX(), value);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            line = new Line2D.Double(value, dataArea.getMinY(), value, dataArea.getMaxY());
-        }
-        Paint paint = plot.getDomainGridlinePaint();
-        if (paint == null) {
-            paint = CategoryPlot.DEFAULT_GRIDLINE_PAINT;
-        }
-        g2.setPaint(paint);
-        Stroke stroke = plot.getDomainGridlineStroke();
-        if (stroke == null) {
-            stroke = CategoryPlot.DEFAULT_GRIDLINE_STROKE;
-        }
-        g2.setStroke(stroke);
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        g2.draw(line);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
-    }
-
-    /**
-     * Draws a line perpendicular to the range axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value at which the grid line should be drawn.
-     * @param paint  the paint ({@code null} not permitted).
-     * @param stroke  the stroke ({@code null} not permitted).
-     */
-    @Override
-    public void drawRangeLine(Graphics2D g2, CategoryPlot plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke) {
-        Range range = axis.getRange();
-        if (!range.contains(value)) {
+    protected void drawGridlines(Graphics2D g2, Rectangle2D dataArea, List<ValueTick> angularTicks, List<ValueTick> radialTicks) {
+        PolarItemRenderer renderer = getRenderer();
+        // no renderer, no gridlines...
+        if (renderer == null) {
             return;
         }
-        PlotOrientation orientation = plot.getOrientation();
-        Line2D line = null;
-        double v = axis.valueToJava2D(value, dataArea, plot.getRangeAxisEdge());
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
+        // draw the domain grid lines, if any...
+        if (isAngleGridlinesVisible()) {
+            Stroke gridStroke = getAngleGridlineStroke();
+            Paint gridPaint = getAngleGridlinePaint();
+            if ((gridStroke != null) && (gridPaint != null)) {
+                renderer.drawAngularGridLines(g2, this, angularTicks, dataArea);
+            }
         }
-        g2.setPaint(paint);
-        g2.setStroke(stroke);
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        g2.draw(line);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+        // draw the radius grid lines, if any...
+        if (isRadiusGridlinesVisible()) {
+            Stroke gridStroke = getRadiusGridlineStroke();
+            Paint gridPaint = getRadiusGridlinePaint();
+            if ((gridStroke != null) && (gridPaint != null)) {
+                List<ValueTick> ticks = buildRadialTicks(radialTicks);
+                renderer.drawRadialGridLines(g2, this, getAxis(), ticks, dataArea);
+            }
+        }
     }
 
     /**
-     * Draws a marker for the domain axis.
+     * Create a list of ticks based on the given list and plot properties.
+     * Only ticks of a specific type may be in the result list.
      *
-     * @param g2  the graphics device (not {@code null}).
-     * @param plot  the plot (not {@code null}).
-     * @param axis  the range axis (not {@code null}).
-     * @param marker  the marker to be drawn (not {@code null}).
-     * @param dataArea  the area inside the axes (not {@code null}).
-     *
-     * @see #drawRangeMarker(Graphics2D, CategoryPlot, ValueAxis, Marker,
-     *     Rectangle2D)
+     * @param allTicks A list of all available ticks for the primary axis.
+     *        {@code null} not permitted.
+     * @return Ticks to use for radial gridlines.
      */
-    @Override
-    public void drawDomainMarker(Graphics2D g2, CategoryPlot plot, CategoryAxis axis, CategoryMarker marker, Rectangle2D dataArea) {
-        Comparable category = marker.getKey();
-        CategoryDataset dataset = plot.getDataset(plot.getIndexOf(this));
-        int columnIndex = dataset.getColumnIndex(category);
-        if (columnIndex < 0) {
-            return;
-        }
-        final Composite savedComposite = g2.getComposite();
-        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-        PlotOrientation orientation = plot.getOrientation();
-        Rectangle2D bounds;
-        if (marker.getDrawAsLine()) {
-            double v = axis.getCategoryMiddle(columnIndex, dataset.getColumnCount(), dataArea, plot.getDomainAxisEdge());
-            Line2D line = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-            } else {
-                throw new IllegalStateException();
+    protected List<ValueTick> buildRadialTicks(List<ValueTick> allTicks) {
+        List<ValueTick> ticks = new ArrayList<>();
+        for (ValueTick tick : allTicks) {
+            if (isRadiusMinorGridlinesVisible() || TickType.MAJOR.equals(tick.getTickType())) {
+                ticks.add(tick);
             }
-            g2.setPaint(marker.getPaint());
-            g2.setStroke(marker.getStroke());
-            g2.draw(line);
-            bounds = line.getBounds2D();
-        } else {
-            double v0 = axis.getCategoryStart(columnIndex, dataset.getColumnCount(), dataArea, plot.getDomainAxisEdge());
-            double v1 = axis.getCategoryEnd(columnIndex, dataset.getColumnCount(), dataArea, plot.getDomainAxisEdge());
-            Rectangle2D area = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                area = new Rectangle2D.Double(dataArea.getMinX(), v0, dataArea.getWidth(), (v1 - v0));
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                area = new Rectangle2D.Double(v0, dataArea.getMinY(), (v1 - v0), dataArea.getHeight());
-            }
-            g2.setPaint(marker.getPaint());
-            g2.fill(area);
-            bounds = area;
         }
-        String label = marker.getLabel();
-        RectangleAnchor anchor = marker.getLabelAnchor();
-        if (label != null) {
-            Font labelFont = marker.getLabelFont();
-            g2.setFont(labelFont);
-            g2.setPaint(marker.getLabelPaint());
-            Point2D coordinates = calculateDomainMarkerTextAnchorPoint(g2, orientation, dataArea, bounds, marker.getLabelOffset(), marker.getLabelOffsetType(), anchor);
-            TextUtils.drawAlignedString(label, g2, (float) coordinates.getX(), (float) coordinates.getY(), marker.getLabelTextAnchor());
-        }
-        g2.setComposite(savedComposite);
+        return ticks;
     }
 
     /**
-     * Draws a marker for the range axis.
+     * Zooms the axis ranges by the specified percentage about the anchor point.
      *
-     * @param g2  the graphics device (not {@code null}).
-     * @param plot  the plot (not {@code null}).
-     * @param axis  the range axis (not {@code null}).
-     * @param marker  the marker to be drawn (not {@code null}).
-     * @param dataArea  the area inside the axes (not {@code null}).
-     *
-     * @see #drawDomainMarker(Graphics2D, CategoryPlot, CategoryAxis,
-     *     CategoryMarker, Rectangle2D)
+     * @param percent  the amount of the zoom.
      */
     @Override
-    public void drawRangeMarker(Graphics2D g2, CategoryPlot plot, ValueAxis axis, Marker marker, Rectangle2D dataArea) {
-        if (marker instanceof ValueMarker) {
-            ValueMarker vm = (ValueMarker) marker;
-            double value = vm.getValue();
-            Range range = axis.getRange();
-            if (!range.contains(value)) {
-                return;
-            }
-            final Composite savedComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            PlotOrientation orientation = plot.getOrientation();
-            double v = axis.valueToJava2D(value, dataArea, plot.getRangeAxisEdge());
-            Line2D line = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-            } else {
-                throw new IllegalStateException();
-            }
-            g2.setPaint(marker.getPaint());
-            g2.setStroke(marker.getStroke());
-            g2.draw(line);
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coordinates = calculateRangeMarkerTextAnchorPoint(g2, orientation, dataArea, line.getBounds2D(), marker.getLabelOffset(), LengthAdjustmentType.EXPAND, anchor);
-                Rectangle2D rect = TextUtils.calcAlignedStringBounds(label, g2, (float) coordinates.getX(), (float) coordinates.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(rect);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coordinates.getX(), (float) coordinates.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(savedComposite);
-        } else if (marker instanceof IntervalMarker) {
-            IntervalMarker im = (IntervalMarker) marker;
-            double start = im.getStartValue();
-            double end = im.getEndValue();
-            Range range = axis.getRange();
-            if (!(range.intersects(start, end))) {
-                return;
-            }
-            final Composite savedComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            double start2d = axis.valueToJava2D(start, dataArea, plot.getRangeAxisEdge());
-            double end2d = axis.valueToJava2D(end, dataArea, plot.getRangeAxisEdge());
-            double low = Math.min(start2d, end2d);
-            double high = Math.max(start2d, end2d);
-            PlotOrientation orientation = plot.getOrientation();
-            Rectangle2D rect = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                // clip left and right bounds to data area
-                low = Math.max(low, dataArea.getMinX());
-                high = Math.min(high, dataArea.getMaxX());
-                rect = new Rectangle2D.Double(low, dataArea.getMinY(), high - low, dataArea.getHeight());
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                // clip top and bottom bounds to data area
-                low = Math.max(low, dataArea.getMinY());
-                high = Math.min(high, dataArea.getMaxY());
-                rect = new Rectangle2D.Double(dataArea.getMinX(), low, dataArea.getWidth(), high - low);
-            }
-            Paint p = marker.getPaint();
-            if (p instanceof GradientPaint) {
-                GradientPaint gp = (GradientPaint) p;
-                GradientPaintTransformer t = im.getGradientPaintTransformer();
-                if (t != null) {
-                    gp = t.transform(gp, rect);
-                }
-                g2.setPaint(gp);
-            } else {
-                g2.setPaint(p);
-            }
-            g2.fill(rect);
-            // now draw the outlines, if visible...
-            if (im.getOutlinePaint() != null && im.getOutlineStroke() != null) {
-                if (orientation == PlotOrientation.VERTICAL) {
-                    Line2D line = new Line2D.Double();
-                    double x0 = dataArea.getMinX();
-                    double x1 = dataArea.getMaxX();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(x0, start2d, x1, start2d);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(x0, end2d, x1, end2d);
-                        g2.draw(line);
-                    }
+    public void zoom(double percent) {
+        for (int axisIdx = 0; axisIdx < getAxisCount(); axisIdx++) {
+            final ValueAxis axis = getAxis(axisIdx);
+            if (axis != null) {
+                if (percent > 0.0) {
+                    double radius = axis.getUpperBound();
+                    double scaledRadius = radius * percent;
+                    axis.setUpperBound(scaledRadius);
+                    axis.setAutoRange(false);
                 } else {
-                    // PlotOrientation.HORIZONTAL
-                    Line2D line = new Line2D.Double();
-                    double y0 = dataArea.getMinY();
-                    double y1 = dataArea.getMaxY();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(start2d, y0, start2d, y1);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(end2d, y0, end2d, y1);
-                        g2.draw(line);
-                    }
+                    axis.setAutoRange(true);
                 }
             }
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateRangeMarkerTextAnchorPoint(g2, orientation, dataArea, rect, marker.getLabelOffset(), marker.getLabelOffsetType(), anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
+        }
+    }
+
+    /**
+     * A utility method that returns a list of datasets that are mapped to a
+     * particular axis.
+     *
+     * @param axisIndex  the axis index ({@code null} not permitted).
+     *
+     * @return A list of datasets.
+     */
+    private List<XYDataset> getDatasetsMappedToAxis(Integer axisIndex) {
+        Args.nullNotPermitted(axisIndex, "axisIndex");
+        List<XYDataset> result = new ArrayList<>();
+        for (Entry<Integer, XYDataset> entry : this.datasets.entrySet()) {
+            List<Integer> mappedAxes = this.datasetToAxesMap.get(entry.getKey());
+            if (mappedAxes == null) {
+                if (axisIndex.equals(ZERO)) {
+                    result.add(getDataset(entry.getKey()));
+                }
+            } else {
+                if (mappedAxes.contains(axisIndex)) {
+                    result.add(getDataset(entry.getKey()));
+                }
             }
-            g2.setComposite(savedComposite);
         }
+        return result;
     }
 
     /**
-     * Calculates the {@code (x, y)} coordinates for drawing the label for a
-     * marker on the range axis.
+     * Returns the range for the specified axis.
      *
-     * @param g2  the graphics device.
-     * @param orientation  the plot orientation.
-     * @param dataArea  the data area.
-     * @param markerArea  the rectangle surrounding the marker.
-     * @param markerOffset  the marker offset.
-     * @param labelOffsetType  the label offset type.
-     * @param anchor  the label anchor.
+     * @param axis  the axis.
      *
-     * @return The coordinates for drawing the marker label.
-     */
-    protected Point2D calculateDomainMarkerTextAnchorPoint(Graphics2D g2, PlotOrientation orientation, Rectangle2D dataArea, Rectangle2D markerArea, RectangleInsets markerOffset, LengthAdjustmentType labelOffsetType, RectangleAnchor anchor) {
-        Rectangle2D anchorRect = null;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, LengthAdjustmentType.CONTRACT, labelOffsetType);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, labelOffsetType, LengthAdjustmentType.CONTRACT);
-        }
-        return anchor.getAnchorPoint(anchorRect);
-    }
-
-    /**
-     * Calculates the (x, y) coordinates for drawing a marker label.
-     *
-     * @param g2  the graphics device.
-     * @param orientation  the plot orientation.
-     * @param dataArea  the data area.
-     * @param markerArea  the rectangle surrounding the marker.
-     * @param markerOffset  the marker offset.
-     * @param labelOffsetType  the label offset type.
-     * @param anchor  the label anchor.
-     *
-     * @return The coordinates for drawing the marker label.
-     */
-    protected Point2D calculateRangeMarkerTextAnchorPoint(Graphics2D g2, PlotOrientation orientation, Rectangle2D dataArea, Rectangle2D markerArea, RectangleInsets markerOffset, LengthAdjustmentType labelOffsetType, RectangleAnchor anchor) {
-        Rectangle2D anchorRect = null;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, labelOffsetType, LengthAdjustmentType.CONTRACT);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, LengthAdjustmentType.CONTRACT, labelOffsetType);
-        }
-        return anchor.getAnchorPoint(anchorRect);
-    }
-
-    /**
-     * Returns a legend item for a series.  This default implementation will
-     * return {@code null} if {@link #isSeriesVisible(int)} or
-     * {@link #isSeriesVisibleInLegend(int)} returns {@code false}.
-     *
-     * @param datasetIndex  the dataset index (zero-based).
-     * @param series  the series index (zero-based).
-     *
-     * @return The legend item (possibly {@code null}).
-     *
-     * @see #getLegendItems()
+     * @return The range.
      */
     @Override
-    public LegendItem getLegendItem(int datasetIndex, int series) {
-        CategoryPlot p = getPlot();
-        if (p == null) {
-            return null;
+    public Range getDataRange(ValueAxis axis) {
+        Range result = null;
+        List<XYDataset> mappedDatasets = new ArrayList<>();
+        int axisIndex = getAxisIndex(axis);
+        if (axisIndex >= 0) {
+            mappedDatasets = getDatasetsMappedToAxis(axisIndex);
         }
-        // check that a legend item needs to be displayed...
-        if (!isSeriesVisible(series) || !isSeriesVisibleInLegend(series)) {
-            return null;
+        // iterate through the datasets that map to the axis and get the union
+        // of the ranges.
+        for (XYDataset dataset : mappedDatasets) {
+            if (dataset != null) {
+                // FIXME better ask the renderer instead of DatasetUtilities
+                result = Range.combine(result, DatasetUtils.findRangeBounds(dataset));
+            }
         }
-        CategoryDataset dataset = p.getDataset(datasetIndex);
-        String label = this.legendItemLabelGenerator.generateLabel(dataset, series);
-        String description = label;
-        String toolTipText = null;
-        if (this.legendItemToolTipGenerator != null) {
-            toolTipText = this.legendItemToolTipGenerator.generateLabel(dataset, series);
-        }
-        String urlText = null;
-        if (this.legendItemURLGenerator != null) {
-            urlText = this.legendItemURLGenerator.generateLabel(dataset, series);
-        }
-        Shape shape = lookupLegendShape(series);
-        Paint paint = lookupSeriesPaint(series);
-        Paint outlinePaint = lookupSeriesOutlinePaint(series);
-        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
-        LegendItem item = new LegendItem(label, description, toolTipText, urlText, shape, paint, outlineStroke, outlinePaint);
-        item.setLabelFont(lookupLegendTextFont(series));
-        Paint labelPaint = lookupLegendTextPaint(series);
-        if (labelPaint != null) {
-            item.setLabelPaint(labelPaint);
-        }
-        item.setSeriesKey(dataset.getRowKey(series));
-        item.setSeriesIndex(series);
-        item.setDataset(dataset);
-        item.setDatasetIndex(datasetIndex);
-        return item;
+        return result;
     }
 
     /**
-     * Tests this renderer for equality with another object.
+     * Receives notification of a change to the plot's m_Dataset.
+     * <P>
+     * The axis ranges are updated if necessary.
      *
-     * @param obj  the object.
+     * @param event  information about the event (not used here).
+     */
+    @Override
+    public void datasetChanged(DatasetChangeEvent event) {
+        for (int i = 0; i < this.axes.size(); i++) {
+            final ValueAxis axis = this.axes.get(i);
+            if (axis != null) {
+                axis.configure();
+            }
+        }
+        if (getParent() != null) {
+            getParent().datasetChanged(event);
+        } else {
+            super.datasetChanged(event);
+        }
+    }
+
+    /**
+     * Notifies all registered listeners of a property change.
+     * <P>
+     * One source of property change events is the plot's m_Renderer.
+     *
+     * @param event  information about the property change.
+     */
+    @Override
+    public void rendererChanged(RendererChangeEvent event) {
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the legend items for the plot.  Each legend item is generated by
+     * the plot's m_Renderer, since the m_Renderer is responsible for the visual
+     * representation of the data.
+     *
+     * @return The legend items.
+     */
+    @Override
+    public LegendItemCollection getLegendItems() {
+        if (this.fixedLegendItems != null) {
+            return this.fixedLegendItems;
+        }
+        LegendItemCollection result = new LegendItemCollection();
+        int count = this.datasets.size();
+        for (int datasetIndex = 0; datasetIndex < count; datasetIndex++) {
+            XYDataset dataset = getDataset(datasetIndex);
+            PolarItemRenderer renderer = getRenderer(datasetIndex);
+            if (dataset != null && renderer != null) {
+                int seriesCount = dataset.getSeriesCount();
+                for (int i = 0; i < seriesCount; i++) {
+                    LegendItem item = renderer.getLegendItem(i);
+                    result.add(item);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Tests this plot for equality with another object.
+     *
+     * @param obj  the object ({@code null} permitted).
      *
      * @return {@code true} or {@code false}.
      */
@@ -1049,521 +1576,327 @@ public abstract class AbstractCategoryItemRenderer extends AbstractRenderer impl
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof AbstractCategoryItemRenderer)) {
+        if (!(obj instanceof PolarPlot)) {
             return false;
         }
-        AbstractCategoryItemRenderer that = (AbstractCategoryItemRenderer) obj;
-        if (!Objects.equals(this.itemLabelGeneratorMap, that.itemLabelGeneratorMap)) {
+        PolarPlot that = (PolarPlot) obj;
+        if (!this.axes.equals(that.axes)) {
             return false;
         }
-        if (!Objects.equals(this.defaultItemLabelGenerator, that.defaultItemLabelGenerator)) {
+        if (!this.axisLocations.equals(that.axisLocations)) {
             return false;
         }
-        if (!Objects.equals(this.toolTipGeneratorMap, that.toolTipGeneratorMap)) {
+        if (!this.renderers.equals(that.renderers)) {
             return false;
         }
-        if (!Objects.equals(this.defaultToolTipGenerator, that.defaultToolTipGenerator)) {
+        if (!this.angleTickUnit.equals(that.angleTickUnit)) {
             return false;
         }
-        if (!Objects.equals(this.itemURLGeneratorMap, that.itemURLGeneratorMap)) {
+        if (this.angleGridlinesVisible != that.angleGridlinesVisible) {
             return false;
         }
-        if (!Objects.equals(this.defaultItemURLGenerator, that.defaultItemURLGenerator)) {
+        if (this.angleOffset != that.angleOffset) {
             return false;
         }
-        if (!Objects.equals(this.legendItemLabelGenerator, that.legendItemLabelGenerator)) {
+        if (this.counterClockwise != that.counterClockwise) {
             return false;
         }
-        if (!Objects.equals(this.legendItemToolTipGenerator, that.legendItemToolTipGenerator)) {
+        if (this.angleLabelsVisible != that.angleLabelsVisible) {
             return false;
         }
-        if (!Objects.equals(this.legendItemURLGenerator, that.legendItemURLGenerator)) {
+        if (!this.angleLabelFont.equals(that.angleLabelFont)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.angleLabelPaint, that.angleLabelPaint)) {
+            return false;
+        }
+        if (!Objects.equals(this.angleGridlineStroke, that.angleGridlineStroke)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.angleGridlinePaint, that.angleGridlinePaint)) {
+            return false;
+        }
+        if (this.radiusGridlinesVisible != that.radiusGridlinesVisible) {
+            return false;
+        }
+        if (!Objects.equals(this.radiusGridlineStroke, that.radiusGridlineStroke)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.radiusGridlinePaint, that.radiusGridlinePaint)) {
+            return false;
+        }
+        if (this.radiusMinorGridlinesVisible != that.radiusMinorGridlinesVisible) {
+            return false;
+        }
+        if (!this.cornerTextItems.equals(that.cornerTextItems)) {
+            return false;
+        }
+        if (this.margin != that.margin) {
+            return false;
+        }
+        if (!Objects.equals(this.fixedLegendItems, that.fixedLegendItems)) {
             return false;
         }
         return super.equals(obj);
     }
 
     /**
-     * Returns a hash code for the renderer.
-     *
-     * @return The hash code.
-     */
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        return result;
-    }
-
-    /**
-     * Returns the drawing supplier from the plot.
-     *
-     * @return The drawing supplier (possibly {@code null}).
-     */
-    @Override
-    public DrawingSupplier getDrawingSupplier() {
-        DrawingSupplier result = null;
-        CategoryPlot cp = getPlot();
-        if (cp != null) {
-            result = cp.getDrawingSupplier();
-        }
-        return result;
-    }
-
-    /**
-     * Considers the current (x, y) coordinate and updates the crosshair point
-     * if it meets the criteria (usually means the (x, y) coordinate is the
-     * closest to the anchor point so far).
-     *
-     * @param crosshairState  the crosshair state ({@code null} permitted,
-     *                        but the method does nothing in that case).
-     * @param rowKey  the row key.
-     * @param columnKey  the column key.
-     * @param value  the data value.
-     * @param datasetIndex  the dataset index.
-     * @param transX  the x-value translated to Java2D space.
-     * @param transY  the y-value translated to Java2D space.
-     * @param orientation  the plot orientation ({@code null} not permitted).
-     */
-    protected void updateCrosshairValues(CategoryCrosshairState crosshairState, Comparable rowKey, Comparable columnKey, double value, int datasetIndex, double transX, double transY, PlotOrientation orientation) {
-        Args.nullNotPermitted(orientation, "orientation");
-        if (crosshairState != null) {
-            if (this.plot.isRangeCrosshairLockedOnData()) {
-                // both axes
-                crosshairState.updateCrosshairPoint(rowKey, columnKey, value, datasetIndex, transX, transY, orientation);
-            } else {
-                crosshairState.updateCrosshairX(rowKey, columnKey, datasetIndex, transX, orientation);
-            }
-        }
-    }
-
-    /**
-     * Draws an item label.
-     *
-     * @param g2  the graphics device.
-     * @param orientation  the orientation.
-     * @param dataset  the dataset.
-     * @param row  the row.
-     * @param column  the column.
-     * @param x  the x coordinate (in Java2D space).
-     * @param y  the y coordinate (in Java2D space).
-     * @param negative  indicates a negative value (which affects the item
-     *                  label position).
-     */
-    protected void drawItemLabel(Graphics2D g2, PlotOrientation orientation, CategoryDataset dataset, int row, int column, double x, double y, boolean negative) {
-        CategoryItemLabelGenerator generator = getItemLabelGenerator(row, column);
-        if (generator != null) {
-            Font labelFont = getItemLabelFont(row, column);
-            Paint paint = getItemLabelPaint(row, column);
-            g2.setFont(labelFont);
-            g2.setPaint(paint);
-            String label = generator.generateLabel(dataset, row, column);
-            ItemLabelPosition position;
-            if (!negative) {
-                position = getPositiveItemLabelPosition(row, column);
-            } else {
-                position = getNegativeItemLabelPosition(row, column);
-            }
-            Point2D anchorPoint = calculateLabelAnchorPoint(position.getItemLabelAnchor(), x, y, orientation);
-            TextUtils.drawRotatedString(label, g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getTextAnchor(), position.getAngle(), position.getRotationAnchor());
-        }
-    }
-
-    /**
-     * Returns an independent copy of the renderer.  The {@code plot}
-     * reference is shallow copied.
+     * Returns a clone of the plot.
      *
      * @return A clone.
      *
-     * @throws CloneNotSupportedException  can be thrown if one of the objects
-     *         belonging to the renderer does not support cloning (for example,
-     *         an item label generator).
+     * @throws CloneNotSupportedException  this can occur if some component of
+     *         the plot cannot be cloned.
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        AbstractCategoryItemRenderer clone = (AbstractCategoryItemRenderer) super.clone();
-        if (this.itemLabelGeneratorMap != null) {
-            clone.itemLabelGeneratorMap = CloneUtils.cloneMapValues(this.itemLabelGeneratorMap);
-        }
-        if (this.defaultItemLabelGenerator != null) {
-            if (this.defaultItemLabelGenerator instanceof PublicCloneable) {
-                PublicCloneable pc = (PublicCloneable) this.defaultItemLabelGenerator;
-                clone.defaultItemLabelGenerator = (CategoryItemLabelGenerator) pc.clone();
-            } else {
-                throw new CloneNotSupportedException("ItemLabelGenerator not cloneable.");
+        PolarPlot clone = (PolarPlot) super.clone();
+        clone.axes = CloneUtils.clone(this.axes);
+        for (int i = 0; i < this.axes.size(); i++) {
+            ValueAxis axis = this.axes.get(i);
+            if (axis != null) {
+                ValueAxis clonedAxis = (ValueAxis) axis.clone();
+                clone.axes.put(i, clonedAxis);
+                clonedAxis.setPlot(clone);
+                clonedAxis.addChangeListener(clone);
             }
         }
-        if (this.toolTipGeneratorMap != null) {
-            clone.toolTipGeneratorMap = CloneUtils.cloneMapValues(this.toolTipGeneratorMap);
-        }
-        if (this.defaultToolTipGenerator != null) {
-            if (this.defaultToolTipGenerator instanceof PublicCloneable) {
-                PublicCloneable pc = (PublicCloneable) this.defaultToolTipGenerator;
-                clone.defaultToolTipGenerator = (CategoryToolTipGenerator) pc.clone();
-            } else {
-                throw new CloneNotSupportedException("Default tool tip generator not cloneable.");
+        // the datasets are not cloned, but listeners need to be added...
+        clone.datasets = CloneUtils.clone(this.datasets);
+        for (int i = 0; i < clone.datasets.size(); ++i) {
+            XYDataset d = getDataset(i);
+            if (d != null) {
+                d.addChangeListener(clone);
             }
         }
-        if (this.itemURLGeneratorMap != null) {
-            clone.itemURLGeneratorMap = CloneUtils.cloneMapValues(this.itemURLGeneratorMap);
-        }
-        if (this.defaultItemURLGenerator != null) {
-            if (this.defaultItemURLGenerator instanceof PublicCloneable) {
-                PublicCloneable pc = (PublicCloneable) this.defaultItemURLGenerator;
-                clone.defaultItemURLGenerator = (CategoryURLGenerator) pc.clone();
-            } else {
-                throw new CloneNotSupportedException("Default item URL generator not cloneable.");
+        clone.renderers = CloneUtils.clone(this.renderers);
+        for (int i = 0; i < this.renderers.size(); i++) {
+            PolarItemRenderer renderer2 = this.renderers.get(i);
+            if (renderer2 instanceof PublicCloneable) {
+                PublicCloneable pc = (PublicCloneable) renderer2;
+                PolarItemRenderer rc = (PolarItemRenderer) pc.clone();
+                clone.renderers.put(i, rc);
+                rc.setPlot(clone);
+                rc.addChangeListener(clone);
             }
         }
-        if (this.legendItemLabelGenerator instanceof PublicCloneable) {
-            clone.legendItemLabelGenerator = (CategorySeriesLabelGenerator) CloneUtils.clone((Object) this.legendItemLabelGenerator);
-        }
-        if (this.legendItemToolTipGenerator instanceof PublicCloneable) {
-            clone.legendItemToolTipGenerator = (CategorySeriesLabelGenerator) CloneUtils.clone((Object) this.legendItemToolTipGenerator);
-        }
-        if (this.legendItemURLGenerator instanceof PublicCloneable) {
-            clone.legendItemURLGenerator = (CategorySeriesLabelGenerator) CloneUtils.clone((Object) this.legendItemURLGenerator);
-        }
+        clone.cornerTextItems = new ArrayList<>(this.cornerTextItems);
         return clone;
     }
 
     /**
-     * Returns a domain axis for a plot.
+     * Provides serialization support.
      *
-     * @param plot  the plot.
-     * @param index  the axis index.
+     * @param stream  the output stream.
      *
-     * @return A domain axis.
+     * @throws IOException  if there is an I/O error.
      */
-    protected CategoryAxis getDomainAxis(CategoryPlot plot, int index) {
-        CategoryAxis result = plot.getDomainAxis(index);
-        if (result == null) {
-            result = plot.getDomainAxis();
-        }
-        return result;
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writeStroke(this.angleGridlineStroke, stream);
+        SerialUtils.writePaint(this.angleGridlinePaint, stream);
+        SerialUtils.writeStroke(this.radiusGridlineStroke, stream);
+        SerialUtils.writePaint(this.radiusGridlinePaint, stream);
+        SerialUtils.writePaint(this.angleLabelPaint, stream);
     }
 
     /**
-     * Returns a range axis for a plot.
+     * Provides serialization support.
      *
-     * @param plot  the plot.
-     * @param index  the axis index.
+     * @param stream  the input stream.
      *
-     * @return A range axis.
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
      */
-    protected ValueAxis getRangeAxis(CategoryPlot plot, int index) {
-        ValueAxis result = plot.getRangeAxis(index);
-        if (result == null) {
-            result = plot.getRangeAxis();
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.angleGridlineStroke = SerialUtils.readStroke(stream);
+        this.angleGridlinePaint = SerialUtils.readPaint(stream);
+        this.radiusGridlineStroke = SerialUtils.readStroke(stream);
+        this.radiusGridlinePaint = SerialUtils.readPaint(stream);
+        this.angleLabelPaint = SerialUtils.readPaint(stream);
+        int rangeAxisCount = this.axes.size();
+        for (int i = 0; i < rangeAxisCount; i++) {
+            Axis axis = this.axes.get(i);
+            if (axis != null) {
+                axis.setPlot(this);
+                axis.addChangeListener(this);
+            }
         }
-        return result;
+        int datasetCount = this.datasets.size();
+        for (int i = 0; i < datasetCount; i++) {
+            Dataset dataset = this.datasets.get(i);
+            if (dataset != null) {
+                dataset.addChangeListener(this);
+            }
+        }
+        int rendererCount = this.renderers.size();
+        for (int i = 0; i < rendererCount; i++) {
+            PolarItemRenderer renderer = this.renderers.get(i);
+            if (renderer != null) {
+                renderer.addChangeListener(this);
+            }
+        }
     }
 
     /**
-     * Returns a (possibly empty) collection of legend items for the series
-     * that this renderer is responsible for drawing.
+     * This method is required by the {@link Zoomable} interface, but since
+     * the plot does not have any domain axes, it does nothing.
      *
-     * @return The legend item collection (never {@code null}).
-     *
-     * @see #getLegendItem(int, int)
+     * @param factor  the zoom factor.
+     * @param state  the plot state.
+     * @param source  the source point (in Java2D coordinates).
      */
     @Override
-    public LegendItemCollection getLegendItems() {
-        LegendItemCollection result = new LegendItemCollection();
-        if (this.plot == null) {
-            return result;
-        }
-        int index = this.plot.getIndexOf(this);
-        CategoryDataset dataset = this.plot.getDataset(index);
-        if (dataset == null) {
-            return result;
-        }
-        int seriesCount = dataset.getRowCount();
-        if (plot.getRowRenderingOrder().equals(SortOrder.ASCENDING)) {
-            for (int i = 0; i < seriesCount; i++) {
-                if (isSeriesVisibleInLegend(i)) {
-                    LegendItem item = getLegendItem(index, i);
-                    if (item != null) {
-                        result.add(item);
-                    }
+    public void zoomDomainAxes(double factor, PlotRenderingInfo state, Point2D source) {
+        // do nothing
+    }
+
+    /**
+     * This method is required by the {@link Zoomable} interface, but since
+     * the plot does not have any domain axes, it does nothing.
+     *
+     * @param factor  the zoom factor.
+     * @param state  the plot state.
+     * @param source  the source point (in Java2D coordinates).
+     * @param useAnchor  use source point as zoom anchor?
+     */
+    @Override
+    public void zoomDomainAxes(double factor, PlotRenderingInfo state, Point2D source, boolean useAnchor) {
+        // do nothing
+    }
+
+    /**
+     * This method is required by the {@link Zoomable} interface, but since
+     * the plot does not have any domain axes, it does nothing.
+     *
+     * @param lowerPercent  the new lower bound.
+     * @param upperPercent  the new upper bound.
+     * @param state  the plot state.
+     * @param source  the source point (in Java2D coordinates).
+     */
+    @Override
+    public void zoomDomainAxes(double lowerPercent, double upperPercent, PlotRenderingInfo state, Point2D source) {
+        // do nothing
+    }
+
+    /**
+     * Multiplies the range on the range axis/axes by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param state  the plot state.
+     * @param source  the source point (in Java2D coordinates).
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo state, Point2D source) {
+        zoom(factor);
+    }
+
+    /**
+     * Multiplies the range on the range axis by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point (in Java2D space).
+     * @param useAnchor  use source point as zoom anchor?
+     *
+     * @see #zoomDomainAxes(double, PlotRenderingInfo, Point2D, boolean)
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
+        // get the source coordinate - this plot has always a VERTICAL
+        // orientation
+        final double sourceX = source.getX();
+        for (int axisIdx = 0; axisIdx < getAxisCount(); axisIdx++) {
+            final ValueAxis axis = getAxis(axisIdx);
+            if (axis != null) {
+                if (useAnchor) {
+                    double anchorX = axis.java2DToValue(sourceX, info.getDataArea(), RectangleEdge.BOTTOM);
+                    axis.resizeRange(factor, anchorX);
+                } else {
+                    axis.resizeRange(factor);
                 }
             }
-        } else {
-            for (int i = seriesCount - 1; i >= 0; i--) {
-                if (isSeriesVisibleInLegend(i)) {
-                    LegendItem item = getLegendItem(index, i);
-                    if (item != null) {
-                        result.add(item);
-                    }
-                }
-            }
         }
-        return result;
     }
 
     /**
-     * Returns the legend item label generator.
+     * Zooms in on the range axes.
      *
-     * @return The label generator (never {@code null}).
-     *
-     * @see #setLegendItemLabelGenerator(CategorySeriesLabelGenerator)
-     */
-    public CategorySeriesLabelGenerator getLegendItemLabelGenerator() {
-        return this.legendItemLabelGenerator;
-    }
-
-    /**
-     * Sets the legend item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} not permitted).
-     *
-     * @see #getLegendItemLabelGenerator()
-     */
-    public void setLegendItemLabelGenerator(CategorySeriesLabelGenerator generator) {
-        Args.nullNotPermitted(generator, "generator");
-        this.legendItemLabelGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend item tool tip generator.
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setLegendItemToolTipGenerator(CategorySeriesLabelGenerator)
-     */
-    public CategorySeriesLabelGenerator getLegendItemToolTipGenerator() {
-        return this.legendItemToolTipGenerator;
-    }
-
-    /**
-     * Sets the legend item tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #setLegendItemToolTipGenerator(CategorySeriesLabelGenerator)
-     */
-    public void setLegendItemToolTipGenerator(CategorySeriesLabelGenerator generator) {
-        this.legendItemToolTipGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend item URL generator.
-     *
-     * @return The URL generator (possibly {@code null}).
-     *
-     * @see #setLegendItemURLGenerator(CategorySeriesLabelGenerator)
-     */
-    public CategorySeriesLabelGenerator getLegendItemURLGenerator() {
-        return this.legendItemURLGenerator;
-    }
-
-    /**
-     * Sets the legend item URL generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemURLGenerator()
-     */
-    public void setLegendItemURLGenerator(CategorySeriesLabelGenerator generator) {
-        this.legendItemURLGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Adds an entity with the specified hotspot.
-     *
-     * @param entities  the entity collection.
-     * @param dataset  the dataset.
-     * @param row  the row index.
-     * @param column  the column index.
-     * @param hotspot  the hotspot ({@code null} not permitted).
-     */
-    protected void addItemEntity(EntityCollection entities, CategoryDataset dataset, int row, int column, Shape hotspot) {
-        Args.nullNotPermitted(hotspot, "hotspot");
-        if (!getItemCreateEntity(row, column)) {
-            return;
-        }
-        String tip = null;
-        CategoryToolTipGenerator tipster = getToolTipGenerator(row, column);
-        if (tipster != null) {
-            tip = tipster.generateToolTip(dataset, row, column);
-        }
-        String url = null;
-        CategoryURLGenerator urlster = getItemURLGenerator(row, column);
-        if (urlster != null) {
-            url = urlster.generateURL(dataset, row, column);
-        }
-        CategoryItemEntity entity = new CategoryItemEntity(hotspot, tip, url, dataset, dataset.getRowKey(row), dataset.getColumnKey(column));
-        entities.add(entity);
-    }
-
-    /**
-     * Adds an entity to the collection.
-     *
-     * @param entities  the entity collection being populated.
-     * @param hotspot  the entity area (if {@code null} a default will be
-     *              used).
-     * @param dataset  the dataset.
-     * @param row  the series.
-     * @param column  the item.
-     * @param entityX  the entity's center x-coordinate in user space (only
-     *                 used if {@code area} is {@code null}).
-     * @param entityY  the entity's center y-coordinate in user space (only
-     *                 used if {@code area} is {@code null}).
-     */
-    protected void addEntity(EntityCollection entities, Shape hotspot, CategoryDataset dataset, int row, int column, double entityX, double entityY) {
-        if (!getItemCreateEntity(row, column)) {
-            return;
-        }
-        Shape s = hotspot;
-        if (hotspot == null) {
-            double r = getDefaultEntityRadius();
-            double w = r * 2;
-            if (getPlot().getOrientation() == PlotOrientation.VERTICAL) {
-                s = new Ellipse2D.Double(entityX - r, entityY - r, w, w);
-            } else {
-                s = new Ellipse2D.Double(entityY - r, entityX - r, w, w);
-            }
-        }
-        String tip = null;
-        CategoryToolTipGenerator generator = getToolTipGenerator(row, column);
-        if (generator != null) {
-            tip = generator.generateToolTip(dataset, row, column);
-        }
-        String url = null;
-        CategoryURLGenerator urlster = getItemURLGenerator(row, column);
-        if (urlster != null) {
-            url = urlster.generateURL(dataset, row, column);
-        }
-        CategoryItemEntity entity = new CategoryItemEntity(s, tip, url, dataset, dataset.getRowKey(row), dataset.getColumnKey(column));
-        entities.add(entity);
-    }
-}
-/* ======================================================
- * JFreeChart : a chart library for the Java(tm) platform
- * ======================================================
- *
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
- *
- * Project Info:  https://www.jfree.org/jfreechart/index.html
- *
- * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2.1 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
- * License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
- * USA.
- *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
- * Other names may be trademarks of their respective owners.]
- *
- * ---------------
- * OHLCSeries.java
- * ---------------
- * (C) Copyright 2006-present, by David Gilbert.
- *
- * Original Author:  David Gilbert;
- * Contributor(s):   -;
- */
-/**
- * A list of ({@link RegularTimePeriod}, open, high, low, close) data items.
- *
- * @param <S> the series key type.
- *
- * @see OHLCSeriesCollection
- */
-class OHLCSeries<S extends Comparable<S>> extends ComparableObjectSeries<S> {
-
-    /**
-     * Creates a new empty series.  By default, items added to the series will
-     * be sorted into ascending order by period, and duplicate periods will
-     * not be allowed.
-     *
-     * @param key  the series key ({@code null} not permitted).
-     */
-    public OHLCSeries(S key) {
-        super(key, true, false);
-    }
-
-    /**
-     * Returns the time period for the specified item.
-     *
-     * @param index  the item index.
-     *
-     * @return The time period.
-     */
-    public RegularTimePeriod getPeriod(int index) {
-        OHLCItem item = (OHLCItem) getDataItem(index);
-        return item.getPeriod();
-    }
-
-    /**
-     * Returns the data item at the specified index.
-     *
-     * @param index  the item index.
-     *
-     * @return The data item.
+     * @param lowerPercent  the new lower bound.
+     * @param upperPercent  the new upper bound.
+     * @param state  the plot state.
+     * @param source  the source point (in Java2D coordinates).
      */
     @Override
-    public ComparableObjectItem getDataItem(int index) {
-        return super.getDataItem(index);
+    public void zoomRangeAxes(double lowerPercent, double upperPercent, PlotRenderingInfo state, Point2D source) {
+        zoom((upperPercent + lowerPercent) / 2.0);
     }
 
     /**
-     * Adds a data item to the series.
+     * Returns {@code false} always.
      *
-     * @param period  the period.
-     * @param open  the open-value.
-     * @param high  the high-value.
-     * @param low  the low-value.
-     * @param close  the close-value.
-     */
-    public void add(RegularTimePeriod period, double open, double high, double low, double close) {
-        if (getItemCount() > 0) {
-            OHLCItem item0 = (OHLCItem) this.getDataItem(0);
-            if (!period.getClass().equals(item0.getPeriod().getClass())) {
-                throw new IllegalArgumentException("Can't mix RegularTimePeriod class types.");
-            }
-        }
-        super.add(new OHLCItem(period, open, high, low, close), true);
-    }
-
-    /**
-     * Adds a data item to the series.  The values from the item passed to
-     * this method will be copied into a new object.
-     *
-     * @param item  the item ({@code null} not permitted).
-     *
-     * @since 1.0.17
-     */
-    public void add(OHLCItem item) {
-        Args.nullNotPermitted(item, "item");
-        add(item.getPeriod(), item.getOpenValue(), item.getHighValue(), item.getLowValue(), item.getCloseValue());
-    }
-
-    /**
-     * Removes the item with the specified index.
-     *
-     * @param index  the item index.
-     *
-     * @return The item removed.
-     *
-     * @since 1.0.14
+     * @return {@code false} always.
      */
     @Override
-    public ComparableObjectItem remove(int index) {
-        return super.remove(index);
+    public boolean isDomainZoomable() {
+        return false;
+    }
+
+    /**
+     * Returns {@code true} to indicate that the range axis is zoomable.
+     *
+     * @return {@code true}.
+     */
+    @Override
+    public boolean isRangeZoomable() {
+        return true;
+    }
+
+    /**
+     * Returns the orientation of the plot.
+     *
+     * @return The orientation.
+     */
+    @Override
+    public PlotOrientation getOrientation() {
+        return PlotOrientation.HORIZONTAL;
+    }
+
+    /**
+     * Translates a (theta, radius) pair into Java2D coordinates.  If
+     * {@code radius} is less than the lower bound of the axis, then
+     * this method returns the centre point.
+     *
+     * @param angleDegrees  the angle in degrees.
+     * @param radius  the radius.
+     * @param axis  the axis.
+     * @param dataArea  the data area.
+     *
+     * @return A point in Java2D space.
+     */
+    public Point translateToJava2D(double angleDegrees, double radius, ValueAxis axis, Rectangle2D dataArea) {
+        if (counterClockwise) {
+            angleDegrees = -angleDegrees;
+        }
+        double radians = Math.toRadians(angleDegrees + this.angleOffset);
+        double minx = dataArea.getMinX() + this.margin;
+        double maxx = dataArea.getMaxX() - this.margin;
+        double miny = dataArea.getMinY() + this.margin;
+        double maxy = dataArea.getMaxY() - this.margin;
+        double halfWidth = (maxx - minx) / 2.0;
+        double halfHeight = (maxy - miny) / 2.0;
+        double midX = minx + halfWidth;
+        double midY = miny + halfHeight;
+        double l = Math.min(halfWidth, halfHeight);
+        Rectangle2D quadrant = new Rectangle2D.Double(midX, midY, l, l);
+        double axisMin = axis.getLowerBound();
+        double adjustedRadius = Math.max(radius, axisMin);
+        double length = axis.valueToJava2D(adjustedRadius, quadrant, RectangleEdge.BOTTOM) - midX;
+        float x = (float) (midX + Math.cos(radians) * length);
+        float y = (float) (midY + Math.sin(radians) * length);
+        int ix = Math.round(x);
+        int iy = Math.round(y);
+        return new Point(ix, iy);
     }
 }

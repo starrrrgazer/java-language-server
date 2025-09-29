@@ -61,7 +61,7 @@ package DEF.cv;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5170,7 +5170,7 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -10243,633 +10243,639 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * ChartUtils.java
- * ---------------
- * (C) Copyright 2001-present, by David Gilbert and Contributors.
+ * ----------------------------
+ * XYBoxAndWhiskerRenderer.java
+ * ----------------------------
+ * (C) Copyright 2003-present, by David Browning and Contributors.
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   Wolfgang Irler;
- *                   Richard Atkinson;
- *                   Xavier Poinsard;
- *
- */
-/**
- * A collection of utility methods for JFreeChart.  Includes methods for
- * converting charts to image formats (PNG and JPEG) plus creating simple HTML
- * image maps.
- *
- * @see ImageMapUtils
- */
-public abstract class ChartUtils {
-
-    private ChartUtils() {
-        // no requirement to instantiate
-    }
-
-    /**
-     * Returns {@code true} if JFreeSVG is on the classpath, and
-     * {@code false} otherwise.  The JFreeSVG library can be found at
-     * <a href="https://www.jfree.org/jfreesvg/">https://www.jfree.org/jfreesvg/</a>
-     *
-     * @return A boolean.
-     *
-     * @since 2.0.0
-     */
-    public static boolean isJFreeSVGAvailable() {
-        Class<?> svgGraphics2DClass = null;
-        try {
-            svgGraphics2DClass = Class.forName("org.jfree.svg.SVGGraphics2D");
-        } catch (ClassNotFoundException e) {
-            // svgGraphics2DClass will be null so the function will return false
-        }
-        return svgGraphics2DClass != null;
-    }
-
-    /**
-     * Returns {@code true} if OrsonPDF is on the classpath, and
-     * {@code false} otherwise.  The OrsonPDF library can be found at
-     * http://www.object-refinery.com/orsonpdf/
-     *
-     * @return A boolean.
-     *
-     * @since 2.0.0
-     */
-    public static boolean isOrsonPDFAvailable() {
-        Class<?> pdfDocumentClass = null;
-        try {
-            pdfDocumentClass = Class.forName("com.orsonpdf.PDFDocument");
-        } catch (ClassNotFoundException e) {
-            // pdfDocument class will be null so the function will return false
-        }
-        return (pdfDocumentClass != null);
-    }
-
-    /**
-     * Applies the current theme to the specified chart.  This method is
-     * provided for convenience, the theme itself is stored in the
-     * {@link ChartFactory} class.
-     *
-     * @param chart  the chart ({@code null} not permitted).
-     */
-    public static void applyCurrentTheme(JFreeChart chart) {
-        ChartFactory.getChartTheme().apply(chart);
-    }
-
-    /**
-     * Writes a chart to an output stream in PNG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsPNG(OutputStream out, JFreeChart chart, int width, int height) throws IOException {
-        // defer argument checking...
-        writeChartAsPNG(out, chart, width, height, null);
-    }
-
-    /**
-     * Writes a chart to an output stream in PNG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param encodeAlpha  encode alpha?
-     * @param compression  the compression level (0-9).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsPNG(OutputStream out, JFreeChart chart, int width, int height, boolean encodeAlpha, int compression) throws IOException {
-        // defer argument checking...
-        ChartUtils.writeChartAsPNG(out, chart, width, height, null, encodeAlpha, compression);
-    }
-
-    /**
-     * Writes a chart to an output stream in PNG format.  This method allows
-     * you to pass in a {@link ChartRenderingInfo} object, to collect
-     * information about the chart dimensions/entities.  You will need this
-     * info if you want to create an HTML image map.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsPNG(OutputStream out, JFreeChart chart, int width, int height, ChartRenderingInfo info) throws IOException {
-        Args.nullNotPermitted(chart, "chart");
-        BufferedImage bufferedImage = chart.createBufferedImage(width, height, info);
-        EncoderUtil.writeBufferedImage(bufferedImage, ImageFormat.PNG, out);
-    }
-
-    /**
-     * Writes a chart to an output stream in PNG format.  This method allows
-     * you to pass in a {@link ChartRenderingInfo} object, to collect
-     * information about the chart dimensions/entities.  You will need this
-     * info if you want to create an HTML image map.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  carries back chart rendering info ({@code null}
-     *              permitted).
-     * @param encodeAlpha  encode alpha?
-     * @param compression  the PNG compression level (0-9).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsPNG(OutputStream out, JFreeChart chart, int width, int height, ChartRenderingInfo info, boolean encodeAlpha, int compression) throws IOException {
-        Args.nullNotPermitted(out, "out");
-        Args.nullNotPermitted(chart, "chart");
-        BufferedImage chartImage = chart.createBufferedImage(width, height, BufferedImage.TYPE_INT_ARGB, info);
-        ChartUtils.writeBufferedImageAsPNG(out, chartImage, encodeAlpha, compression);
-    }
-
-    /**
-     * Writes a scaled version of a chart to an output stream in PNG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the unscaled chart width.
-     * @param height  the unscaled chart height.
-     * @param widthScaleFactor  the horizontal scale factor.
-     * @param heightScaleFactor  the vertical scale factor.
-     *
-     * @throws IOException if there are any I/O problems.
-     */
-    public static void writeScaledChartAsPNG(OutputStream out, JFreeChart chart, int width, int height, int widthScaleFactor, int heightScaleFactor) throws IOException {
-        Args.nullNotPermitted(out, "out");
-        Args.nullNotPermitted(chart, "chart");
-        double desiredWidth = width * widthScaleFactor;
-        double desiredHeight = height * heightScaleFactor;
-        double defaultWidth = width;
-        double defaultHeight = height;
-        boolean scale = false;
-        // get desired width and height from somewhere then...
-        if ((widthScaleFactor != 1) || (heightScaleFactor != 1)) {
-            scale = true;
-        }
-        double scaleX = desiredWidth / defaultWidth;
-        double scaleY = desiredHeight / defaultHeight;
-        BufferedImage image = new BufferedImage((int) desiredWidth, (int) desiredHeight, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        if (scale) {
-            AffineTransform saved = g2.getTransform();
-            g2.transform(AffineTransform.getScaleInstance(scaleX, scaleY));
-            chart.draw(g2, new Rectangle2D.Double(0, 0, defaultWidth, defaultHeight), null, null);
-            g2.setTransform(saved);
-            g2.dispose();
-        } else {
-            chart.draw(g2, new Rectangle2D.Double(0, 0, defaultWidth, defaultHeight), null, null);
-        }
-        out.write(encodeAsPNG(image));
-    }
-
-    /**
-     * Saves a chart to the specified file in PNG format.
-     *
-     * @param file  the file name ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsPNG(File file, JFreeChart chart, int width, int height) throws IOException {
-        // defer argument checking...
-        saveChartAsPNG(file, chart, width, height, null);
-    }
-
-    /**
-     * Saves a chart to a file in PNG format.  This method allows you to pass
-     * in a {@link ChartRenderingInfo} object, to collect information about the
-     * chart dimensions/entities.  You will need this info if you want to
-     * create an HTML image map.
-     *
-     * @param file  the file ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsPNG(File file, JFreeChart chart, int width, int height, ChartRenderingInfo info) throws IOException {
-        Args.nullNotPermitted(file, "file");
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            ChartUtils.writeChartAsPNG(out, chart, width, height, info);
-        }
-    }
-
-    /**
-     * Saves a chart to a file in PNG format.  This method allows you to pass
-     * in a {@link ChartRenderingInfo} object, to collect information about the
-     * chart dimensions/entities.  You will need this info if you want to
-     * create an HTML image map.
-     *
-     * @param file  the file ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     * @param encodeAlpha  encode alpha?
-     * @param compression  the PNG compression level (0-9).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsPNG(File file, JFreeChart chart, int width, int height, ChartRenderingInfo info, boolean encodeAlpha, int compression) throws IOException {
-        Args.nullNotPermitted(file, "file");
-        Args.nullNotPermitted(chart, "chart");
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            writeChartAsPNG(out, chart, width, height, info, encodeAlpha, compression);
-        }
-    }
-
-    /**
-     * Writes a chart to an output stream in JPEG format.  Please note that
-     * JPEG is a poor format for chart images, use PNG if possible.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsJPEG(OutputStream out, JFreeChart chart, int width, int height) throws IOException {
-        // defer argument checking...
-        writeChartAsJPEG(out, chart, width, height, null);
-    }
-
-    /**
-     * Writes a chart to an output stream in JPEG format.  Please note that
-     * JPEG is a poor format for chart images, use PNG if possible.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param quality  the quality setting.
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsJPEG(OutputStream out, float quality, JFreeChart chart, int width, int height) throws IOException {
-        // defer argument checking...
-        ChartUtils.writeChartAsJPEG(out, quality, chart, width, height, null);
-    }
-
-    /**
-     * Writes a chart to an output stream in JPEG format. This method allows
-     * you to pass in a {@link ChartRenderingInfo} object, to collect
-     * information about the chart dimensions/entities.  You will need this
-     * info if you want to create an HTML image map.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsJPEG(OutputStream out, JFreeChart chart, int width, int height, ChartRenderingInfo info) throws IOException {
-        Args.nullNotPermitted(out, "out");
-        Args.nullNotPermitted(chart, "chart");
-        BufferedImage image = chart.createBufferedImage(width, height, BufferedImage.TYPE_INT_RGB, info);
-        EncoderUtil.writeBufferedImage(image, ImageFormat.JPEG, out);
-    }
-
-    /**
-     * Writes a chart to an output stream in JPEG format.  This method allows
-     * you to pass in a {@link ChartRenderingInfo} object, to collect
-     * information about the chart dimensions/entities.  You will need this
-     * info if you want to create an HTML image map.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param quality  the output quality (0.0f to 1.0f).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeChartAsJPEG(OutputStream out, float quality, JFreeChart chart, int width, int height, ChartRenderingInfo info) throws IOException {
-        Args.nullNotPermitted(out, "out");
-        Args.nullNotPermitted(chart, "chart");
-        BufferedImage image = chart.createBufferedImage(width, height, BufferedImage.TYPE_INT_RGB, info);
-        EncoderUtil.writeBufferedImage(image, ImageFormat.JPEG, out, quality);
-    }
-
-    /**
-     * Saves a chart to a file in JPEG format.
-     *
-     * @param file  the file ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsJPEG(File file, JFreeChart chart, int width, int height) throws IOException {
-        // defer argument checking...
-        saveChartAsJPEG(file, chart, width, height, null);
-    }
-
-    /**
-     * Saves a chart to a file in JPEG format.
-     *
-     * @param file  the file ({@code null} not permitted).
-     * @param quality  the JPEG quality setting.
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsJPEG(File file, float quality, JFreeChart chart, int width, int height) throws IOException {
-        // defer argument checking...
-        saveChartAsJPEG(file, quality, chart, width, height, null);
-    }
-
-    /**
-     * Saves a chart to a file in JPEG format.  This method allows you to pass
-     * in a {@link ChartRenderingInfo} object, to collect information about the
-     * chart dimensions/entities.  You will need this info if you want to
-     * create an HTML image map.
-     *
-     * @param file  the file name ({@code null} not permitted).
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsJPEG(File file, JFreeChart chart, int width, int height, ChartRenderingInfo info) throws IOException {
-        Args.nullNotPermitted(file, "file");
-        Args.nullNotPermitted(chart, "chart");
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            writeChartAsJPEG(out, chart, width, height, info);
-        }
-    }
-
-    /**
-     * Saves a chart to a file in JPEG format.  This method allows you to pass
-     * in a {@link ChartRenderingInfo} object, to collect information about the
-     * chart dimensions/entities.  You will need this info if you want to
-     * create an HTML image map.
-     *
-     * @param file  the file name ({@code null} not permitted).
-     * @param quality  the quality setting.
-     * @param chart  the chart ({@code null} not permitted).
-     * @param width  the image width.
-     * @param height  the image height.
-     * @param info  the chart rendering info ({@code null} permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void saveChartAsJPEG(File file, float quality, JFreeChart chart, int width, int height, ChartRenderingInfo info) throws IOException {
-        Args.nullNotPermitted(file, "file");
-        Args.nullNotPermitted(chart, "chart");
-        try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file))) {
-            writeChartAsJPEG(out, quality, chart, width, height, info);
-        }
-    }
-
-    /**
-     * Writes a {@link BufferedImage} to an output stream in JPEG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param image  the image ({@code null} not permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeBufferedImageAsJPEG(OutputStream out, BufferedImage image) throws IOException {
-        // defer argument checking...
-        writeBufferedImageAsJPEG(out, 0.75f, image);
-    }
-
-    /**
-     * Writes a {@link BufferedImage} to an output stream in JPEG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param quality  the image quality (0.0f to 1.0f).
-     * @param image  the image ({@code null} not permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeBufferedImageAsJPEG(OutputStream out, float quality, BufferedImage image) throws IOException {
-        EncoderUtil.writeBufferedImage(image, ImageFormat.JPEG, out, quality);
-    }
-
-    /**
-     * Writes a {@link BufferedImage} to an output stream in PNG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param image  the image ({@code null} not permitted).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeBufferedImageAsPNG(OutputStream out, BufferedImage image) throws IOException {
-        EncoderUtil.writeBufferedImage(image, ImageFormat.PNG, out);
-    }
-
-    /**
-     * Writes a {@link BufferedImage} to an output stream in PNG format.
-     *
-     * @param out  the output stream ({@code null} not permitted).
-     * @param image  the image ({@code null} not permitted).
-     * @param encodeAlpha  encode alpha?
-     * @param compression  the compression level (0-9).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeBufferedImageAsPNG(OutputStream out, BufferedImage image, boolean encodeAlpha, int compression) throws IOException {
-        EncoderUtil.writeBufferedImage(image, ImageFormat.PNG, out, compression, encodeAlpha);
-    }
-
-    /**
-     * Encodes a {@link BufferedImage} to PNG format.
-     *
-     * @param image  the image ({@code null} not permitted).
-     *
-     * @return A byte array in PNG format.
-     *
-     * @throws IOException if there is an I/O problem.
-     */
-    public static byte[] encodeAsPNG(BufferedImage image) throws IOException {
-        return EncoderUtil.encode(image, ImageFormat.PNG);
-    }
-
-    /**
-     * Encodes a {@link BufferedImage} to PNG format.
-     *
-     * @param image  the image ({@code null} not permitted).
-     * @param encodeAlpha  encode alpha?
-     * @param compression  the PNG compression level (0-9).
-     *
-     * @return The byte array in PNG format.
-     *
-     * @throws IOException if there is an I/O problem.
-     */
-    public static byte[] encodeAsPNG(BufferedImage image, boolean encodeAlpha, int compression) throws IOException {
-        return EncoderUtil.encode(image, ImageFormat.PNG, compression, encodeAlpha);
-    }
-
-    /**
-     * Writes an image map to an output stream.
-     *
-     * @param writer  the writer ({@code null} not permitted).
-     * @param name  the map name ({@code null} not permitted).
-     * @param info  the chart rendering info ({@code null} not permitted).
-     * @param useOverLibForToolTips  whether to use OverLIB for tooltips
-     *                               (http://www.bosrup.com/web/overlib/).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeImageMap(PrintWriter writer, String name, ChartRenderingInfo info, boolean useOverLibForToolTips) throws IOException {
-        ToolTipTagFragmentGenerator toolTipTagFragmentGenerator;
-        if (useOverLibForToolTips) {
-            toolTipTagFragmentGenerator = new OverLIBToolTipTagFragmentGenerator();
-        } else {
-            toolTipTagFragmentGenerator = new StandardToolTipTagFragmentGenerator();
-        }
-        ImageMapUtils.writeImageMap(writer, name, info, toolTipTagFragmentGenerator, new StandardURLTagFragmentGenerator());
-    }
-
-    /**
-     * Writes an image map to the specified writer.
-     *
-     * @param writer  the writer ({@code null} not permitted).
-     * @param name  the map name ({@code null} not permitted).
-     * @param info  the chart rendering info ({@code null} not permitted).
-     * @param toolTipTagFragmentGenerator  a generator for the HTML fragment
-     *     that will contain the tooltip text ({@code null} not permitted
-     *     if {@code info} contains tooltip information).
-     * @param urlTagFragmentGenerator  a generator for the HTML fragment that
-     *     will contain the URL reference ({@code null} not permitted if
-     *     {@code info} contains URLs).
-     *
-     * @throws IOException if there are any I/O errors.
-     */
-    public static void writeImageMap(PrintWriter writer, String name, ChartRenderingInfo info, ToolTipTagFragmentGenerator toolTipTagFragmentGenerator, URLTagFragmentGenerator urlTagFragmentGenerator) throws IOException {
-        writer.println(ImageMapUtils.getImageMap(name, info, toolTipTagFragmentGenerator, urlTagFragmentGenerator));
-    }
-
-    /**
-     * Creates an HTML image map.  This method maps to
-     * {@link ImageMapUtils#getImageMap(String, ChartRenderingInfo,
-     * ToolTipTagFragmentGenerator, URLTagFragmentGenerator)}, using default
-     * generators.
-     *
-     * @param name  the map name ({@code null} not permitted).
-     * @param info  the chart rendering info ({@code null} not permitted).
-     *
-     * @return The map tag.
-     */
-    public static String getImageMap(String name, ChartRenderingInfo info) {
-        return ImageMapUtils.getImageMap(name, info, new StandardToolTipTagFragmentGenerator(), new StandardURLTagFragmentGenerator());
-    }
-
-    /**
-     * Creates an HTML image map.  This method maps directly to
-     * {@link ImageMapUtils#getImageMap(String, ChartRenderingInfo,
-     * ToolTipTagFragmentGenerator, URLTagFragmentGenerator)}.
-     *
-     * @param name  the map name ({@code null} not permitted).
-     * @param info  the chart rendering info ({@code null} not permitted).
-     * @param toolTipTagFragmentGenerator  a generator for the HTML fragment
-     *     that will contain the tooltip text ({@code null} not permitted
-     *     if {@code info} contains tooltip information).
-     * @param urlTagFragmentGenerator  a generator for the HTML fragment that
-     *     will contain the URL reference ({@code null} not permitted if
-     *     {@code info} contains URLs).
-     *
-     * @return The map tag.
-     */
-    public static String getImageMap(String name, ChartRenderingInfo info, ToolTipTagFragmentGenerator toolTipTagFragmentGenerator, URLTagFragmentGenerator urlTagFragmentGenerator) {
-        return ImageMapUtils.getImageMap(name, info, toolTipTagFragmentGenerator, urlTagFragmentGenerator);
-    }
-}
-/* ======================================================
- * JFreeChart : a chart library for the Java(tm) platform
- * ======================================================
- *
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
- *
- * Project Info:  https://www.jfree.org/jfreechart/index.html
- *
- * This library is free software; you can redistribute it and/or modify it
- * under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation; either version 2.1 of the License, or
- * (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful, but
- * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
- * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
- * License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
- * USA.
- *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
- * Other names may be trademarks of their respective owners.]
- *
- * ----------------
- * DatasetTags.java
- * ----------------
- * (C) Copyright 2003-present, by David Gilbert and Contributors.
- *
- * Original Author:  David Gilbert;
- * Contributor(s):   -;
- *
- * Changes
- * -------
- * 23-Jan-2003 : Version 1 (DG);
+ * Original Author:  David Browning (for Australian Institute of Marine
+ *                   Science);
+ * Contributor(s):   David Gilbert;
  *
  */
 /**
- * Constants for the tags that identify the elements in the XML files.
+ * A renderer that draws box-and-whisker items on an {@link XYPlot}.  This
+ * renderer requires a {@link BoxAndWhiskerXYDataset}).  The example shown here
+ * is generated by the{@code BoxAndWhiskerChartDemo2.java} program
+ * included in the JFreeChart demo collection:
+ * <br><br>
+ * <img src="doc-files/XYBoxAndWhiskerRendererSample.png"
+ * alt="XYBoxAndWhiskerRendererSample.png">
+ * <P>
+ * This renderer does not include any code to calculate the crosshair point.
  */
-interface DatasetTags {
+public class XYBoxAndWhiskerRenderer extends AbstractXYItemRenderer implements XYItemRenderer, Cloneable, PublicCloneable, Serializable {
 
     /**
-     * The 'PieDataset' element name.
+     * For serialization.
      */
-    String PIEDATASET_TAG = "PieDataset";
+    private static final long serialVersionUID = -8020170108532232324L;
 
     /**
-     * The 'CategoryDataset' element name.
+     * The box width.
      */
-    String CATEGORYDATASET_TAG = "CategoryDataset";
+    private double boxWidth;
 
     /**
-     * The 'Series' element name.
+     * The paint used to fill the box.
      */
-    String SERIES_TAG = "Series";
+    private transient Paint boxPaint;
 
     /**
-     * The 'Item' element name.
+     * A flag that controls whether the box is filled.
      */
-    String ITEM_TAG = "Item";
+    private boolean fillBox;
 
     /**
-     * The 'Key' element name.
+     * The paint used to draw various artifacts such as outliers, farout
+     * symbol, average ellipse and median line.
      */
-    String KEY_TAG = "Key";
+    private transient Paint artifactPaint = Color.BLACK;
 
     /**
-     * The 'Value' element name.
+     * Creates a new renderer for box and whisker charts.
      */
-    String VALUE_TAG = "Value";
+    public XYBoxAndWhiskerRenderer() {
+        this(-1.0);
+    }
+
+    /**
+     * Creates a new renderer for box and whisker charts.
+     * <P>
+     * Use -1 for the box width if you prefer the width to be calculated
+     * automatically.
+     *
+     * @param boxWidth  the box width.
+     */
+    public XYBoxAndWhiskerRenderer(double boxWidth) {
+        super();
+        this.boxWidth = boxWidth;
+        this.boxPaint = Color.GREEN;
+        this.fillBox = true;
+        setDefaultToolTipGenerator(new BoxAndWhiskerXYToolTipGenerator());
+    }
+
+    /**
+     * Returns the width of each box.
+     *
+     * @return The box width.
+     *
+     * @see #setBoxWidth(double)
+     */
+    public double getBoxWidth() {
+        return this.boxWidth;
+    }
+
+    /**
+     * Sets the box width and sends a {@link RendererChangeEvent} to all
+     * registered listeners.
+     * <P>
+     * If you set the width to a negative value, the renderer will calculate
+     * the box width automatically based on the space available on the chart.
+     *
+     * @param width  the width.
+     *
+     * @see #getBoxWidth()
+     */
+    public void setBoxWidth(double width) {
+        if (width != this.boxWidth) {
+            this.boxWidth = width;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the paint used to fill boxes.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setBoxPaint(Paint)
+     */
+    public Paint getBoxPaint() {
+        return this.boxPaint;
+    }
+
+    /**
+     * Sets the paint used to fill boxes and sends a {@link RendererChangeEvent}
+     * to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getBoxPaint()
+     */
+    public void setBoxPaint(Paint paint) {
+        this.boxPaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the flag that controls whether the box is filled.
+     *
+     * @return A boolean.
+     *
+     * @see #setFillBox(boolean)
+     */
+    public boolean getFillBox() {
+        return this.fillBox;
+    }
+
+    /**
+     * Sets the flag that controls whether the box is filled and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param flag  the flag.
+     *
+     * @see #setFillBox(boolean)
+     */
+    public void setFillBox(boolean flag) {
+        this.fillBox = flag;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint used to paint the various artifacts such as outliers,
+     * farout symbol, median line and the averages ellipse.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setArtifactPaint(Paint)
+     */
+    public Paint getArtifactPaint() {
+        return this.artifactPaint;
+    }
+
+    /**
+     * Sets the paint used to paint the various artifacts such as outliers,
+     * farout symbol, median line and the averages ellipse, and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getArtifactPaint()
+     */
+    public void setArtifactPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.artifactPaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the range of values the renderer requires to display all the
+     * items from the specified dataset.
+     *
+     * @param dataset  the dataset ({@code null} permitted).
+     *
+     * @return The range ({@code null} if the dataset is {@code null}
+     *         or empty).
+     *
+     * @see #findDomainBounds(XYDataset)
+     */
+    @Override
+    public Range findRangeBounds(XYDataset dataset) {
+        return findRangeBounds(dataset, true);
+    }
+
+    /**
+     * Returns the box paint or, if this is {@code null}, the item
+     * paint.
+     *
+     * @param series  the series index.
+     * @param item  the item index.
+     *
+     * @return The paint used to fill the box for the specified item (never
+     *         {@code null}).
+     */
+    protected Paint lookupBoxPaint(int series, int item) {
+        Paint p = getBoxPaint();
+        if (p != null) {
+            return p;
+        } else {
+            // TODO: could change this to itemFillPaint().  For backwards
+            // compatibility, it might require a useFillPaint flag.
+            return getItemPaint(series, item);
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param state  the renderer state.
+     * @param dataArea  the area within which the plot is being drawn.
+     * @param info  collects info about the drawing.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset (must be an instance of
+     *                 {@link BoxAndWhiskerXYDataset}).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    @Override
+    public void drawItem(Graphics2D g2, XYItemRendererState state, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        PlotOrientation orientation = plot.getOrientation();
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            drawHorizontalItem(g2, dataArea, info, plot, domainAxis, rangeAxis, dataset, series, item, crosshairState, pass);
+        } else if (orientation == PlotOrientation.VERTICAL) {
+            drawVerticalItem(g2, dataArea, info, plot, domainAxis, rangeAxis, dataset, series, item, crosshairState, pass);
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area within which the plot is being drawn.
+     * @param info  collects info about the drawing.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset (must be an instance of
+     *                 {@link BoxAndWhiskerXYDataset}).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    public void drawHorizontalItem(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        // setup for collecting optional entity info...
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+        BoxAndWhiskerXYDataset boxAndWhiskerData = (BoxAndWhiskerXYDataset) dataset;
+        Number x = boxAndWhiskerData.getX(series, item);
+        Number yMax = boxAndWhiskerData.getMaxRegularValue(series, item);
+        Number yMin = boxAndWhiskerData.getMinRegularValue(series, item);
+        Number yMedian = boxAndWhiskerData.getMedianValue(series, item);
+        Number yAverage = boxAndWhiskerData.getMeanValue(series, item);
+        Number yQ1Median = boxAndWhiskerData.getQ1Value(series, item);
+        Number yQ3Median = boxAndWhiskerData.getQ3Value(series, item);
+        double xx = domainAxis.valueToJava2D(x.doubleValue(), dataArea, plot.getDomainAxisEdge());
+        RectangleEdge location = plot.getRangeAxisEdge();
+        double yyMax = rangeAxis.valueToJava2D(yMax.doubleValue(), dataArea, location);
+        double yyMin = rangeAxis.valueToJava2D(yMin.doubleValue(), dataArea, location);
+        double yyMedian = rangeAxis.valueToJava2D(yMedian.doubleValue(), dataArea, location);
+        double yyAverage = 0.0;
+        if (yAverage != null) {
+            yyAverage = rangeAxis.valueToJava2D(yAverage.doubleValue(), dataArea, location);
+        }
+        double yyQ1Median = rangeAxis.valueToJava2D(yQ1Median.doubleValue(), dataArea, location);
+        double yyQ3Median = rangeAxis.valueToJava2D(yQ3Median.doubleValue(), dataArea, location);
+        double exactBoxWidth = getBoxWidth();
+        double width = exactBoxWidth;
+        double dataAreaX = dataArea.getHeight();
+        double maxBoxPercent = 0.1;
+        double maxBoxWidth = dataAreaX * maxBoxPercent;
+        if (exactBoxWidth <= 0.0) {
+            int itemCount = boxAndWhiskerData.getItemCount(series);
+            exactBoxWidth = dataAreaX / itemCount * 4.5 / 7;
+            if (exactBoxWidth < 3) {
+                width = 3;
+            } else if (exactBoxWidth > maxBoxWidth) {
+                width = maxBoxWidth;
+            } else {
+                width = exactBoxWidth;
+            }
+        }
+        g2.setPaint(getItemPaint(series, item));
+        Stroke s = getItemStroke(series, item);
+        g2.setStroke(s);
+        // draw the upper shadow
+        g2.draw(new Line2D.Double(yyMax, xx, yyQ3Median, xx));
+        g2.draw(new Line2D.Double(yyMax, xx - width / 2, yyMax, xx + width / 2));
+        // draw the lower shadow
+        g2.draw(new Line2D.Double(yyMin, xx, yyQ1Median, xx));
+        g2.draw(new Line2D.Double(yyMin, xx - width / 2, yyMin, xx + width / 2));
+        // draw the body
+        Shape box;
+        if (yyQ1Median < yyQ3Median) {
+            box = new Rectangle2D.Double(yyQ1Median, xx - width / 2, yyQ3Median - yyQ1Median, width);
+        } else {
+            box = new Rectangle2D.Double(yyQ3Median, xx - width / 2, yyQ1Median - yyQ3Median, width);
+        }
+        if (this.fillBox) {
+            g2.setPaint(lookupBoxPaint(series, item));
+            g2.fill(box);
+        }
+        g2.setStroke(getItemOutlineStroke(series, item));
+        g2.setPaint(getItemOutlinePaint(series, item));
+        g2.draw(box);
+        // draw median
+        g2.setPaint(getArtifactPaint());
+        g2.draw(new Line2D.Double(yyMedian, xx - width / 2, yyMedian, xx + width / 2));
+        // draw average - SPECIAL AIMS REQUIREMENT
+        if (yAverage != null) {
+            double aRadius = width / 4;
+            // here we check that the average marker will in fact be visible
+            // before drawing it...
+            if ((yyAverage > (dataArea.getMinX() - aRadius)) && (yyAverage < (dataArea.getMaxX() + aRadius))) {
+                Ellipse2D.Double avgEllipse = new Ellipse2D.Double(yyAverage - aRadius, xx - aRadius, aRadius * 2, aRadius * 2);
+                g2.fill(avgEllipse);
+                g2.draw(avgEllipse);
+            }
+        }
+        // FIXME: draw outliers
+        // add an entity for the item...
+        if (entities != null && box.intersects(dataArea)) {
+            addEntity(entities, box, dataset, series, item, yyAverage, xx);
+        }
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area within which the plot is being drawn.
+     * @param info  collects info about the drawing.
+     * @param plot  the plot (can be used to obtain standard color
+     *              information etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset (must be an instance of
+     *                 {@link BoxAndWhiskerXYDataset}).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    public void drawVerticalItem(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        // setup for collecting optional entity info...
+        EntityCollection entities = null;
+        if (info != null) {
+            entities = info.getOwner().getEntityCollection();
+        }
+        BoxAndWhiskerXYDataset boxAndWhiskerData = (BoxAndWhiskerXYDataset) dataset;
+        Number x = boxAndWhiskerData.getX(series, item);
+        Number yMax = boxAndWhiskerData.getMaxRegularValue(series, item);
+        Number yMin = boxAndWhiskerData.getMinRegularValue(series, item);
+        Number yMedian = boxAndWhiskerData.getMedianValue(series, item);
+        Number yAverage = boxAndWhiskerData.getMeanValue(series, item);
+        Number yQ1Median = boxAndWhiskerData.getQ1Value(series, item);
+        Number yQ3Median = boxAndWhiskerData.getQ3Value(series, item);
+        List yOutliers = boxAndWhiskerData.getOutliers(series, item);
+        // yOutliers can be null, but we'd prefer it to be an empty list in
+        // that case...
+        if (yOutliers == null) {
+            yOutliers = Collections.EMPTY_LIST;
+        }
+        double xx = domainAxis.valueToJava2D(x.doubleValue(), dataArea, plot.getDomainAxisEdge());
+        RectangleEdge location = plot.getRangeAxisEdge();
+        double yyMax = rangeAxis.valueToJava2D(yMax.doubleValue(), dataArea, location);
+        double yyMin = rangeAxis.valueToJava2D(yMin.doubleValue(), dataArea, location);
+        double yyMedian = rangeAxis.valueToJava2D(yMedian.doubleValue(), dataArea, location);
+        double yyAverage = 0.0;
+        if (yAverage != null) {
+            yyAverage = rangeAxis.valueToJava2D(yAverage.doubleValue(), dataArea, location);
+        }
+        double yyQ1Median = rangeAxis.valueToJava2D(yQ1Median.doubleValue(), dataArea, location);
+        double yyQ3Median = rangeAxis.valueToJava2D(yQ3Median.doubleValue(), dataArea, location);
+        double yyOutlier;
+        double exactBoxWidth = getBoxWidth();
+        double width = exactBoxWidth;
+        double dataAreaX = dataArea.getMaxX() - dataArea.getMinX();
+        double maxBoxPercent = 0.1;
+        double maxBoxWidth = dataAreaX * maxBoxPercent;
+        if (exactBoxWidth <= 0.0) {
+            int itemCount = boxAndWhiskerData.getItemCount(series);
+            exactBoxWidth = dataAreaX / itemCount * 4.5 / 7;
+            if (exactBoxWidth < 3) {
+                width = 3;
+            } else if (exactBoxWidth > maxBoxWidth) {
+                width = maxBoxWidth;
+            } else {
+                width = exactBoxWidth;
+            }
+        }
+        g2.setPaint(getItemPaint(series, item));
+        Stroke s = getItemStroke(series, item);
+        g2.setStroke(s);
+        // draw the upper shadow
+        g2.draw(new Line2D.Double(xx, yyMax, xx, yyQ3Median));
+        g2.draw(new Line2D.Double(xx - width / 2, yyMax, xx + width / 2, yyMax));
+        // draw the lower shadow
+        g2.draw(new Line2D.Double(xx, yyMin, xx, yyQ1Median));
+        g2.draw(new Line2D.Double(xx - width / 2, yyMin, xx + width / 2, yyMin));
+        // draw the body
+        Shape box;
+        if (yyQ1Median > yyQ3Median) {
+            box = new Rectangle2D.Double(xx - width / 2, yyQ3Median, width, yyQ1Median - yyQ3Median);
+        } else {
+            box = new Rectangle2D.Double(xx - width / 2, yyQ1Median, width, yyQ3Median - yyQ1Median);
+        }
+        if (this.fillBox) {
+            g2.setPaint(lookupBoxPaint(series, item));
+            g2.fill(box);
+        }
+        g2.setStroke(getItemOutlineStroke(series, item));
+        g2.setPaint(getItemOutlinePaint(series, item));
+        g2.draw(box);
+        // draw median
+        g2.setPaint(getArtifactPaint());
+        g2.draw(new Line2D.Double(xx - width / 2, yyMedian, xx + width / 2, yyMedian));
+        // average radius
+        double aRadius = 0;
+        // outlier radius
+        double oRadius = width / 3;
+        // draw average - SPECIAL AIMS REQUIREMENT
+        if (yAverage != null) {
+            aRadius = width / 4;
+            // here we check that the average marker will in fact be visible
+            // before drawing it...
+            if ((yyAverage > (dataArea.getMinY() - aRadius)) && (yyAverage < (dataArea.getMaxY() + aRadius))) {
+                Ellipse2D.Double avgEllipse = new Ellipse2D.Double(xx - aRadius, yyAverage - aRadius, aRadius * 2, aRadius * 2);
+                g2.fill(avgEllipse);
+                g2.draw(avgEllipse);
+            }
+        }
+        List outliers = new ArrayList();
+        OutlierListCollection outlierListCollection = new OutlierListCollection();
+        /* From outlier array sort out which are outliers and put these into
+         * an arraylist. If there are any farouts, set the flag on the
+         * OutlierListCollection
+         */
+        for (int i = 0; i < yOutliers.size(); i++) {
+            double outlier = ((Number) yOutliers.get(i)).doubleValue();
+            if (outlier > boxAndWhiskerData.getMaxOutlier(series, item).doubleValue()) {
+                outlierListCollection.setHighFarOut(true);
+            } else if (outlier < boxAndWhiskerData.getMinOutlier(series, item).doubleValue()) {
+                outlierListCollection.setLowFarOut(true);
+            } else if (outlier > boxAndWhiskerData.getMaxRegularValue(series, item).doubleValue()) {
+                yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea, location);
+                outliers.add(new Outlier(xx, yyOutlier, oRadius));
+            } else if (outlier < boxAndWhiskerData.getMinRegularValue(series, item).doubleValue()) {
+                yyOutlier = rangeAxis.valueToJava2D(outlier, dataArea, location);
+                outliers.add(new Outlier(xx, yyOutlier, oRadius));
+            }
+            Collections.sort(outliers);
+        }
+        // Process outliers. Each outlier is either added to the appropriate
+        // outlier list or a new outlier list is made
+        for (Iterator iterator = outliers.iterator(); iterator.hasNext(); ) {
+            Outlier outlier = (Outlier) iterator.next();
+            outlierListCollection.add(outlier);
+        }
+        // draw yOutliers
+        double maxAxisValue = rangeAxis.valueToJava2D(rangeAxis.getUpperBound(), dataArea, location) + aRadius;
+        double minAxisValue = rangeAxis.valueToJava2D(rangeAxis.getLowerBound(), dataArea, location) - aRadius;
+        // draw outliers
+        for (Iterator iterator = outlierListCollection.iterator(); iterator.hasNext(); ) {
+            OutlierList list = (OutlierList) iterator.next();
+            Outlier outlier = list.getAveragedOutlier();
+            Point2D point = outlier.getPoint();
+            if (list.isMultiple()) {
+                drawMultipleEllipse(point, width, oRadius, g2);
+            } else {
+                drawEllipse(point, oRadius, g2);
+            }
+        }
+        // draw farout
+        if (outlierListCollection.isHighFarOut()) {
+            drawHighFarOut(aRadius, g2, xx, maxAxisValue);
+        }
+        if (outlierListCollection.isLowFarOut()) {
+            drawLowFarOut(aRadius, g2, xx, minAxisValue);
+        }
+        // add an entity for the item...
+        if (entities != null && box.intersects(dataArea)) {
+            addEntity(entities, box, dataset, series, item, xx, yyAverage);
+        }
+    }
+
+    /**
+     * Draws an ellipse to represent an outlier.
+     *
+     * @param point  the location.
+     * @param oRadius  the radius.
+     * @param g2  the graphics device.
+     */
+    protected void drawEllipse(Point2D point, double oRadius, Graphics2D g2) {
+        Ellipse2D.Double dot = new Ellipse2D.Double(point.getX() + oRadius / 2, point.getY(), oRadius, oRadius);
+        g2.draw(dot);
+    }
+
+    /**
+     * Draws two ellipses to represent overlapping outliers.
+     *
+     * @param point  the location.
+     * @param boxWidth  the box width.
+     * @param oRadius  the radius.
+     * @param g2  the graphics device.
+     */
+    protected void drawMultipleEllipse(Point2D point, double boxWidth, double oRadius, Graphics2D g2) {
+        Ellipse2D.Double dot1 = new Ellipse2D.Double(point.getX() - (boxWidth / 2) + oRadius, point.getY(), oRadius, oRadius);
+        Ellipse2D.Double dot2 = new Ellipse2D.Double(point.getX() + (boxWidth / 2), point.getY(), oRadius, oRadius);
+        g2.draw(dot1);
+        g2.draw(dot2);
+    }
+
+    /**
+     * Draws a triangle to indicate the presence of far out values.
+     *
+     * @param aRadius  the radius.
+     * @param g2  the graphics device.
+     * @param xx  the x value.
+     * @param m  the max y value.
+     */
+    protected void drawHighFarOut(double aRadius, Graphics2D g2, double xx, double m) {
+        double side = aRadius * 2;
+        g2.draw(new Line2D.Double(xx - side, m + side, xx + side, m + side));
+        g2.draw(new Line2D.Double(xx - side, m + side, xx, m));
+        g2.draw(new Line2D.Double(xx + side, m + side, xx, m));
+    }
+
+    /**
+     * Draws a triangle to indicate the presence of far out values.
+     *
+     * @param aRadius  the radius.
+     * @param g2  the graphics device.
+     * @param xx  the x value.
+     * @param m  the min y value.
+     */
+    protected void drawLowFarOut(double aRadius, Graphics2D g2, double xx, double m) {
+        double side = aRadius * 2;
+        g2.draw(new Line2D.Double(xx - side, m - side, xx + side, m - side));
+        g2.draw(new Line2D.Double(xx - side, m - side, xx, m));
+        g2.draw(new Line2D.Double(xx + side, m - side, xx, m));
+    }
+
+    /**
+     * Tests this renderer for equality with another object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return {@code true} or {@code false}.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof XYBoxAndWhiskerRenderer)) {
+            return false;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        XYBoxAndWhiskerRenderer that = (XYBoxAndWhiskerRenderer) obj;
+        if (this.boxWidth != that.getBoxWidth()) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.boxPaint, that.boxPaint)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.artifactPaint, that.artifactPaint)) {
+            return false;
+        }
+        if (this.fillBox != that.fillBox) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.boxPaint, stream);
+        SerialUtils.writePaint(this.artifactPaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.boxPaint = SerialUtils.readPaint(stream);
+        this.artifactPaint = SerialUtils.readPaint(stream);
+    }
+
+    /**
+     * Returns a clone of the renderer.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException  if the renderer cannot be cloned.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
 }

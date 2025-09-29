@@ -1,5 +1,6 @@
 package org.javacs.log;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.logging.*;
 
@@ -10,7 +11,9 @@ public class LogConfig {
 
         try {
             // 1. 输出到文件
-            FileHandler fileHandler = new FileHandler("ljy.log"); // 追加模式
+            long timestamp = System.currentTimeMillis();
+            String name = timestamp + ".log";
+            FileHandler fileHandler = new FileHandler(name); // 追加模式
             fileHandler.setFormatter(new SimpleFormatter());
             fileHandler.setEncoding("UTF-8"); // 设置文件编码为UTF-8
             logger.addHandler(fileHandler);

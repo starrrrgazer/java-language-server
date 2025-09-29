@@ -25,418 +25,1438 @@ package NOD.ad;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------------------
- * AbstractXYItemRenderer.java
- * ---------------------------
- * (C) Copyright 2002-present, by David Gilbert and Contributors.
+ * -----------------
+ * WaferMapPlot.java
+ * -----------------
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   Richard Atkinson;
- *                   Focus Computer Services Limited;
- *                   Tim Bardzil;
- *                   Sergei Ivanov;
- *                   Peter Kolb (patch 2809117);
- *                   Martin Krauskopf;
+ * (C) Copyright 2003-2021, by Robert Redburn and Contributors.
+ *
+ * Original Author:  Robert Redburn;
+ * Contributor(s):   David Gilbert;
+ *
  */
 /**
- * A base class that can be used to create new {@link XYItemRenderer}
- * implementations.
- * <p>
- * <b>Subclassing</b>
- * If you create your own subclass of this renderer, please refer to the
- * Javadocs for {@link AbstractRenderer} for important information about
- * cloning.
+ * A wafer map plot.
  */
-public abstract class AbstractXYItemRenderer extends AbstractRenderer implements XYItemRenderer, AnnotationChangeListener, Cloneable, Serializable {
+public class WaferMapPlot extends Plot implements RendererChangeListener, Cloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = 8019124836026607990L;
+    private static final long serialVersionUID = 4668320403707308155L;
 
     /**
-     * The plot.
+     * The default grid line stroke.
      */
-    private XYPlot plot;
+    public static final Stroke DEFAULT_GRIDLINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0.0f, new float[] { 2.0f, 2.0f }, 0.0f);
 
     /**
-     * A list of item label generators (one per series).
+     * The default grid line paint.
      */
-    private Map<Integer, XYItemLabelGenerator> itemLabelGeneratorMap;
+    public static final Paint DEFAULT_GRIDLINE_PAINT = Color.LIGHT_GRAY;
 
     /**
-     * The default item label generator.
+     * The default crosshair visibility.
      */
-    private XYItemLabelGenerator defaultItemLabelGenerator;
+    public static final boolean DEFAULT_CROSSHAIR_VISIBLE = false;
 
     /**
-     * A list of tool tip generators (one per series).
+     * The default crosshair stroke.
      */
-    private Map<Integer, XYToolTipGenerator> toolTipGeneratorMap;
+    public static final Stroke DEFAULT_CROSSHAIR_STROKE = DEFAULT_GRIDLINE_STROKE;
 
     /**
-     * The default tool tip generator.
+     * The default crosshair paint.
      */
-    private XYToolTipGenerator defaultToolTipGenerator;
+    public static final Paint DEFAULT_CROSSHAIR_PAINT = Color.BLUE;
 
     /**
-     * The URL text generator.
+     * The resourceBundle for the localization.
      */
-    private XYURLGenerator urlGenerator;
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.plot.LocalizationBundle");
 
     /**
-     * Annotations to be drawn in the background layer ('underneath' the data
-     * items).
+     * The plot orientation.
+     *  vertical = notch down
+     *  horizontal = notch right
      */
-    private List<XYAnnotation> backgroundAnnotations;
+    private final PlotOrientation orientation;
 
     /**
-     * Annotations to be drawn in the foreground layer ('on top' of the data
-     * items).
+     * The dataset.
      */
-    private List<XYAnnotation> foregroundAnnotations;
+    private WaferMapDataset dataset;
 
     /**
-     * The legend item label generator.
+     * Object responsible for drawing the visual representation of each point
+     * on the plot.
      */
-    private XYSeriesLabelGenerator legendItemLabelGenerator;
+    private WaferMapRenderer renderer;
 
     /**
-     * The legend item tool tip generator.
+     * Creates a new plot with no dataset.
      */
-    private XYSeriesLabelGenerator legendItemToolTipGenerator;
+    public WaferMapPlot() {
+        this(null);
+    }
 
     /**
-     * The legend item URL generator.
+     * Creates a new plot.
+     *
+     * @param dataset  the dataset ({@code null} permitted).
      */
-    private XYSeriesLabelGenerator legendItemURLGenerator;
+    public WaferMapPlot(WaferMapDataset dataset) {
+        this(dataset, null);
+    }
 
     /**
-     * Creates a renderer where the tooltip generator and the URL generator are
-     * both {@code null}.
+     * Creates a new plot.
+     *
+     * @param dataset  the dataset ({@code null} permitted).
+     * @param renderer  the renderer ({@code null} permitted).
      */
-    protected AbstractXYItemRenderer() {
+    public WaferMapPlot(WaferMapDataset dataset, WaferMapRenderer renderer) {
         super();
-        this.itemLabelGeneratorMap = new HashMap<>();
-        this.toolTipGeneratorMap = new HashMap<>();
-        this.urlGenerator = null;
-        this.backgroundAnnotations = new ArrayList<>();
-        this.foregroundAnnotations = new ArrayList<>();
-        this.legendItemLabelGenerator = new StandardXYSeriesLabelGenerator("{0}");
+        this.orientation = PlotOrientation.VERTICAL;
+        this.dataset = dataset;
+        if (dataset != null) {
+            dataset.addChangeListener(this);
+        }
+        this.renderer = renderer;
+        if (renderer != null) {
+            renderer.setPlot(this);
+            renderer.addChangeListener(this);
+        }
     }
 
     /**
-     * Returns the number of passes through the data that the renderer requires
-     * in order to draw the chart.  Most charts will require a single pass, but
-     * some require two passes.
+     * Returns the plot type as a string.
      *
-     * @return The pass count.
+     * @return A short string describing the type of plot.
      */
     @Override
-    public int getPassCount() {
-        return 1;
+    public String getPlotType() {
+        return ("WMAP_Plot");
     }
 
     /**
-     * Returns the plot that the renderer is assigned to.
+     * Returns the dataset
      *
-     * @return The plot (possibly {@code null}).
+     * @return The dataset (possibly {@code null}).
+     */
+    public WaferMapDataset getDataset() {
+        return this.dataset;
+    }
+
+    /**
+     * Sets the dataset used by the plot and sends a {@link PlotChangeEvent}
+     * to all registered listeners.
+     *
+     * @param dataset  the dataset ({@code null} permitted).
+     */
+    public void setDataset(WaferMapDataset dataset) {
+        // if there is an existing dataset, remove the plot from the list of
+        // change listeners...
+        if (this.dataset != null) {
+            this.dataset.removeChangeListener(this);
+        }
+        // set the new dataset, and register the chart as a change listener...
+        this.dataset = dataset;
+        if (dataset != null) {
+            dataset.addChangeListener(this);
+        }
+        // send a dataset change event to self to trigger plot change event
+        datasetChanged(new DatasetChangeEvent(this, dataset));
+    }
+
+    /**
+     * Sets the item renderer, and notifies all listeners of a change to the
+     * plot.  If the renderer is set to {@code null}, no chart will be
+     * drawn.
+     *
+     * @param renderer  the new renderer ({@code null} permitted).
+     */
+    public void setRenderer(WaferMapRenderer renderer) {
+        if (this.renderer != null) {
+            this.renderer.removeChangeListener(this);
+        }
+        this.renderer = renderer;
+        if (renderer != null) {
+            renderer.setPlot(this);
+        }
+        fireChangeEvent();
+    }
+
+    /**
+     * Receives a chart element visitor.  Many plot subclasses will override
+     * this method to handle their subcomponents.
+     *
+     * @param visitor  the visitor ({@code null} not permitted).
      */
     @Override
-    public XYPlot getPlot() {
-        return this.plot;
+    public void receive(ChartElementVisitor visitor) {
+        // FIXME : handle the renderer
+        super.receive(visitor);
     }
 
     /**
-     * Sets the plot that the renderer is assigned to.
-     *
-     * @param plot  the plot ({@code null} permitted).
-     */
-    @Override
-    public void setPlot(XYPlot plot) {
-        this.plot = plot;
-    }
-
-    /**
-     * Initialises the renderer and returns a state object that should be
-     * passed to all subsequent calls to the drawItem() method.
-     * <P>
-     * This method will be called before the first item is rendered, giving the
-     * renderer an opportunity to initialise any state information it wants to
-     * maintain.  The renderer can do nothing if it chooses.
+     * Draws the wafermap view.
      *
      * @param g2  the graphics device.
-     * @param dataArea  the area inside the axes.
-     * @param plot  the plot.
-     * @param dataset  the dataset.
-     * @param info  an optional info collection object to return data back to
-     *              the caller.
-     *
-     * @return The renderer state (never {@code null}).
+     * @param area  the plot area.
+     * @param anchor  the anchor point ({@code null} permitted).
+     * @param state  the plot state.
+     * @param info  the plot rendering info.
      */
     @Override
-    public XYItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, XYPlot plot, XYDataset dataset, PlotRenderingInfo info) {
-        return new XYItemRendererState(info);
-    }
-
-    /**
-     * Adds a {@code KEY_BEGIN_ELEMENT} hint to the graphics target.  This
-     * hint is recognised by <b>JFreeSVG</b> (in theory it could be used by
-     * other {@code Graphics2D} implementations also).
-     *
-     * @param g2  the graphics target ({@code null} not permitted).
-     * @param seriesKey  the series key that identifies the element
-     *     ({@code null} not permitted).
-     * @param itemIndex  the item index.
-     */
-    protected void beginElementGroup(Graphics2D g2, Comparable seriesKey, int itemIndex) {
-        beginElementGroup(g2, new XYItemKey(seriesKey, itemIndex));
-    }
-
-    // ITEM LABEL GENERATOR
-    /**
-     * Returns the label generator for a data item.  This implementation simply
-     * passes control to the {@link #getSeriesItemLabelGenerator(int)} method.
-     * If, for some reason, you want a different generator for individual
-     * items, you can override this method.
-     *
-     * @param series  the series index (zero based).
-     * @param item  the item index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYItemLabelGenerator getItemLabelGenerator(int series, int item) {
-        // otherwise look up the generator table
-        XYItemLabelGenerator generator = this.itemLabelGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultItemLabelGenerator;
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState state, PlotRenderingInfo info) {
+        // if the plot area is too small, just return...
+        boolean b1 = (area.getWidth() <= MINIMUM_WIDTH_TO_DRAW);
+        boolean b2 = (area.getHeight() <= MINIMUM_HEIGHT_TO_DRAW);
+        if (b1 || b2) {
+            return;
         }
-        return generator;
-    }
-
-    /**
-     * Returns the item label generator for a series.
-     *
-     * @param series  the series index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYItemLabelGenerator getSeriesItemLabelGenerator(int series) {
-        return this.itemLabelGeneratorMap.get(series);
-    }
-
-    /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero based).
-     * @param generator  the generator ({@code null} permitted).
-     */
-    @Override
-    public void setSeriesItemLabelGenerator(int series, XYItemLabelGenerator generator) {
-        this.itemLabelGeneratorMap.put(series, generator);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the default item label generator.
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYItemLabelGenerator getDefaultItemLabelGenerator() {
-        return this.defaultItemLabelGenerator;
-    }
-
-    /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     */
-    @Override
-    public void setDefaultItemLabelGenerator(XYItemLabelGenerator generator) {
-        this.defaultItemLabelGenerator = generator;
-        fireChangeEvent();
-    }
-
-    // TOOL TIP GENERATOR
-    /**
-     * Returns the tool tip generator for a data item.  If, for some reason,
-     * you want a different generator for individual items, you can override
-     * this method.
-     *
-     * @param series  the series index (zero based).
-     * @param item  the item index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    @Override
-    public XYToolTipGenerator getToolTipGenerator(int series, int item) {
-        // otherwise look up the generator table
-        XYToolTipGenerator generator = this.toolTipGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultToolTipGenerator;
+        // record the plot area...
+        if (info != null) {
+            info.setPlotArea(area);
         }
-        return generator;
+        // adjust the drawing area for the plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+        drawChipGrid(g2, area);
+        drawWaferEdge(g2, area);
     }
 
     /**
-     * Returns the tool tip generator for a series.
+     * Calculates and draws the chip locations on the wafer.
      *
-     * @param series  the series index (zero based).
-     *
-     * @return The generator (possibly {@code null}).
+     * @param g2  the graphics device.
+     * @param plotArea  the plot area.
      */
-    @Override
-    public XYToolTipGenerator getSeriesToolTipGenerator(int series) {
-        return this.toolTipGeneratorMap.get(series);
+    protected void drawChipGrid(Graphics2D g2, Rectangle2D plotArea) {
+        Shape savedClip = g2.getClip();
+        g2.setClip(getWaferEdge(plotArea));
+        Rectangle2D chip = new Rectangle2D.Double();
+        int xchips = 35;
+        int ychips = 20;
+        double space = 1d;
+        if (this.dataset != null) {
+            xchips = this.dataset.getMaxChipX() + 2;
+            ychips = this.dataset.getMaxChipY() + 2;
+            space = this.dataset.getChipSpace();
+        }
+        double startX = plotArea.getX();
+        double startY = plotArea.getY();
+        double chipWidth = 1d;
+        double chipHeight = 1d;
+        if (plotArea.getWidth() != plotArea.getHeight()) {
+            double major, minor;
+            if (plotArea.getWidth() > plotArea.getHeight()) {
+                major = plotArea.getWidth();
+                minor = plotArea.getHeight();
+            } else {
+                major = plotArea.getHeight();
+                minor = plotArea.getWidth();
+            }
+            //set upperLeft point
+            if (plotArea.getWidth() == minor) {
+                // x is minor
+                startY += (major - minor) / 2;
+                chipWidth = (plotArea.getWidth() - (space * xchips - 1)) / xchips;
+                chipHeight = (plotArea.getWidth() - (space * ychips - 1)) / ychips;
+            } else {
+                // y is minor
+                startX += (major - minor) / 2;
+                chipWidth = (plotArea.getHeight() - (space * xchips - 1)) / xchips;
+                chipHeight = (plotArea.getHeight() - (space * ychips - 1)) / ychips;
+            }
+        }
+        for (int x = 1; x <= xchips; x++) {
+            double upperLeftX = (startX - chipWidth) + (chipWidth * x) + (space * (x - 1));
+            for (int y = 1; y <= ychips; y++) {
+                double upperLeftY = (startY - chipHeight) + (chipHeight * y) + (space * (y - 1));
+                chip.setFrame(upperLeftX, upperLeftY, chipWidth, chipHeight);
+                g2.setColor(Color.WHITE);
+                if (this.dataset.getChipValue(x - 1, ychips - y - 1) != null) {
+                    g2.setPaint(this.renderer.getChipColor(this.dataset.getChipValue(x - 1, ychips - y - 1)));
+                }
+                g2.fill(chip);
+                g2.setColor(Color.LIGHT_GRAY);
+                g2.draw(chip);
+            }
+        }
+        g2.setClip(savedClip);
     }
 
     /**
-     * Sets the tool tip generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Calculates the location of the waferedge.
      *
-     * @param series  the series index (zero based).
-     * @param generator  the generator ({@code null} permitted).
+     * @param plotArea  the plot area.
+     *
+     * @return The wafer edge.
+     */
+    protected Ellipse2D getWaferEdge(Rectangle2D plotArea) {
+        Ellipse2D edge = new Ellipse2D.Double();
+        double diameter = plotArea.getWidth();
+        double upperLeftX = plotArea.getX();
+        double upperLeftY = plotArea.getY();
+        //get major dimension
+        if (plotArea.getWidth() != plotArea.getHeight()) {
+            double major, minor;
+            if (plotArea.getWidth() > plotArea.getHeight()) {
+                major = plotArea.getWidth();
+                minor = plotArea.getHeight();
+            } else {
+                major = plotArea.getHeight();
+                minor = plotArea.getWidth();
+            }
+            //ellipse diameter is the minor dimension
+            diameter = minor;
+            //set upperLeft point
+            if (plotArea.getWidth() == minor) {
+                // x is minor
+                upperLeftY = plotArea.getY() + (major - minor) / 2;
+            } else {
+                // y is minor
+                upperLeftX = plotArea.getX() + (major - minor) / 2;
+            }
+        }
+        edge.setFrame(upperLeftX, upperLeftY, diameter, diameter);
+        return edge;
+    }
+
+    /**
+     * Draws the waferedge, including the notch.
+     *
+     * @param g2  the graphics device.
+     * @param plotArea  the plot area.
+     */
+    protected void drawWaferEdge(Graphics2D g2, Rectangle2D plotArea) {
+        // draw the wafer
+        Ellipse2D waferEdge = getWaferEdge(plotArea);
+        g2.setColor(Color.BLACK);
+        g2.draw(waferEdge);
+        // calculate and draw the notch
+        // horizontal orientation is considered notch right
+        // vertical orientation is considered notch down
+        Arc2D notch;
+        Rectangle2D waferFrame = waferEdge.getFrame();
+        double notchDiameter = waferFrame.getWidth() * 0.04;
+        if (this.orientation == PlotOrientation.HORIZONTAL) {
+            Rectangle2D notchFrame = new Rectangle2D.Double(waferFrame.getX() + waferFrame.getWidth() - (notchDiameter / 2), waferFrame.getY() + (waferFrame.getHeight() / 2) - (notchDiameter / 2), notchDiameter, notchDiameter);
+            notch = new Arc2D.Double(notchFrame, 90d, 180d, Arc2D.OPEN);
+        } else {
+            Rectangle2D notchFrame = new Rectangle2D.Double(waferFrame.getX() + (waferFrame.getWidth() / 2) - (notchDiameter / 2), waferFrame.getY() + waferFrame.getHeight() - (notchDiameter / 2), notchDiameter, notchDiameter);
+            notch = new Arc2D.Double(notchFrame, 0d, 180d, Arc2D.OPEN);
+        }
+        g2.setColor(Color.WHITE);
+        g2.fill(notch);
+        g2.setColor(Color.BLACK);
+        g2.draw(notch);
+    }
+
+    /**
+     * Return the legend items from the renderer.
+     *
+     * @return The legend items.
      */
     @Override
-    public void setSeriesToolTipGenerator(int series, XYToolTipGenerator generator) {
-        this.toolTipGeneratorMap.put(series, generator);
+    public LegendItemCollection getLegendItems() {
+        return this.renderer.getLegendCollection();
+    }
+
+    /**
+     * Notifies all registered listeners of a renderer change.
+     *
+     * @param event  the event.
+     */
+    @Override
+    public void rendererChanged(RendererChangeEvent event) {
+        fireChangeEvent();
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ---------
+ * Plot.java
+ * ---------
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Sylvain Vieujot;
+ *                   Jeremy Bowman;
+ *                   Andreas Schneider;
+ *                   Gideon Krause;
+ *                   Nicolas Brodu;
+ *                   Michal Krause;
+ *                   Richard West, Advanced Micro Devices, Inc.;
+ *                   Peter Kolb - patches 2603321, 2809117;
+ * 
+ */
+/**
+ * The base class for all plots in JFreeChart.  The {@link JFreeChart} class
+ * delegates the drawing of axes and data to the plot.  This base class
+ * provides facilities common to most plot types.
+ */
+public abstract class Plot implements ChartElement, AxisChangeListener, DatasetChangeListener, AnnotationChangeListener, MarkerChangeListener, LegendItemSource, PublicCloneable, Cloneable, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = -8831571430103671324L;
+
+    /**
+     * Useful constant representing zero.
+     */
+    public static final Number ZERO = 0;
+
+    /**
+     * The default insets.
+     */
+    public static final RectangleInsets DEFAULT_INSETS = new RectangleInsets(4.0, 8.0, 4.0, 8.0);
+
+    /**
+     * The default outline stroke.
+     */
+    public static final Stroke DEFAULT_OUTLINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+
+    /**
+     * The default outline color.
+     */
+    public static final Paint DEFAULT_OUTLINE_PAINT = Color.GRAY;
+
+    /**
+     * The default foreground alpha transparency.
+     */
+    public static final float DEFAULT_FOREGROUND_ALPHA = 1.0f;
+
+    /**
+     * The default background alpha transparency.
+     */
+    public static final float DEFAULT_BACKGROUND_ALPHA = 1.0f;
+
+    /**
+     * The default background color.
+     */
+    public static final Paint DEFAULT_BACKGROUND_PAINT = Color.WHITE;
+
+    /**
+     * The minimum width at which the plot should be drawn.
+     */
+    public static final int MINIMUM_WIDTH_TO_DRAW = 10;
+
+    /**
+     * The minimum height at which the plot should be drawn.
+     */
+    public static final int MINIMUM_HEIGHT_TO_DRAW = 10;
+
+    /**
+     * A default box shape for legend items.
+     */
+    public static final Shape DEFAULT_LEGEND_ITEM_BOX = new Rectangle2D.Double(-4.0, -4.0, 8.0, 8.0);
+
+    /**
+     * A default circle shape for legend items.
+     */
+    public static final Shape DEFAULT_LEGEND_ITEM_CIRCLE = new Ellipse2D.Double(-4.0, -4.0, 8.0, 8.0);
+
+    /**
+     * The chart that the plot is assigned to.  It can be {@code null} if the
+     * plot is not assigned to a chart yet, or if the plot is a subplot of a
+     * another plot.
+     */
+    private JFreeChart chart;
+
+    /**
+     * The parent plot ({@code null} if this is the root plot).
+     */
+    private Plot parent;
+
+    /**
+     * The message to display if no data is available.
+     */
+    private String noDataMessage;
+
+    /**
+     * The font used to display the 'no data' message.
+     */
+    private Font noDataMessageFont;
+
+    /**
+     * The paint used to draw the 'no data' message.
+     */
+    private transient Paint noDataMessagePaint;
+
+    /**
+     * Amount of blank space around the plot area.
+     */
+    private RectangleInsets insets;
+
+    /**
+     * A flag that controls whether the plot outline is drawn.
+     */
+    private boolean outlineVisible;
+
+    /**
+     * The Stroke used to draw an outline around the plot.
+     */
+    private transient Stroke outlineStroke;
+
+    /**
+     * The Paint used to draw an outline around the plot.
+     */
+    private transient Paint outlinePaint;
+
+    /**
+     * An optional color used to fill the plot background.
+     */
+    private transient Paint backgroundPaint;
+
+    /**
+     * An optional image for the plot background.
+     */
+    // not currently serialized
+    private transient Image backgroundImage;
+
+    /**
+     * The alignment for the background image.
+     */
+    private RectangleAlignment backgroundImageAlignment = RectangleAlignment.FILL;
+
+    /**
+     * The alpha value used to draw the background image.
+     */
+    private float backgroundImageAlpha = 0.5f;
+
+    /**
+     * The alpha-transparency for the plot.
+     */
+    private float foregroundAlpha;
+
+    /**
+     * The alpha transparency for the background paint.
+     */
+    private float backgroundAlpha;
+
+    /**
+     * The drawing supplier.
+     */
+    private DrawingSupplier drawingSupplier;
+
+    /**
+     * Storage for registered change listeners.
+     */
+    private transient EventListenerList listenerList;
+
+    /**
+     * A flag that controls whether the plot will notify listeners
+     * of changes (defaults to true, but sometimes it is useful to disable
+     * this).
+     */
+    private boolean notify;
+
+    /**
+     * Creates a new plot.
+     */
+    protected Plot() {
+        this.chart = null;
+        this.parent = null;
+        this.insets = DEFAULT_INSETS;
+        this.backgroundPaint = DEFAULT_BACKGROUND_PAINT;
+        this.backgroundAlpha = DEFAULT_BACKGROUND_ALPHA;
+        this.backgroundImage = null;
+        this.outlineVisible = true;
+        this.outlineStroke = DEFAULT_OUTLINE_STROKE;
+        this.outlinePaint = DEFAULT_OUTLINE_PAINT;
+        this.foregroundAlpha = DEFAULT_FOREGROUND_ALPHA;
+        this.noDataMessage = null;
+        this.noDataMessageFont = new Font("SansSerif", Font.PLAIN, 12);
+        this.noDataMessagePaint = Color.BLACK;
+        this.drawingSupplier = new DefaultDrawingSupplier();
+        this.notify = true;
+        this.listenerList = new EventListenerList();
+    }
+
+    /**
+     * Returns the chart that this plot is assigned to.  This method can
+     * return {@code null} if the plot is not yet assigned to a plot, or if the
+     * plot is a subplot of another plot.
+     *
+     * @return The chart (possibly {@code null}).
+     */
+    public JFreeChart getChart() {
+        return this.chart;
+    }
+
+    /**
+     * Sets the chart that the plot is assigned to.  This method is not
+     * intended for external use.
+     *
+     * @param chart  the chart ({@code null} permitted).
+     */
+    public void setChart(JFreeChart chart) {
+        this.chart = chart;
+    }
+
+    /**
+     * Fetches the element hinting flag from the chart that this plot is
+     * assigned to.  If the plot is not assigned (directly or indirectly) to
+     * a chart instance, this method will return {@code false}.
+     *
+     * @return A boolean.
+     */
+    public boolean fetchElementHintingFlag() {
+        if (this.parent != null) {
+            return this.parent.fetchElementHintingFlag();
+        }
+        if (this.chart != null) {
+            return this.chart.getElementHinting();
+        }
+        return false;
+    }
+
+    /**
+     * Returns the string that is displayed when the dataset is empty or
+     * {@code null}.
+     *
+     * @return The 'no data' message ({@code null} possible).
+     *
+     * @see #setNoDataMessage(String)
+     * @see #getNoDataMessageFont()
+     * @see #getNoDataMessagePaint()
+     */
+    public String getNoDataMessage() {
+        return this.noDataMessage;
+    }
+
+    /**
+     * Sets the message that is displayed when the dataset is empty or
+     * {@code null}, and sends a {@link PlotChangeEvent} to all registered
+     * listeners.
+     *
+     * @param message  the message ({@code null} permitted).
+     *
+     * @see #getNoDataMessage()
+     */
+    public void setNoDataMessage(String message) {
+        this.noDataMessage = message;
         fireChangeEvent();
     }
 
     /**
-     * Returns the default tool tip generator.
+     * Returns the font used to display the 'no data' message.
      *
-     * @return The generator (possibly {@code null}).
+     * @return The font (never {@code null}).
      *
-     * @see #setDefaultToolTipGenerator(XYToolTipGenerator)
+     * @see #setNoDataMessageFont(Font)
+     * @see #getNoDataMessage()
      */
-    @Override
-    public XYToolTipGenerator getDefaultToolTipGenerator() {
-        return this.defaultToolTipGenerator;
+    public Font getNoDataMessageFont() {
+        return this.noDataMessageFont;
     }
 
     /**
-     * Sets the default tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the font used to display the 'no data' message and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
      *
-     * @param generator  the generator ({@code null} permitted).
+     * @param font  the font ({@code null} not permitted).
      *
-     * @see #getDefaultToolTipGenerator()
+     * @see #getNoDataMessageFont()
      */
-    @Override
-    public void setDefaultToolTipGenerator(XYToolTipGenerator generator) {
-        this.defaultToolTipGenerator = generator;
-        fireChangeEvent();
-    }
-
-    // URL GENERATOR
-    /**
-     * Returns the URL generator for HTML image maps.
-     *
-     * @return The URL generator (possibly {@code null}).
-     */
-    @Override
-    public XYURLGenerator getURLGenerator() {
-        return this.urlGenerator;
-    }
-
-    /**
-     * Sets the URL generator for HTML image maps and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param urlGenerator  the URL generator ({@code null} permitted).
-     */
-    @Override
-    public void setURLGenerator(XYURLGenerator urlGenerator) {
-        this.urlGenerator = urlGenerator;
+    public void setNoDataMessageFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        this.noDataMessageFont = font;
         fireChangeEvent();
     }
 
     /**
-     * Adds an annotation and sends a {@link RendererChangeEvent} to all
-     * registered listeners.  The annotation is added to the foreground
-     * layer.
+     * Returns the paint used to display the 'no data' message.
      *
-     * @param annotation  the annotation ({@code null} not permitted).
+     * @return The paint (never {@code null}).
+     *
+     * @see #setNoDataMessagePaint(Paint)
+     * @see #getNoDataMessage()
      */
-    @Override
-    public void addAnnotation(XYAnnotation annotation) {
-        // defer argument checking
-        addAnnotation(annotation, Layer.FOREGROUND);
+    public Paint getNoDataMessagePaint() {
+        return this.noDataMessagePaint;
     }
 
     /**
-     * Adds an annotation to the specified layer and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the paint used to display the 'no data' message and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
      *
-     * @param annotation  the annotation ({@code null} not permitted).
-     * @param layer  the layer ({@code null} not permitted).
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getNoDataMessagePaint()
      */
-    @Override
-    public void addAnnotation(XYAnnotation annotation, Layer layer) {
-        Args.nullNotPermitted(annotation, "annotation");
-        Args.nullNotPermitted(layer, "layer");
-        switch(layer) {
-            case FOREGROUND:
-                this.foregroundAnnotations.add(annotation);
-                annotation.addChangeListener(this);
+    public void setNoDataMessagePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.noDataMessagePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns a short string describing the plot type.
+     * <P>
+     * Note: this gets used in the chart property editing user interface,
+     * but there needs to be a better mechanism for identifying the plot type.
+     *
+     * @return A short string describing the plot type (never
+     *     {@code null}).
+     */
+    public abstract String getPlotType();
+
+    /**
+     * Returns the parent plot (or {@code null} if this plot is not part
+     * of a combined plot).
+     *
+     * @return The parent plot.
+     *
+     * @see #setParent(Plot)
+     * @see #getRootPlot()
+     */
+    public Plot getParent() {
+        return this.parent;
+    }
+
+    /**
+     * Sets the parent plot.  This method is intended for internal use, you
+     * shouldn't need to call it directly.
+     *
+     * @param parent  the parent plot ({@code null} permitted).
+     *
+     * @see #getParent()
+     */
+    public void setParent(Plot parent) {
+        this.parent = parent;
+    }
+
+    /**
+     * Returns the root plot.
+     *
+     * @return The root plot.
+     *
+     * @see #getParent()
+     */
+    public Plot getRootPlot() {
+        Plot p = getParent();
+        if (p == null) {
+            return this;
+        }
+        return p.getRootPlot();
+    }
+
+    /**
+     * Returns {@code true} if this plot is part of a combined plot
+     * structure (that is, {@link #getParent()} returns a non-{@code null}
+     * value), and {@code false} otherwise.
+     *
+     * @return {@code true} if this plot is part of a combined plot
+     *         structure.
+     *
+     * @see #getParent()
+     */
+    public boolean isSubplot() {
+        return (getParent() != null);
+    }
+
+    /**
+     * Returns the insets for the plot area.
+     *
+     * @return The insets (never {@code null}).
+     *
+     * @see #setInsets(RectangleInsets)
+     */
+    public RectangleInsets getInsets() {
+        return this.insets;
+    }
+
+    /**
+     * Sets the insets for the plot and sends a {@link PlotChangeEvent} to
+     * all registered listeners.
+     *
+     * @param insets  the new insets ({@code null} not permitted).
+     *
+     * @see #getInsets()
+     * @see #setInsets(RectangleInsets, boolean)
+     */
+    public void setInsets(RectangleInsets insets) {
+        setInsets(insets, true);
+    }
+
+    /**
+     * Sets the insets for the plot and, if requested,  and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param insets  the new insets ({@code null} not permitted).
+     * @param notify  a flag that controls whether the registered listeners are
+     *                notified.
+     *
+     * @see #getInsets()
+     * @see #setInsets(RectangleInsets)
+     */
+    public void setInsets(RectangleInsets insets, boolean notify) {
+        Args.nullNotPermitted(insets, "insets");
+        if (!this.insets.equals(insets)) {
+            this.insets = insets;
+            if (notify) {
                 fireChangeEvent();
-                break;
-            case BACKGROUND:
-                this.backgroundAnnotations.add(annotation);
-                annotation.addChangeListener(this);
+            }
+        }
+    }
+
+    /**
+     * Returns the background color of the plot area.
+     *
+     * @return The paint (possibly {@code null}).
+     *
+     * @see #setBackgroundPaint(Paint)
+     */
+    public Paint getBackgroundPaint() {
+        return this.backgroundPaint;
+    }
+
+    /**
+     * Sets the background color of the plot area and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getBackgroundPaint()
+     */
+    public void setBackgroundPaint(Paint paint) {
+        if (paint == null) {
+            if (this.backgroundPaint != null) {
+                this.backgroundPaint = null;
                 fireChangeEvent();
-                break;
-            default:
-                // should never get here
-                throw new RuntimeException("Unknown layer.");
+            }
+        } else {
+            if (this.backgroundPaint != null) {
+                if (this.backgroundPaint.equals(paint)) {
+                    // nothing to do
+                    return;
+                }
+            }
+            this.backgroundPaint = paint;
+            fireChangeEvent();
         }
     }
 
     /**
-     * Removes the specified annotation and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
+     * Returns the alpha transparency of the plot area background.
      *
-     * @param annotation  the annotation to remove ({@code null} not
-     *                    permitted).
+     * @return The alpha transparency.
      *
-     * @return A boolean to indicate whether the annotation was
-     *         successfully removed.
+     * @see #setBackgroundAlpha(float)
      */
-    @Override
-    public boolean removeAnnotation(XYAnnotation annotation) {
-        boolean removed = this.foregroundAnnotations.remove(annotation);
-        removed = removed & this.backgroundAnnotations.remove(annotation);
-        annotation.removeChangeListener(this);
-        fireChangeEvent();
-        return removed;
+    public float getBackgroundAlpha() {
+        return this.backgroundAlpha;
     }
 
     /**
-     * Removes all annotations and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
+     * Sets the alpha transparency of the plot area background, and notifies
+     * registered listeners that the plot has been modified.
+     *
+     * @param alpha the new alpha value (in the range 0.0f to 1.0f).
+     *
+     * @see #getBackgroundAlpha()
+     */
+    public void setBackgroundAlpha(float alpha) {
+        if (this.backgroundAlpha != alpha) {
+            this.backgroundAlpha = alpha;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the drawing supplier for the plot.
+     *
+     * @return The drawing supplier (possibly {@code null}).
+     *
+     * @see #setDrawingSupplier(DrawingSupplier)
+     */
+    public DrawingSupplier getDrawingSupplier() {
+        DrawingSupplier result;
+        Plot p = getParent();
+        if (p != null) {
+            result = p.getDrawingSupplier();
+        } else {
+            result = this.drawingSupplier;
+        }
+        return result;
+    }
+
+    /**
+     * Sets the drawing supplier for the plot and sends a
+     * {@link PlotChangeEvent} to all registered listeners.  The drawing
+     * supplier is responsible for supplying a limitless (possibly repeating)
+     * sequence of {@code Paint}, {@code Stroke} and
+     * {@code Shape} objects that the plot's renderer(s) can use to
+     * populate its (their) tables.
+     *
+     * @param supplier  the new supplier.
+     *
+     * @see #getDrawingSupplier()
+     */
+    public void setDrawingSupplier(DrawingSupplier supplier) {
+        this.drawingSupplier = supplier;
+        fireChangeEvent();
+    }
+
+    /**
+     * Sets the drawing supplier for the plot and, if requested, sends a
+     * {@link PlotChangeEvent} to all registered listeners.  The drawing
+     * supplier is responsible for supplying a limitless (possibly repeating)
+     * sequence of {@code Paint}, {@code Stroke} and
+     * {@code Shape} objects that the plot's renderer(s) can use to
+     * populate its (their) tables.
+     *
+     * @param supplier  the new supplier.
+     * @param notify  notify listeners?
+     *
+     * @see #getDrawingSupplier()
+     */
+    public void setDrawingSupplier(DrawingSupplier supplier, boolean notify) {
+        this.drawingSupplier = supplier;
+        if (notify) {
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the background image that is used to fill the plot's background
+     * area.
+     *
+     * @return The image (possibly {@code null}).
+     *
+     * @see #setBackgroundImage(Image)
+     */
+    public Image getBackgroundImage() {
+        return this.backgroundImage;
+    }
+
+    /**
+     * Sets the background image for the plot and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param image  the image ({@code null} permitted).
+     *
+     * @see #getBackgroundImage()
+     */
+    public void setBackgroundImage(Image image) {
+        this.backgroundImage = image;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the background image alignment. The default value is
+     * {@code RectangleAlignment.FILL}.
+     *
+     * @return The alignment (never {@code null}).
+     *
+     * @see #setBackgroundImageAlignment(RectangleAlignment)
+     */
+    public RectangleAlignment getBackgroundImageAlignment() {
+        return this.backgroundImageAlignment;
+    }
+
+    /**
+     * Sets the alignment for the background image and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param alignment  the alignment ({@code null} not permitted).
+     *
+     * @see #getBackgroundImageAlignment()
+     */
+    public void setBackgroundImageAlignment(RectangleAlignment alignment) {
+        Args.nullNotPermitted(alignment, "alignment");
+        if (this.backgroundImageAlignment != alignment) {
+            this.backgroundImageAlignment = alignment;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the alpha transparency used to draw the background image.  This
+     * is a value in the range 0.0f to 1.0f, where 0.0f is fully transparent
+     * and 1.0f is fully opaque.
+     *
+     * @return The alpha transparency.
+     *
+     * @see #setBackgroundImageAlpha(float)
+     */
+    public float getBackgroundImageAlpha() {
+        return this.backgroundImageAlpha;
+    }
+
+    /**
+     * Sets the alpha transparency used when drawing the background image.
+     *
+     * @param alpha  the alpha transparency (in the range 0.0f to 1.0f, where
+     *     0.0f is fully transparent, and 1.0f is fully opaque).
+     *
+     * @throws IllegalArgumentException if {@code alpha} is not within
+     *     the specified range.
+     *
+     * @see #getBackgroundImageAlpha()
+     */
+    public void setBackgroundImageAlpha(float alpha) {
+        if (alpha < 0.0f || alpha > 1.0f) {
+            throw new IllegalArgumentException("The 'alpha' value must be in the range 0.0f to 1.0f.");
+        }
+        if (this.backgroundImageAlpha != alpha) {
+            this.backgroundImageAlpha = alpha;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the flag that controls whether the plot outline is
+     * drawn.  The default value is {@code true}.  Note that for
+     * historical reasons, the plot's outline paint and stroke can take on
+     * {@code null} values, in which case the outline will not be drawn
+     * even if this flag is set to {@code true}.
+     *
+     * @return The outline visibility flag.
+     *
+     * @see #setOutlineVisible(boolean)
+     */
+    public boolean isOutlineVisible() {
+        return this.outlineVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the plot's outline is
+     * drawn, and sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param visible  the new flag value.
+     *
+     * @see #isOutlineVisible()
+     */
+    public void setOutlineVisible(boolean visible) {
+        this.outlineVisible = visible;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the stroke used to outline the plot area.
+     *
+     * @return The stroke (possibly {@code null}).
+     *
+     * @see #setOutlineStroke(Stroke)
+     */
+    public Stroke getOutlineStroke() {
+        return this.outlineStroke;
+    }
+
+    /**
+     * Sets the stroke used to outline the plot area and sends a
+     * {@link PlotChangeEvent} to all registered listeners. If you set this
+     * attribute to {@code null}, no outline will be drawn.
+     *
+     * @param stroke  the stroke ({@code null} permitted).
+     *
+     * @see #getOutlineStroke()
+     */
+    public void setOutlineStroke(Stroke stroke) {
+        if (stroke == null) {
+            if (this.outlineStroke != null) {
+                this.outlineStroke = null;
+                fireChangeEvent();
+            }
+        } else {
+            if (this.outlineStroke != null) {
+                if (this.outlineStroke.equals(stroke)) {
+                    // nothing to do
+                    return;
+                }
+            }
+            this.outlineStroke = stroke;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the color used to draw the outline of the plot area.
+     *
+     * @return The color (possibly {@code null}).
+     *
+     * @see #setOutlinePaint(Paint)
+     */
+    public Paint getOutlinePaint() {
+        return this.outlinePaint;
+    }
+
+    /**
+     * Sets the paint used to draw the outline of the plot area and sends a
+     * {@link PlotChangeEvent} to all registered listeners.  If you set this
+     * attribute to {@code null}, no outline will be drawn.
+     *
+     * @param paint  the paint ({@code null} permitted).
+     *
+     * @see #getOutlinePaint()
+     */
+    public void setOutlinePaint(Paint paint) {
+        if (paint == null) {
+            if (this.outlinePaint != null) {
+                this.outlinePaint = null;
+                fireChangeEvent();
+            }
+        } else {
+            if (this.outlinePaint != null) {
+                if (this.outlinePaint.equals(paint)) {
+                    // nothing to do
+                    return;
+                }
+            }
+            this.outlinePaint = paint;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the alpha-transparency for the plot foreground.
+     *
+     * @return The alpha-transparency.
+     *
+     * @see #setForegroundAlpha(float)
+     */
+    public float getForegroundAlpha() {
+        return this.foregroundAlpha;
+    }
+
+    /**
+     * Sets the alpha-transparency for the plot and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param alpha  the new alpha transparency.
+     *
+     * @see #getForegroundAlpha()
+     */
+    public void setForegroundAlpha(float alpha) {
+        if (this.foregroundAlpha != alpha) {
+            this.foregroundAlpha = alpha;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the legend items for the plot.  By default, this method returns
+     * {@code null}.  Subclasses should override to return a
+     * {@link LegendItemCollection}.
+     *
+     * @return The legend items for the plot (possibly {@code null}).
      */
     @Override
-    public void removeAnnotations() {
-        for (XYAnnotation annotation : this.foregroundAnnotations) {
-            annotation.removeChangeListener(this);
+    public LegendItemCollection getLegendItems() {
+        return null;
+    }
+
+    /**
+     * Returns a flag that controls whether change events are sent to
+     * registered listeners.
+     *
+     * @return A boolean.
+     *
+     * @see #setNotify(boolean)
+     */
+    public boolean isNotify() {
+        return this.notify;
+    }
+
+    /**
+     * Sets a flag that controls whether listeners receive
+     * {@link PlotChangeEvent} notifications.
+     *
+     * @param notify  a boolean.
+     *
+     * @see #isNotify()
+     */
+    public void setNotify(boolean notify) {
+        this.notify = notify;
+        // if the flag is being set to true, there may be queued up changes...
+        if (notify) {
+            notifyListeners(new PlotChangeEvent(this));
         }
-        for (XYAnnotation annotation : this.backgroundAnnotations) {
-            annotation.removeChangeListener(this);
+    }
+
+    /**
+     * Registers an object for notification of changes to the plot.
+     *
+     * @param listener  the object to be registered.
+     *
+     * @see #removeChangeListener(PlotChangeListener)
+     */
+    public void addChangeListener(PlotChangeListener listener) {
+        this.listenerList.add(PlotChangeListener.class, listener);
+    }
+
+    /**
+     * Unregisters an object for notification of changes to the plot.
+     *
+     * @param listener  the object to be unregistered.
+     *
+     * @see #addChangeListener(PlotChangeListener)
+     */
+    public void removeChangeListener(PlotChangeListener listener) {
+        this.listenerList.remove(PlotChangeListener.class, listener);
+    }
+
+    /**
+     * Notifies all registered listeners that the plot has been modified.
+     *
+     * @param event  information about the change event.
+     */
+    public void notifyListeners(PlotChangeEvent event) {
+        // if the 'notify' flag has been switched to false, we don't notify
+        // the listeners
+        if (!this.notify) {
+            return;
         }
-        this.foregroundAnnotations.clear();
-        this.backgroundAnnotations.clear();
-        fireChangeEvent();
+        Object[] listeners = this.listenerList.getListenerList();
+        for (int i = listeners.length - 2; i >= 0; i -= 2) {
+            if (listeners[i] == PlotChangeListener.class) {
+                ((PlotChangeListener) listeners[i + 1]).plotChanged(event);
+            }
+        }
+    }
+
+    /**
+     * Sends a {@link PlotChangeEvent} to all registered listeners.
+     */
+    protected void fireChangeEvent() {
+        notifyListeners(new PlotChangeEvent(this));
+    }
+
+    /**
+     * Receives a chart element visitor.  Many plot subclasses will override
+     * this method to handle their subcomponents.
+     *
+     * @param visitor  the visitor ({@code null} not permitted).
+     */
+    @Override
+    public void receive(ChartElementVisitor visitor) {
+        visitor.visit(this);
+    }
+
+    /**
+     * Draws the plot within the specified area.  The anchor is a point on the
+     * chart that is specified externally (for instance, it may be the last
+     * point of the last mouse click performed by the user) - plots can use or
+     * ignore this value as they see fit.
+     * <br><br>
+     * Subclasses need to provide an implementation of this method, obviously.
+     *
+     * @param g2  the graphics device.
+     * @param area  the plot area.
+     * @param anchor  the anchor point ({@code null} permitted).
+     * @param parentState  the parent state (if any, {@code null} permitted).
+     * @param info  carries back plot rendering info.
+     */
+    public abstract void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info);
+
+    /**
+     * Draws the plot background (the background color and/or image).
+     * <P>
+     * This method will be called during the chart drawing process and is
+     * declared public so that it can be accessed by the renderers used by
+     * certain subclasses.  You shouldn't need to call this method directly.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area within which the plot should be drawn.
+     */
+    public void drawBackground(Graphics2D g2, Rectangle2D area) {
+        // some subclasses override this method completely, so don't put
+        // anything here that *must* be done
+        fillBackground(g2, area);
+        drawBackgroundImage(g2, area);
+    }
+
+    /**
+     * Fills the specified area with the background paint.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area.
+     *
+     * @see #getBackgroundPaint()
+     * @see #getBackgroundAlpha()
+     * @see #fillBackground(Graphics2D, Rectangle2D, PlotOrientation)
+     */
+    protected void fillBackground(Graphics2D g2, Rectangle2D area) {
+        fillBackground(g2, area, PlotOrientation.VERTICAL);
+    }
+
+    /**
+     * Fills the specified area with the background paint.  If the background
+     * paint is an instance of {@code GradientPaint}, the gradient will
+     * run in the direction suggested by the plot's orientation.
+     *
+     * @param g2  the graphics target.
+     * @param area  the plot area.
+     * @param orientation  the plot orientation ({@code null} not permitted).
+     */
+    protected void fillBackground(Graphics2D g2, Rectangle2D area, PlotOrientation orientation) {
+        Args.nullNotPermitted(orientation, "orientation");
+        if (this.backgroundPaint == null) {
+            return;
+        }
+        Paint p = this.backgroundPaint;
+        if (p instanceof GradientPaint) {
+            GradientPaint gp = (GradientPaint) p;
+            if (orientation == PlotOrientation.VERTICAL) {
+                p = new GradientPaint((float) area.getCenterX(), (float) area.getMaxY(), gp.getColor1(), (float) area.getCenterX(), (float) area.getMinY(), gp.getColor2());
+            } else if (orientation == PlotOrientation.HORIZONTAL) {
+                p = new GradientPaint((float) area.getMinX(), (float) area.getCenterY(), gp.getColor1(), (float) area.getMaxX(), (float) area.getCenterY(), gp.getColor2());
+            }
+        }
+        Composite originalComposite = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, this.backgroundAlpha));
+        g2.setPaint(p);
+        g2.fill(area);
+        g2.setComposite(originalComposite);
+    }
+
+    /**
+     * Draws the background image (if there is one) aligned within the
+     * specified area.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area.
+     *
+     * @see #getBackgroundImage()
+     * @see #getBackgroundImageAlignment()
+     * @see #getBackgroundImageAlpha()
+     */
+    public void drawBackgroundImage(Graphics2D g2, Rectangle2D area) {
+        if (this.backgroundImage == null) {
+            // nothing to do
+            return;
+        }
+        Composite savedComposite = g2.getComposite();
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, this.backgroundImageAlpha));
+        Rectangle2D dest = new Rectangle2D.Double(0.0, 0.0, this.backgroundImage.getWidth(null), this.backgroundImage.getHeight(null));
+        this.backgroundImageAlignment.align(dest, area);
+        Shape savedClip = g2.getClip();
+        g2.clip(area);
+        g2.drawImage(this.backgroundImage, (int) dest.getX(), (int) dest.getY(), (int) dest.getWidth() + 1, (int) dest.getHeight() + 1, null);
+        g2.setClip(savedClip);
+        g2.setComposite(savedComposite);
+    }
+
+    /**
+     * Draws the plot outline.  This method will be called during the chart
+     * drawing process and is declared public so that it can be accessed by the
+     * renderers used by certain subclasses. You shouldn't need to call this
+     * method directly.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area within which the plot should be drawn.
+     */
+    public void drawOutline(Graphics2D g2, Rectangle2D area) {
+        if (!this.outlineVisible) {
+            return;
+        }
+        if ((this.outlineStroke != null) && (this.outlinePaint != null)) {
+            g2.setStroke(this.outlineStroke);
+            g2.setPaint(this.outlinePaint);
+            Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+            g2.draw(area);
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+        }
+    }
+
+    /**
+     * Draws a message to state that there is no data to plot.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area within which the plot should be drawn.
+     */
+    protected void drawNoDataMessage(Graphics2D g2, Rectangle2D area) {
+        Shape savedClip = g2.getClip();
+        g2.clip(area);
+        String message = this.noDataMessage;
+        if (message != null) {
+            g2.setFont(this.noDataMessageFont);
+            g2.setPaint(this.noDataMessagePaint);
+            TextBlock block = TextUtils.createTextBlock(this.noDataMessage, this.noDataMessageFont, this.noDataMessagePaint, 0.9f * (float) area.getWidth(), new G2TextMeasurer(g2));
+            block.draw(g2, (float) area.getCenterX(), (float) area.getCenterY(), TextBlockAnchor.CENTER);
+        }
+        g2.setClip(savedClip);
+    }
+
+    /**
+     * Creates a plot entity that contains a reference to the plot and the
+     * data area as shape.
+     *
+     * @param dataArea  the data area used as hot spot for the entity.
+     * @param plotState  the plot rendering info containing a reference to the
+     *     EntityCollection.
+     * @param toolTip  the tool tip (defined in the respective Plot
+     *     subclass) ({@code null} permitted).
+     * @param urlText  the url (defined in the respective Plot subclass)
+     *     ({@code null} permitted).
+     */
+    protected void createAndAddEntity(Rectangle2D dataArea, PlotRenderingInfo plotState, String toolTip, String urlText) {
+        if (plotState != null && plotState.getOwner() != null) {
+            EntityCollection e = plotState.getOwner().getEntityCollection();
+            if (e != null) {
+                e.add(new PlotEntity(dataArea, this, toolTip, urlText));
+            }
+        }
+    }
+
+    /**
+     * Handles a 'click' on the plot.  Since the plot does not maintain any
+     * information about where it has been drawn, the plot rendering info is
+     * supplied as an argument so that the plot dimensions can be determined.
+     *
+     * @param x  the x coordinate (in Java2D space).
+     * @param y  the y coordinate (in Java2D space).
+     * @param info  an object containing information about the dimensions of
+     *              the plot.
+     */
+    public void handleClick(int x, int y, PlotRenderingInfo info) {
+        // provides a 'no action' default
+    }
+
+    /**
+     * Performs a zoom on the plot.  Subclasses should override if zooming is
+     * appropriate for the type of plot.
+     *
+     * @param percent  the zoom percentage.
+     */
+    public void zoom(double percent) {
+        // do nothing by default.
     }
 
     /**
      * Receives notification of a change to an {@link Annotation} added to
-     * this renderer.
+     * this plot.
      *
      * @param event  information about the event (not used here).
      */
@@ -446,752 +1466,83 @@ public abstract class AbstractXYItemRenderer extends AbstractRenderer implements
     }
 
     /**
-     * Returns a collection of the annotations that are assigned to the
-     * renderer.
+     * Receives notification of a change to one of the plot's axes.
      *
-     * @return A collection of annotations (possibly empty but never
-     *     {@code null}).
+     * @param event  information about the event (not used here).
      */
     @Override
-    public Collection<XYAnnotation> getAnnotations() {
-        List<XYAnnotation> result = new ArrayList<>(this.foregroundAnnotations);
-        result.addAll(this.backgroundAnnotations);
-        return result;
-    }
-
-    /**
-     * Returns the legend item label generator.
-     *
-     * @return The label generator (never {@code null}).
-     *
-     * @see #setLegendItemLabelGenerator(XYSeriesLabelGenerator)
-     */
-    @Override
-    public XYSeriesLabelGenerator getLegendItemLabelGenerator() {
-        return this.legendItemLabelGenerator;
-    }
-
-    /**
-     * Sets the legend item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} not permitted).
-     *
-     * @see #getLegendItemLabelGenerator()
-     */
-    @Override
-    public void setLegendItemLabelGenerator(XYSeriesLabelGenerator generator) {
-        Args.nullNotPermitted(generator, "generator");
-        this.legendItemLabelGenerator = generator;
+    public void axisChanged(AxisChangeEvent event) {
         fireChangeEvent();
     }
 
     /**
-     * Returns the legend item tool tip generator.
+     * Receives notification of a change to the plot's dataset.
+     * <P>
+     * The plot reacts by passing on a plot change event to all registered
+     * listeners.
      *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setLegendItemToolTipGenerator(XYSeriesLabelGenerator)
+     * @param event  information about the event (not used here).
      */
-    public XYSeriesLabelGenerator getLegendItemToolTipGenerator() {
-        return this.legendItemToolTipGenerator;
+    @Override
+    public void datasetChanged(DatasetChangeEvent event) {
+        PlotChangeEvent newEvent = new PlotChangeEvent(this);
+        newEvent.setType(ChartChangeEventType.DATASET_UPDATED);
+        notifyListeners(newEvent);
     }
 
     /**
-     * Sets the legend item tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Receives notification of a change to a marker that is assigned to the
+     * plot.
      *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemToolTipGenerator()
+     * @param event  the event.
      */
-    public void setLegendItemToolTipGenerator(XYSeriesLabelGenerator generator) {
-        this.legendItemToolTipGenerator = generator;
+    @Override
+    public void markerChanged(MarkerChangeEvent event) {
         fireChangeEvent();
     }
 
     /**
-     * Returns the legend item URL generator.
+     * Adjusts the supplied x-value.
      *
-     * @return The URL generator (possibly {@code null}).
+     * @param x  the x-value.
+     * @param w1  width 1.
+     * @param w2  width 2.
+     * @param edge  the edge (left or right).
      *
-     * @see #setLegendItemURLGenerator(XYSeriesLabelGenerator)
+     * @return The adjusted x-value.
      */
-    public XYSeriesLabelGenerator getLegendItemURLGenerator() {
-        return this.legendItemURLGenerator;
-    }
-
-    /**
-     * Sets the legend item URL generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemURLGenerator()
-     */
-    public void setLegendItemURLGenerator(XYSeriesLabelGenerator generator) {
-        this.legendItemURLGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the lower and upper bounds (range) of the x-values in the
-     * specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     *
-     * @see #findRangeBounds(XYDataset)
-     */
-    @Override
-    public Range findDomainBounds(XYDataset dataset) {
-        return findDomainBounds(dataset, false);
-    }
-
-    /**
-     * Returns the lower and upper bounds (range) of the x-values in the
-     * specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param includeInterval  include the interval (if any) for the dataset?
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     */
-    protected Range findDomainBounds(XYDataset dataset, boolean includeInterval) {
-        if (dataset == null) {
-            return null;
-        }
-        if (getDataBoundsIncludesVisibleSeriesOnly()) {
-            List visibleSeriesKeys = new ArrayList();
-            int seriesCount = dataset.getSeriesCount();
-            for (int s = 0; s < seriesCount; s++) {
-                if (isSeriesVisible(s)) {
-                    visibleSeriesKeys.add(dataset.getSeriesKey(s));
-                }
-            }
-            return DatasetUtils.findDomainBounds(dataset, visibleSeriesKeys, includeInterval);
-        }
-        return DatasetUtils.findDomainBounds(dataset, includeInterval);
-    }
-
-    /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     *
-     * @see #findDomainBounds(XYDataset)
-     */
-    @Override
-    public Range findRangeBounds(XYDataset dataset) {
-        return findRangeBounds(dataset, false);
-    }
-
-    /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     * @param includeInterval  include the interval (if any) for the dataset?
-     *
-     * @return The range ({@code null} if the dataset is {@code null}
-     *         or empty).
-     */
-    protected Range findRangeBounds(XYDataset dataset, boolean includeInterval) {
-        if (dataset == null) {
-            return null;
-        }
-        if (getDataBoundsIncludesVisibleSeriesOnly()) {
-            List visibleSeriesKeys = new ArrayList();
-            int seriesCount = dataset.getSeriesCount();
-            for (int s = 0; s < seriesCount; s++) {
-                if (isSeriesVisible(s)) {
-                    visibleSeriesKeys.add(dataset.getSeriesKey(s));
-                }
-            }
-            // the bounds should be calculated using just the items within
-            // the current range of the x-axis...if there is one
-            Range xRange = null;
-            XYPlot p = getPlot();
-            if (p != null) {
-                ValueAxis xAxis = null;
-                int index = p.getIndexOf(this);
-                if (index >= 0) {
-                    xAxis = this.plot.getDomainAxisForDataset(index);
-                }
-                if (xAxis != null) {
-                    xRange = xAxis.getRange();
-                }
-            }
-            if (xRange == null) {
-                xRange = new Range(Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY);
-            }
-            return DatasetUtils.findRangeBounds(dataset, visibleSeriesKeys, xRange, includeInterval);
-        }
-        return DatasetUtils.findRangeBounds(dataset, includeInterval);
-    }
-
-    /**
-     * Returns a (possibly empty) collection of legend items for the series
-     * that this renderer is responsible for drawing.
-     *
-     * @return The legend item collection (never {@code null}).
-     */
-    @Override
-    public LegendItemCollection getLegendItems() {
-        if (this.plot == null) {
-            return new LegendItemCollection();
-        }
-        LegendItemCollection result = new LegendItemCollection();
-        int index = this.plot.getIndexOf(this);
-        XYDataset dataset = this.plot.getDataset(index);
-        if (dataset != null) {
-            int seriesCount = dataset.getSeriesCount();
-            for (int i = 0; i < seriesCount; i++) {
-                if (isSeriesVisibleInLegend(i)) {
-                    LegendItem item = getLegendItem(index, i);
-                    if (item != null) {
-                        result.add(item);
-                    }
-                }
-            }
+    protected double getRectX(double x, double w1, double w2, RectangleEdge edge) {
+        double result = x;
+        if (edge == RectangleEdge.LEFT) {
+            result = result + w1;
+        } else if (edge == RectangleEdge.RIGHT) {
+            result = result + w2;
         }
         return result;
     }
 
     /**
-     * Returns a default legend item for the specified series.  Subclasses
-     * should override this method to generate customised items.
+     * Adjusts the supplied y-value.
      *
-     * @param datasetIndex  the dataset index (zero-based).
-     * @param series  the series index (zero-based).
+     * @param y  the x-value.
+     * @param h1  height 1.
+     * @param h2  height 2.
+     * @param edge  the edge (top or bottom).
      *
-     * @return A legend item for the series.
+     * @return The adjusted y-value.
      */
-    @Override
-    public LegendItem getLegendItem(int datasetIndex, int series) {
-        XYPlot xyplot = getPlot();
-        if (xyplot == null) {
-            return null;
+    protected double getRectY(double y, double h1, double h2, RectangleEdge edge) {
+        double result = y;
+        if (edge == RectangleEdge.TOP) {
+            result = result + h1;
+        } else if (edge == RectangleEdge.BOTTOM) {
+            result = result + h2;
         }
-        XYDataset dataset = xyplot.getDataset(datasetIndex);
-        if (dataset == null) {
-            return null;
-        }
-        String label = this.legendItemLabelGenerator.generateLabel(dataset, series);
-        String description = label;
-        String toolTipText = null;
-        if (getLegendItemToolTipGenerator() != null) {
-            toolTipText = getLegendItemToolTipGenerator().generateLabel(dataset, series);
-        }
-        String urlText = null;
-        if (getLegendItemURLGenerator() != null) {
-            urlText = getLegendItemURLGenerator().generateLabel(dataset, series);
-        }
-        Shape shape = lookupLegendShape(series);
-        Paint paint = lookupSeriesPaint(series);
-        LegendItem item = new LegendItem(label, paint);
-        item.setToolTipText(toolTipText);
-        item.setURLText(urlText);
-        item.setLabelFont(lookupLegendTextFont(series));
-        Paint labelPaint = lookupLegendTextPaint(series);
-        if (labelPaint != null) {
-            item.setLabelPaint(labelPaint);
-        }
-        item.setSeriesKey(dataset.getSeriesKey(series));
-        item.setSeriesIndex(series);
-        item.setDataset(dataset);
-        item.setDatasetIndex(datasetIndex);
-        if (getTreatLegendShapeAsLine()) {
-            item.setLineVisible(true);
-            item.setLine(shape);
-            item.setLinePaint(paint);
-            item.setShapeVisible(false);
-        } else {
-            Paint outlinePaint = lookupSeriesOutlinePaint(series);
-            Stroke outlineStroke = lookupSeriesOutlineStroke(series);
-            item.setOutlinePaint(outlinePaint);
-            item.setOutlineStroke(outlineStroke);
-        }
-        return item;
+        return result;
     }
 
     /**
-     * Fills a band between two values on the axis.  This can be used to color
-     * bands between the grid lines.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the domain axis.
-     * @param dataArea  the data area.
-     * @param start  the start value.
-     * @param end  the end value.
-     */
-    @Override
-    public void fillDomainGridBand(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double start, double end) {
-        double x1 = axis.valueToJava2D(start, dataArea, plot.getDomainAxisEdge());
-        double x2 = axis.valueToJava2D(end, dataArea, plot.getDomainAxisEdge());
-        Rectangle2D band;
-        if (plot.getOrientation() == PlotOrientation.VERTICAL) {
-            band = new Rectangle2D.Double(Math.min(x1, x2), dataArea.getMinY(), Math.abs(x2 - x1), dataArea.getHeight());
-        } else {
-            band = new Rectangle2D.Double(dataArea.getMinX(), Math.min(x1, x2), dataArea.getWidth(), Math.abs(x2 - x1));
-        }
-        Paint paint = plot.getDomainTickBandPaint();
-        if (paint != null) {
-            g2.setPaint(paint);
-            g2.fill(band);
-        }
-    }
-
-    /**
-     * Fills a band between two values on the range axis.  This can be used to
-     * color bands between the grid lines.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the range axis.
-     * @param dataArea  the data area.
-     * @param start  the start value.
-     * @param end  the end value.
-     */
-    @Override
-    public void fillRangeGridBand(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double start, double end) {
-        double y1 = axis.valueToJava2D(start, dataArea, plot.getRangeAxisEdge());
-        double y2 = axis.valueToJava2D(end, dataArea, plot.getRangeAxisEdge());
-        Rectangle2D band;
-        if (plot.getOrientation() == PlotOrientation.VERTICAL) {
-            band = new Rectangle2D.Double(dataArea.getMinX(), Math.min(y1, y2), dataArea.getWidth(), Math.abs(y2 - y1));
-        } else {
-            band = new Rectangle2D.Double(Math.min(y1, y2), dataArea.getMinY(), Math.abs(y2 - y1), dataArea.getHeight());
-        }
-        Paint paint = plot.getRangeTickBandPaint();
-        if (paint != null) {
-            g2.setPaint(paint);
-            g2.fill(band);
-        }
-    }
-
-    /**
-     * Draws a line perpendicular to the domain axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value at which the grid line should be drawn.
-     * @param paint  the paint ({@code null} not permitted).
-     * @param stroke  the stroke ({@code null} not permitted).
-     */
-    @Override
-    public void drawDomainLine(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke) {
-        Range range = axis.getRange();
-        if (!range.contains(value)) {
-            return;
-        }
-        PlotOrientation orientation = plot.getOrientation();
-        Line2D line = null;
-        double v = axis.valueToJava2D(value, dataArea, plot.getDomainAxisEdge());
-        if (orientation.isHorizontal()) {
-            line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-        } else if (orientation.isVertical()) {
-            line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-        }
-        g2.setPaint(paint);
-        g2.setStroke(stroke);
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        g2.draw(line);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
-    }
-
-    /**
-     * Draws a line perpendicular to the range axis.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value at which the grid line should be drawn.
-     * @param paint  the paint.
-     * @param stroke  the stroke.
-     */
-    @Override
-    public void drawRangeLine(Graphics2D g2, XYPlot plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke) {
-        Range range = axis.getRange();
-        if (!range.contains(value)) {
-            return;
-        }
-        PlotOrientation orientation = plot.getOrientation();
-        Line2D line = null;
-        double v = axis.valueToJava2D(value, dataArea, plot.getRangeAxisEdge());
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-        }
-        g2.setPaint(paint);
-        g2.setStroke(stroke);
-        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
-        g2.draw(line);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
-    }
-
-    /**
-     * Draws a line on the chart perpendicular to the x-axis to mark
-     * a value or range of values.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param domainAxis  the domain axis.
-     * @param marker  the marker line.
-     * @param dataArea  the axis data area.
-     */
-    @Override
-    public void drawDomainMarker(Graphics2D g2, XYPlot plot, ValueAxis domainAxis, Marker marker, Rectangle2D dataArea) {
-        if (marker instanceof ValueMarker) {
-            ValueMarker vm = (ValueMarker) marker;
-            double value = vm.getValue();
-            Range range = domainAxis.getRange();
-            if (!range.contains(value)) {
-                return;
-            }
-            double v = domainAxis.valueToJava2D(value, dataArea, plot.getDomainAxisEdge());
-            PlotOrientation orientation = plot.getOrientation();
-            Line2D line = null;
-            switch(orientation) {
-                case HORIZONTAL:
-                    line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-                    break;
-                case VERTICAL:
-                    line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-                    break;
-                default:
-                    throw new IllegalStateException("Unrecognised orientation.");
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            g2.setPaint(marker.getPaint());
-            g2.setStroke(marker.getStroke());
-            g2.draw(line);
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateDomainMarkerTextAnchorPoint(g2, orientation, dataArea, line.getBounds2D(), marker.getLabelOffset(), LengthAdjustmentType.EXPAND, anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        } else if (marker instanceof IntervalMarker) {
-            IntervalMarker im = (IntervalMarker) marker;
-            double start = im.getStartValue();
-            double end = im.getEndValue();
-            Range range = domainAxis.getRange();
-            if (!(range.intersects(start, end))) {
-                return;
-            }
-            double start2d = domainAxis.valueToJava2D(start, dataArea, plot.getDomainAxisEdge());
-            double end2d = domainAxis.valueToJava2D(end, dataArea, plot.getDomainAxisEdge());
-            double low = Math.min(start2d, end2d);
-            double high = Math.max(start2d, end2d);
-            PlotOrientation orientation = plot.getOrientation();
-            Rectangle2D rect = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                // clip top and bottom bounds to data area
-                low = Math.max(low, dataArea.getMinY());
-                high = Math.min(high, dataArea.getMaxY());
-                rect = new Rectangle2D.Double(dataArea.getMinX(), low, dataArea.getWidth(), high - low);
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                // clip left and right bounds to data area
-                low = Math.max(low, dataArea.getMinX());
-                high = Math.min(high, dataArea.getMaxX());
-                rect = new Rectangle2D.Double(low, dataArea.getMinY(), high - low, dataArea.getHeight());
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            Paint p = marker.getPaint();
-            if (p instanceof GradientPaint) {
-                GradientPaint gp = (GradientPaint) p;
-                GradientPaintTransformer t = im.getGradientPaintTransformer();
-                if (t != null) {
-                    gp = t.transform(gp, rect);
-                }
-                g2.setPaint(gp);
-            } else {
-                g2.setPaint(p);
-            }
-            g2.fill(rect);
-            // now draw the outlines, if visible...
-            if (im.getOutlinePaint() != null && im.getOutlineStroke() != null) {
-                if (orientation == PlotOrientation.VERTICAL) {
-                    Line2D line = new Line2D.Double();
-                    double y0 = dataArea.getMinY();
-                    double y1 = dataArea.getMaxY();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(start2d, y0, start2d, y1);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(end2d, y0, end2d, y1);
-                        g2.draw(line);
-                    }
-                } else {
-                    // PlotOrientation.HORIZONTAL
-                    Line2D line = new Line2D.Double();
-                    double x0 = dataArea.getMinX();
-                    double x1 = dataArea.getMaxX();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(x0, start2d, x1, start2d);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(x0, end2d, x1, end2d);
-                        g2.draw(line);
-                    }
-                }
-            }
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateDomainMarkerTextAnchorPoint(g2, orientation, dataArea, rect, marker.getLabelOffset(), marker.getLabelOffsetType(), anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        }
-    }
-
-    /**
-     * Calculates the {@code (x, y)} coordinates for drawing a marker label.
-     *
-     * @param g2  the graphics device.
-     * @param orientation  the plot orientation.
-     * @param dataArea  the data area.
-     * @param markerArea  the rectangle surrounding the marker area.
-     * @param markerOffset  the marker label offset.
-     * @param labelOffsetType  the label offset type.
-     * @param anchor  the label anchor.
-     *
-     * @return The coordinates for drawing the marker label.
-     */
-    protected Point2D calculateDomainMarkerTextAnchorPoint(Graphics2D g2, PlotOrientation orientation, Rectangle2D dataArea, Rectangle2D markerArea, RectangleInsets markerOffset, LengthAdjustmentType labelOffsetType, RectangleAnchor anchor) {
-        Rectangle2D anchorRect = null;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, LengthAdjustmentType.CONTRACT, labelOffsetType);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, labelOffsetType, LengthAdjustmentType.CONTRACT);
-        }
-        return anchor.getAnchorPoint(anchorRect);
-    }
-
-    /**
-     * Draws a line on the chart perpendicular to the y-axis to mark a value
-     * or range of values.
-     *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param rangeAxis  the range axis.
-     * @param marker  the marker line.
-     * @param dataArea  the axis data area.
-     */
-    @Override
-    public void drawRangeMarker(Graphics2D g2, XYPlot plot, ValueAxis rangeAxis, Marker marker, Rectangle2D dataArea) {
-        if (marker instanceof ValueMarker) {
-            ValueMarker vm = (ValueMarker) marker;
-            double value = vm.getValue();
-            Range range = rangeAxis.getRange();
-            if (!range.contains(value)) {
-                return;
-            }
-            double v = rangeAxis.valueToJava2D(value, dataArea, plot.getRangeAxisEdge());
-            PlotOrientation orientation = plot.getOrientation();
-            Line2D line = null;
-            switch(orientation) {
-                case HORIZONTAL:
-                    line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
-                    break;
-                case VERTICAL:
-                    line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
-                    break;
-                default:
-                    throw new IllegalStateException("Unrecognised orientation.");
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            g2.setPaint(marker.getPaint());
-            g2.setStroke(marker.getStroke());
-            g2.draw(line);
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateRangeMarkerTextAnchorPoint(g2, orientation, dataArea, line.getBounds2D(), marker.getLabelOffset(), LengthAdjustmentType.EXPAND, anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        } else if (marker instanceof IntervalMarker) {
-            IntervalMarker im = (IntervalMarker) marker;
-            double start = im.getStartValue();
-            double end = im.getEndValue();
-            Range range = rangeAxis.getRange();
-            if (!(range.intersects(start, end))) {
-                return;
-            }
-            double start2d = rangeAxis.valueToJava2D(start, dataArea, plot.getRangeAxisEdge());
-            double end2d = rangeAxis.valueToJava2D(end, dataArea, plot.getRangeAxisEdge());
-            double low = Math.min(start2d, end2d);
-            double high = Math.max(start2d, end2d);
-            PlotOrientation orientation = plot.getOrientation();
-            Rectangle2D rect = null;
-            if (orientation == PlotOrientation.HORIZONTAL) {
-                // clip left and right bounds to data area
-                low = Math.max(low, dataArea.getMinX());
-                high = Math.min(high, dataArea.getMaxX());
-                rect = new Rectangle2D.Double(low, dataArea.getMinY(), high - low, dataArea.getHeight());
-            } else if (orientation == PlotOrientation.VERTICAL) {
-                // clip top and bottom bounds to data area
-                low = Math.max(low, dataArea.getMinY());
-                high = Math.min(high, dataArea.getMaxY());
-                rect = new Rectangle2D.Double(dataArea.getMinX(), low, dataArea.getWidth(), high - low);
-            }
-            final Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, marker.getAlpha()));
-            Paint p = marker.getPaint();
-            if (p instanceof GradientPaint) {
-                GradientPaint gp = (GradientPaint) p;
-                GradientPaintTransformer t = im.getGradientPaintTransformer();
-                if (t != null) {
-                    gp = t.transform(gp, rect);
-                }
-                g2.setPaint(gp);
-            } else {
-                g2.setPaint(p);
-            }
-            g2.fill(rect);
-            // now draw the outlines, if visible...
-            if (im.getOutlinePaint() != null && im.getOutlineStroke() != null) {
-                if (orientation == PlotOrientation.VERTICAL) {
-                    Line2D line = new Line2D.Double();
-                    double x0 = dataArea.getMinX();
-                    double x1 = dataArea.getMaxX();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(x0, start2d, x1, start2d);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(x0, end2d, x1, end2d);
-                        g2.draw(line);
-                    }
-                } else {
-                    // PlotOrientation.HORIZONTAL
-                    Line2D line = new Line2D.Double();
-                    double y0 = dataArea.getMinY();
-                    double y1 = dataArea.getMaxY();
-                    g2.setPaint(im.getOutlinePaint());
-                    g2.setStroke(im.getOutlineStroke());
-                    if (range.contains(start)) {
-                        line.setLine(start2d, y0, start2d, y1);
-                        g2.draw(line);
-                    }
-                    if (range.contains(end)) {
-                        line.setLine(end2d, y0, end2d, y1);
-                        g2.draw(line);
-                    }
-                }
-            }
-            String label = marker.getLabel();
-            RectangleAnchor anchor = marker.getLabelAnchor();
-            if (label != null) {
-                Font labelFont = marker.getLabelFont();
-                g2.setFont(labelFont);
-                Point2D coords = calculateRangeMarkerTextAnchorPoint(g2, orientation, dataArea, rect, marker.getLabelOffset(), marker.getLabelOffsetType(), anchor);
-                Rectangle2D r = TextUtils.calcAlignedStringBounds(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-                g2.setPaint(marker.getLabelBackgroundColor());
-                g2.fill(r);
-                g2.setPaint(marker.getLabelPaint());
-                TextUtils.drawAlignedString(label, g2, (float) coords.getX(), (float) coords.getY(), marker.getLabelTextAnchor());
-            }
-            g2.setComposite(originalComposite);
-        }
-    }
-
-    /**
-     * Calculates the (x, y) coordinates for drawing a marker label.
-     *
-     * @param g2  the graphics device.
-     * @param orientation  the plot orientation.
-     * @param dataArea  the data area.
-     * @param markerArea  the marker area.
-     * @param markerOffset  the marker offset.
-     * @param labelOffsetForRange  ??
-     * @param anchor  the label anchor.
-     *
-     * @return The coordinates for drawing the marker label.
-     */
-    private Point2D calculateRangeMarkerTextAnchorPoint(Graphics2D g2, PlotOrientation orientation, Rectangle2D dataArea, Rectangle2D markerArea, RectangleInsets markerOffset, LengthAdjustmentType labelOffsetForRange, RectangleAnchor anchor) {
-        Rectangle2D anchorRect = null;
-        if (orientation == PlotOrientation.HORIZONTAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, labelOffsetForRange, LengthAdjustmentType.CONTRACT);
-        } else if (orientation == PlotOrientation.VERTICAL) {
-            anchorRect = markerOffset.createAdjustedRectangle(markerArea, LengthAdjustmentType.CONTRACT, labelOffsetForRange);
-        }
-        return anchor.getAnchorPoint(anchorRect);
-    }
-
-    /**
-     * Returns a clone of the renderer.
-     *
-     * @return A clone.
-     *
-     * @throws CloneNotSupportedException if the renderer does not support
-     *         cloning.
-     */
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        AbstractXYItemRenderer clone = (AbstractXYItemRenderer) super.clone();
-        // 'plot' : just retain reference, not a deep copy
-        clone.itemLabelGeneratorMap = CloneUtils.cloneMapValues(this.itemLabelGeneratorMap);
-        clone.defaultItemLabelGenerator = CloneUtils.clone(this.defaultItemLabelGenerator);
-        clone.toolTipGeneratorMap = CloneUtils.cloneMapValues(this.toolTipGeneratorMap);
-        clone.defaultToolTipGenerator = CloneUtils.clone(this.defaultToolTipGenerator);
-        clone.legendItemLabelGenerator = CloneUtils.clone(this.legendItemLabelGenerator);
-        clone.legendItemToolTipGenerator = CloneUtils.clone(this.legendItemToolTipGenerator);
-        clone.legendItemURLGenerator = CloneUtils.clone(this.legendItemURLGenerator);
-        clone.foregroundAnnotations = CloneUtils.cloneList(this.foregroundAnnotations);
-        clone.backgroundAnnotations = CloneUtils.cloneList(this.backgroundAnnotations);
-        return clone;
-    }
-
-    /**
-     * Tests this renderer for equality with another object.
+     * Tests this plot for equality with another object.
      *
      * @param obj  the object ({@code null} permitted).
      *
@@ -1202,237 +1553,210 @@ public abstract class AbstractXYItemRenderer extends AbstractRenderer implements
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof AbstractXYItemRenderer)) {
+        if (!(obj instanceof Plot)) {
             return false;
         }
-        AbstractXYItemRenderer that = (AbstractXYItemRenderer) obj;
-        if (!this.itemLabelGeneratorMap.equals(that.itemLabelGeneratorMap)) {
+        Plot that = (Plot) obj;
+        if (!Objects.equals(this.noDataMessage, that.noDataMessage)) {
             return false;
         }
-        if (!Objects.equals(this.defaultItemLabelGenerator, that.defaultItemLabelGenerator)) {
+        if (!Objects.equals(this.noDataMessageFont, that.noDataMessageFont)) {
             return false;
         }
-        if (!this.toolTipGeneratorMap.equals(that.toolTipGeneratorMap)) {
+        if (!PaintUtils.equal(this.noDataMessagePaint, that.noDataMessagePaint)) {
             return false;
         }
-        if (!Objects.equals(this.defaultToolTipGenerator, that.defaultToolTipGenerator)) {
+        if (!Objects.equals(this.insets, that.insets)) {
             return false;
         }
-        if (!Objects.equals(this.urlGenerator, that.urlGenerator)) {
+        if (this.outlineVisible != that.outlineVisible) {
             return false;
         }
-        if (!this.foregroundAnnotations.equals(that.foregroundAnnotations)) {
+        if (!Objects.equals(this.outlineStroke, that.outlineStroke)) {
             return false;
         }
-        if (!this.backgroundAnnotations.equals(that.backgroundAnnotations)) {
+        if (!PaintUtils.equal(this.outlinePaint, that.outlinePaint)) {
             return false;
         }
-        if (!Objects.equals(this.legendItemLabelGenerator, that.legendItemLabelGenerator)) {
+        if (!PaintUtils.equal(this.backgroundPaint, that.backgroundPaint)) {
             return false;
         }
-        if (!Objects.equals(this.legendItemToolTipGenerator, that.legendItemToolTipGenerator)) {
+        if (!Objects.equals(this.backgroundImage, that.backgroundImage)) {
             return false;
         }
-        if (!Objects.equals(this.legendItemURLGenerator, that.legendItemURLGenerator)) {
+        if (this.backgroundImageAlignment != that.backgroundImageAlignment) {
             return false;
         }
-        return super.equals(obj);
-    }
-
-    @Override
-    public int hashCode() {
-        int result = super.hashCode();
-        result = 31 * result + itemLabelGeneratorMap.hashCode();
-        result = 31 * result + (defaultItemLabelGenerator != null ? defaultItemLabelGenerator.hashCode() : 0);
-        result = 31 * result + toolTipGeneratorMap.hashCode();
-        result = 31 * result + (defaultToolTipGenerator != null ? defaultToolTipGenerator.hashCode() : 0);
-        result = 31 * result + (urlGenerator != null ? urlGenerator.hashCode() : 0);
-        result = 31 * result + (legendItemLabelGenerator != null ? legendItemLabelGenerator.hashCode() : 0);
-        result = 31 * result + (legendItemToolTipGenerator != null ? legendItemToolTipGenerator.hashCode() : 0);
-        result = 31 * result + (legendItemURLGenerator != null ? legendItemURLGenerator.hashCode() : 0);
-        return result;
-    }
-
-    /**
-     * Returns the drawing supplier from the plot.
-     *
-     * @return The drawing supplier (possibly {@code null}).
-     */
-    @Override
-    public DrawingSupplier getDrawingSupplier() {
-        DrawingSupplier result = null;
-        XYPlot p = getPlot();
-        if (p != null) {
-            result = p.getDrawingSupplier();
+        if (this.backgroundImageAlpha != that.backgroundImageAlpha) {
+            return false;
         }
-        return result;
+        if (this.foregroundAlpha != that.foregroundAlpha) {
+            return false;
+        }
+        if (this.backgroundAlpha != that.backgroundAlpha) {
+            return false;
+        }
+        if (!this.drawingSupplier.equals(that.drawingSupplier)) {
+            return false;
+        }
+        if (this.notify != that.notify) {
+            return false;
+        }
+        return true;
     }
 
     /**
-     * Considers the current (x, y) coordinate and updates the crosshair point
-     * if it meets the criteria (usually means the (x, y) coordinate is the
-     * closest to the anchor point so far).
+     * Creates a clone of the plot.
      *
-     * @param crosshairState  the crosshair state ({@code null} permitted,
-     *                        but the method does nothing in that case).
-     * @param x  the x-value (in data space).
-     * @param y  the y-value (in data space).
-     * @param datasetIndex  the index of the dataset for the point.
-     * @param transX  the x-value translated to Java2D space.
-     * @param transY  the y-value translated to Java2D space.
-     * @param orientation  the plot orientation ({@code null} not permitted).
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if some component of the plot does not
+     *         support cloning.
      */
-    protected void updateCrosshairValues(CrosshairState crosshairState, double x, double y, int datasetIndex, double transX, double transY, PlotOrientation orientation) {
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Plot clone = (Plot) super.clone();
+        // private Plot parent <-- don't clone the parent plot, but take care
+        // childs in combined plots instead
+        clone.drawingSupplier = CloneUtils.clone(this.drawingSupplier);
+        clone.listenerList = new EventListenerList();
+        return clone;
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.noDataMessagePaint, stream);
+        SerialUtils.writeStroke(this.outlineStroke, stream);
+        SerialUtils.writePaint(this.outlinePaint, stream);
+        // backgroundImage
+        SerialUtils.writePaint(this.backgroundPaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.noDataMessagePaint = SerialUtils.readPaint(stream);
+        this.outlineStroke = SerialUtils.readStroke(stream);
+        this.outlinePaint = SerialUtils.readPaint(stream);
+        // backgroundImage
+        this.backgroundPaint = SerialUtils.readPaint(stream);
+        this.listenerList = new EventListenerList();
+    }
+
+    /**
+     * Resolves a domain axis location for a given plot orientation.
+     *
+     * @param location  the location ({@code null} not permitted).
+     * @param orientation  the orientation ({@code null} not permitted).
+     *
+     * @return The edge (never {@code null}).
+     */
+    public static RectangleEdge resolveDomainAxisLocation(AxisLocation location, PlotOrientation orientation) {
+        Args.nullNotPermitted(location, "location");
         Args.nullNotPermitted(orientation, "orientation");
-        if (crosshairState != null) {
-            // do we need to update the crosshair values?
-            if (this.plot.isDomainCrosshairLockedOnData()) {
-                if (this.plot.isRangeCrosshairLockedOnData()) {
-                    // both axes
-                    crosshairState.updateCrosshairPoint(x, y, datasetIndex, transX, transY, orientation);
-                } else {
-                    // just the domain axis...
-                    crosshairState.updateCrosshairX(x, transX, datasetIndex);
+        RectangleEdge result = null;
+        switch(location) {
+            case TOP_OR_RIGHT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.RIGHT;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.TOP;
                 }
-            } else {
-                if (this.plot.isRangeCrosshairLockedOnData()) {
-                    // just the range axis...
-                    crosshairState.updateCrosshairY(y, transY, datasetIndex);
-                }
-            }
-        }
-    }
-
-    /**
-     * Draws an item label.
-     *
-     * @param g2  the graphics device.
-     * @param orientation  the orientation.
-     * @param dataset  the dataset.
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
-     * @param x  the x coordinate (in Java2D space).
-     * @param y  the y coordinate (in Java2D space).
-     * @param negative  indicates a negative value (which affects the item
-     *                  label position).
-     */
-    protected void drawItemLabel(Graphics2D g2, PlotOrientation orientation, XYDataset dataset, int series, int item, double x, double y, boolean negative) {
-        XYItemLabelGenerator generator = getItemLabelGenerator(series, item);
-        if (generator != null) {
-            Font labelFont = getItemLabelFont(series, item);
-            Paint paint = getItemLabelPaint(series, item);
-            g2.setFont(labelFont);
-            g2.setPaint(paint);
-            String label = generator.generateLabel(dataset, series, item);
-            // get the label position..
-            ItemLabelPosition position;
-            if (!negative) {
-                position = getPositiveItemLabelPosition(series, item);
-            } else {
-                position = getNegativeItemLabelPosition(series, item);
-            }
-            // work out the label anchor point...
-            Point2D anchorPoint = calculateLabelAnchorPoint(position.getItemLabelAnchor(), x, y, orientation);
-            TextUtils.drawRotatedString(label, g2, (float) anchorPoint.getX(), (float) anchorPoint.getY(), position.getTextAnchor(), position.getAngle(), position.getRotationAnchor());
-        }
-    }
-
-    /**
-     * Draws all the annotations for the specified layer.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the data area.
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param layer  the layer ({@code null} not permitted).
-     * @param info  the plot rendering info.
-     */
-    @Override
-    public void drawAnnotations(Graphics2D g2, Rectangle2D dataArea, ValueAxis domainAxis, ValueAxis rangeAxis, Layer layer, PlotRenderingInfo info) {
-        Args.nullNotPermitted(layer, "layer");
-        List<XYAnnotation> toDraw = new ArrayList<>();
-        switch(layer) {
-            case FOREGROUND:
-                toDraw.addAll(this.foregroundAnnotations);
                 break;
-            case BACKGROUND:
-                toDraw.addAll(this.backgroundAnnotations);
+            case TOP_OR_LEFT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.LEFT;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.TOP;
+                }
+                break;
+            case BOTTOM_OR_RIGHT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.RIGHT;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.BOTTOM;
+                }
+                break;
+            case BOTTOM_OR_LEFT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.LEFT;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.BOTTOM;
+                }
                 break;
             default:
-                // should not get here
-                throw new RuntimeException("Unknown layer.");
+                break;
         }
-        int index = this.plot.getIndexOf(this);
-        for (XYAnnotation annotation : toDraw) {
-            annotation.draw(g2, this.plot, dataArea, domainAxis, rangeAxis, index, info);
+        // the above should cover all the options...
+        if (result == null) {
+            throw new IllegalStateException("resolveDomainAxisLocation()");
         }
+        return result;
     }
 
     /**
-     * Adds an entity to the collection.  Note the the {@code entityX} and
-     * {@code entityY} coordinates are in Java2D space, should already be
-     * adjusted for the plot orientation, and will only be used if
-     * {@code hotspot} is {@code null}.
+     * Resolves a range axis location for a given plot orientation.
      *
-     * @param entities  the entity collection being populated.
-     * @param hotspot  the entity area (if {@code null} a default will be
-     *              used).
-     * @param dataset  the dataset.
-     * @param series  the series.
-     * @param item  the item.
-     * @param entityX  the entity x-coordinate (in Java2D space, only used if
-     *         {@code hotspot} is {@code null}).
-     * @param entityY  the entity y-coordinate (in Java2D space, only used if
-     *         {@code hotspot} is {@code null}).
-     */
-    protected void addEntity(EntityCollection entities, Shape hotspot, XYDataset dataset, int series, int item, double entityX, double entityY) {
-        if (!getItemCreateEntity(series, item)) {
-            return;
-        }
-        // if not hotspot is provided, we create a default based on the
-        // provided data coordinates (which are already in Java2D space)
-        if (hotspot == null) {
-            double r = getDefaultEntityRadius();
-            double w = r * 2;
-            hotspot = new Ellipse2D.Double(entityX - r, entityY - r, w, w);
-        }
-        String tip = null;
-        XYToolTipGenerator generator = getToolTipGenerator(series, item);
-        if (generator != null) {
-            tip = generator.generateToolTip(dataset, series, item);
-        }
-        String url = null;
-        if (getURLGenerator() != null) {
-            url = getURLGenerator().generateURL(dataset, series, item);
-        }
-        XYItemEntity entity = new XYItemEntity(hotspot, dataset, series, item, tip, url);
-        entities.add(entity);
-    }
-
-    /**
-     * Utility method delegating to {@link GeneralPath#moveTo} taking double as
-     * parameters.
+     * @param location  the location ({@code null} not permitted).
+     * @param orientation  the orientation ({@code null} not permitted).
      *
-     * @param hotspot  the region under construction ({@code null} not
-     *           permitted);
-     * @param x  the x coordinate;
-     * @param y  the y coordinate;
+     * @return The edge (never {@code null}).
      */
-    protected static void moveTo(GeneralPath hotspot, double x, double y) {
-        hotspot.moveTo((float) x, (float) y);
-    }
-
-    /**
-     * Utility method delegating to {@link GeneralPath#lineTo} taking double as
-     * parameters.
-     *
-     * @param hotspot  the region under construction ({@code null} not
-     *           permitted);
-     * @param x  the x coordinate;
-     * @param y  the y coordinate;
-     */
-    protected static void lineTo(GeneralPath hotspot, double x, double y) {
-        hotspot.lineTo((float) x, (float) y);
+    public static RectangleEdge resolveRangeAxisLocation(AxisLocation location, PlotOrientation orientation) {
+        Args.nullNotPermitted(location, "location");
+        Args.nullNotPermitted(orientation, "orientation");
+        RectangleEdge result = null;
+        switch(location) {
+            case TOP_OR_RIGHT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.TOP;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.RIGHT;
+                }
+                break;
+            case TOP_OR_LEFT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.TOP;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.LEFT;
+                }
+                break;
+            case BOTTOM_OR_RIGHT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.BOTTOM;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.RIGHT;
+                }
+                break;
+            case BOTTOM_OR_LEFT:
+                if (orientation == PlotOrientation.HORIZONTAL) {
+                    result = RectangleEdge.BOTTOM;
+                } else if (orientation == PlotOrientation.VERTICAL) {
+                    result = RectangleEdge.LEFT;
+                }
+                break;
+            default:
+                break;
+        }
+        // the above should cover all the options...
+        if (result == null) {
+            throw new IllegalStateException("resolveRangeAxisLocation()");
+        }
+        return result;
     }
 }
 /* ======================================================
@@ -1461,33 +1785,402 @@ public abstract class AbstractXYItemRenderer extends AbstractRenderer implements
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ------------------------------
- * XIntervalSeriesCollection.java
- * ------------------------------
+ * ----------------------------------------
+ * DirectionalGradientPaintTransformer.java
+ * ----------------------------------------
+ * (C) Copyright 2013-2021 by Peter Kolb and Contributors.
+ *
+ * Original Author:  Peter Kolb;
+ * Contributor(s):   David Gilbert;
+ *
+ */
+/**
+ * Transforms a {@code GradientPaint} to range over the width of a target
+ * shape.  The orientation of the resulting {@code GradientPaint}
+ * depend on the coordinates of the original paint:
+ *
+ * <ul>
+ * <li> If the original paint starts at 0,0 and ends at a point 0, y != 0,
+ * the resulting paint will have a vertical orientation.
+ * <li> If the original paint starts at 0,0 and ends at a point x !=0, 0,
+ * the resulting paint will have a horizontal orientation.
+ * <li> If the original paint starts at 0,0 and ends at a point x != 0, y != 0,
+ * the resulting paint will have a diagonal orientation from the upper left to
+ * the lower right edge. Lines of equal color will have a 45 ∞ angle,
+ * pointing upwards from left to right.
+ * <li> If the original paint starts at a point x != 0, y != 0,
+ * the resulting paint will have a diagonal orientation from the lower left to
+ * the upper right edge. Lines of equal color will have a 45 ∞ angle,
+ * pointing downwards from left to right.
+ * </ul>
+ * <p>In all cases, the cyclic flag of the original paint will be taken into
+ * account.</p>
+ */
+public class DirectionalGradientPaintTransformer implements GradientPaintTransformer {
+
+    /**
+     * Default constructor.
+     */
+    public DirectionalGradientPaintTransformer() {
+        super();
+    }
+
+    /**
+     * Transforms a {@code GradientPaint} instance to fit some target
+     * shape.
+     *
+     * @param paint  the original paint (not {@code null}).
+     * @param target  the reference area (not {@code null}).
+     *
+     * @return A transformed paint.
+     */
+    @Override
+    public GradientPaint transform(GradientPaint paint, Shape target) {
+        //get the coordinates of the original GradientPaint
+        final double px1 = paint.getPoint1().getX();
+        final double py1 = paint.getPoint1().getY();
+        final double px2 = paint.getPoint2().getX();
+        final double py2 = paint.getPoint2().getY();
+        //get the coordinates of the shape that is to be filled
+        final Rectangle2D bounds = target.getBounds();
+        final float bx = (float) bounds.getX();
+        final float by = (float) bounds.getY();
+        final float bw = (float) bounds.getWidth();
+        final float bh = (float) bounds.getHeight();
+        //reserve variables to store the coordinates of the resulting GradientPaint
+        float rx1, ry1, rx2, ry2;
+        if (px1 == 0 && py1 == 0) {
+            //start point is upper left corner
+            rx1 = bx;
+            ry1 = by;
+            if (px2 != 0.0f && py2 != 0.0f) {
+                //end point is lower right corner --> diagonal gradient
+                float offset = (paint.isCyclic()) ? (bw + bh) / 4.0f : (bw + bh) / 2.0f;
+                rx2 = bx + offset;
+                ry2 = by + offset;
+            } else {
+                //end point is either lower left corner --> vertical gradient
+                //or end point is upper right corner --> horizontal gradient
+                rx2 = (px2 == 0) ? rx1 : (paint.isCyclic() ? (rx1 + bw / 2.0f) : (rx1 + bw));
+                ry2 = (py2 == 0) ? ry1 : (paint.isCyclic() ? (ry1 + bh / 2.0f) : (ry1 + bh));
+            }
+        } else {
+            //start point is lower left right corner --> diagonal gradient
+            rx1 = bx;
+            ry1 = by + bh;
+            float offset = (paint.isCyclic()) ? (bw + bh) / 4.0f : (bw + bh) / 2.0f;
+            rx2 = bx + offset;
+            ry2 = by + bh - offset;
+        }
+        return new GradientPaint(rx1, ry1, paint.getColor1(), rx2, ry2, paint.getColor2(), paint.isCyclic());
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ---------
+ * Task.java
+ * ---------
+ * (C) Copyright 2003-present, by David Gilbert.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   -;
+ *
+ */
+/**
+ * A simple representation of a task.  The task has a description and a
+ * duration.  You can add sub-tasks to the task.
+ */
+public class Task implements Cloneable, PublicCloneable, Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = 1094303785346988894L;
+
+    /**
+     * The task description.
+     */
+    private String description;
+
+    /**
+     * The time period for the task (estimated or actual).
+     */
+    private TimePeriod duration;
+
+    /**
+     * The percent complete ({@code null} is permitted).
+     */
+    private Double percentComplete;
+
+    /**
+     * Storage for the sub-tasks (if any).
+     */
+    private List subtasks;
+
+    /**
+     * Creates a new task.
+     *
+     * @param description  the task description ({@code null} not
+     *                     permitted).
+     * @param duration  the task duration ({@code null} permitted).
+     */
+    public Task(String description, TimePeriod duration) {
+        Args.nullNotPermitted(description, "description");
+        this.description = description;
+        this.duration = duration;
+        this.percentComplete = null;
+        this.subtasks = new java.util.ArrayList();
+    }
+
+    /**
+     * Creates a new task.
+     *
+     * @param description  the task description ({@code null} not
+     *                     permitted).
+     * @param start  the start date ({@code null} not permitted).
+     * @param end  the end date ({@code null} not permitted).
+     */
+    public Task(String description, Date start, Date end) {
+        this(description, new SimpleTimePeriod(start, end));
+    }
+
+    /**
+     * Returns the task description.
+     *
+     * @return The task description (never {@code null}).
+     */
+    public String getDescription() {
+        return this.description;
+    }
+
+    /**
+     * Sets the task description.
+     *
+     * @param description  the description ({@code null} not permitted).
+     */
+    public void setDescription(String description) {
+        Args.nullNotPermitted(description, "description");
+        this.description = description;
+    }
+
+    /**
+     * Returns the duration (actual or estimated) of the task.
+     *
+     * @return The task duration (possibly {@code null}).
+     */
+    public TimePeriod getDuration() {
+        return this.duration;
+    }
+
+    /**
+     * Sets the task duration (actual or estimated).
+     *
+     * @param duration  the duration ({@code null} permitted).
+     */
+    public void setDuration(TimePeriod duration) {
+        this.duration = duration;
+    }
+
+    /**
+     * Returns the percentage complete for this task.
+     *
+     * @return The percentage complete (possibly {@code null}).
+     */
+    public Double getPercentComplete() {
+        return this.percentComplete;
+    }
+
+    /**
+     * Sets the percentage complete for the task.
+     *
+     * @param percent  the percentage ({@code null} permitted).
+     */
+    public void setPercentComplete(Double percent) {
+        this.percentComplete = percent;
+    }
+
+    /**
+     * Sets the percentage complete for the task.
+     *
+     * @param percent  the percentage.
+     */
+    public void setPercentComplete(double percent) {
+        setPercentComplete(Double.valueOf(percent));
+    }
+
+    /**
+     * Adds a sub-task to the task.
+     *
+     * @param subtask  the subtask ({@code null} not permitted).
+     */
+    public void addSubtask(Task subtask) {
+        Args.nullNotPermitted(subtask, "subtask");
+        this.subtasks.add(subtask);
+    }
+
+    /**
+     * Removes a sub-task from the task.
+     *
+     * @param subtask  the subtask.
+     */
+    public void removeSubtask(Task subtask) {
+        this.subtasks.remove(subtask);
+    }
+
+    /**
+     * Returns the sub-task count.
+     *
+     * @return The sub-task count.
+     */
+    public int getSubtaskCount() {
+        return this.subtasks.size();
+    }
+
+    /**
+     * Returns a sub-task.
+     *
+     * @param index  the index.
+     *
+     * @return The sub-task.
+     */
+    public Task getSubtask(int index) {
+        return (Task) this.subtasks.get(index);
+    }
+
+    /**
+     * Tests this object for equality with an arbitrary object.
+     *
+     * @param object  the other object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object object) {
+        if (object == this) {
+            return true;
+        }
+        if (!(object instanceof Task)) {
+            return false;
+        }
+        Task that = (Task) object;
+        if (!Objects.equals(this.description, that.description)) {
+            return false;
+        }
+        if (!Objects.equals(this.duration, that.duration)) {
+            return false;
+        }
+        if (!Objects.equals(this.percentComplete, that.percentComplete)) {
+            return false;
+        }
+        if (!Objects.equals(this.subtasks, that.subtasks)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 71 * hash + Objects.hashCode(this.description);
+        hash = 71 * hash + Objects.hashCode(this.duration);
+        hash = 71 * hash + Objects.hashCode(this.percentComplete);
+        hash = 71 * hash + Objects.hashCode(this.subtasks);
+        return hash;
+    }
+
+    /**
+     * Returns a clone of the task.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException  never thrown by this class, but
+     *         subclasses may not support cloning.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        Task clone = (Task) super.clone();
+        return clone;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * -------------------------------
+ * XYIntervalSeriesCollection.java
+ * -------------------------------
  * (C) Copyright 2006-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
+ *
  */
 /**
- * A collection of {@link XIntervalSeries} objects.
+ * A collection of {@link XYIntervalSeries} objects.
  *
- * @param <S> the series key type.
+ * @param <S> The type for the series keys.
  *
- * @see XIntervalSeries
+ * @since 1.0.3
+ *
+ * @see XYIntervalSeries
  */
-class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractIntervalXYDataset<S> implements IntervalXYDataset<S>, PublicCloneable, Serializable {
+public class XYIntervalSeriesCollection<S extends Comparable<S>> extends AbstractIntervalXYDataset<S> implements IntervalXYDataset<S>, PublicCloneable, Serializable {
 
     /**
      * Storage for the data series.
      */
-    private List<XIntervalSeries<S>> data;
+    private List<XYIntervalSeries<S>> data;
 
     /**
-     * Creates a new {@code XIntervalSeriesCollection} instance.
+     * Creates a new instance of {@code XIntervalSeriesCollection}.
      */
-    public XIntervalSeriesCollection() {
-        super();
+    public XYIntervalSeriesCollection() {
         this.data = new ArrayList<>();
     }
 
@@ -1497,7 +2190,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      *
      * @param series  the series ({@code null} not permitted).
      */
-    public void addSeries(XIntervalSeries<S> series) {
+    public void addSeries(XYIntervalSeries<S> series) {
         Args.nullNotPermitted(series, "series");
         this.data.add(series);
         series.addChangeListener(this);
@@ -1524,7 +2217,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      * @throws IllegalArgumentException if {@code series} is not in the
      *     range {@code 0} to {@code getSeriesCount() - 1}.
      */
-    public XIntervalSeries<S> getSeries(int series) {
+    public XYIntervalSeries<S> getSeries(int series) {
         Args.requireInRange(series, "series", 0, this.data.size() - 1);
         return this.data.get(series);
     }
@@ -1572,9 +2265,8 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public Number getX(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
-        XIntervalDataItem di = (XIntervalDataItem) s.getDataItem(item);
-        return di.getX();
+        XYIntervalSeries<S> s = this.data.get(series);
+        return s.getX(item);
     }
 
     /**
@@ -1588,7 +2280,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public double getStartXValue(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
+        XYIntervalSeries<S> s = this.data.get(series);
         return s.getXLowValue(item);
     }
 
@@ -1596,14 +2288,14 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      * Returns the end x-value (as a double primitive) for an item within a
      * series.
      *
-     * @param series  the series (zero-based index).
-     * @param item  the item (zero-based index).
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
      *
      * @return The value.
      */
     @Override
     public double getEndXValue(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
+        XYIntervalSeries<S> s = this.data.get(series);
         return s.getXHighValue(item);
     }
 
@@ -1618,8 +2310,38 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public double getYValue(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
+        XYIntervalSeries<S> s = this.data.get(series);
         return s.getYValue(item);
+    }
+
+    /**
+     * Returns the start y-value (as a double primitive) for an item within a
+     * series.
+     *
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     *
+     * @return The value.
+     */
+    @Override
+    public double getStartYValue(int series, int item) {
+        XYIntervalSeries<S> s = this.data.get(series);
+        return s.getYLowValue(item);
+    }
+
+    /**
+     * Returns the end y-value (as a double primitive) for an item within a
+     * series.
+     *
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The value.
+     */
+    @Override
+    public double getEndYValue(int series, int item) {
+        XYIntervalSeries<S> s = this.data.get(series);
+        return s.getYHighValue(item);
     }
 
     /**
@@ -1632,9 +2354,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public Number getY(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
-        XIntervalDataItem di = (XIntervalDataItem) s.getDataItem(item);
-        return di.getYValue();
+        return getYValue(series, item);
     }
 
     /**
@@ -1647,9 +2367,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public Number getStartX(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
-        XIntervalDataItem di = (XIntervalDataItem) s.getDataItem(item);
-        return di.getXLowValue();
+        return getStartXValue(series, item);
     }
 
     /**
@@ -1662,9 +2380,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public Number getEndX(int series, int item) {
-        XIntervalSeries<S> s = this.data.get(series);
-        XIntervalDataItem di = (XIntervalDataItem) s.getDataItem(item);
-        return di.getXHighValue();
+        return getEndXValue(series, item);
     }
 
     /**
@@ -1678,7 +2394,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public Number getStartY(int series, int item) {
-        return getY(series, item);
+        return getStartYValue(series, item);
     }
 
     /**
@@ -1692,7 +2408,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      */
     @Override
     public Number getEndY(int series, int item) {
-        return getY(series, item);
+        return getEndYValue(series, item);
     }
 
     /**
@@ -1704,8 +2420,10 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      * @since 1.0.10
      */
     public void removeSeries(int series) {
-        Args.requireInRange(series, "series", 0, this.data.size() - 1);
-        XIntervalSeries<S> ts = this.data.get(series);
+        if ((series < 0) || (series >= getSeriesCount())) {
+            throw new IllegalArgumentException("Series index out of bounds.");
+        }
+        XYIntervalSeries<S> ts = this.data.get(series);
         ts.removeChangeListener(this);
         this.data.remove(series);
         fireDatasetChanged();
@@ -1719,7 +2437,7 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
      *
      * @since 1.0.10
      */
-    public void removeSeries(XIntervalSeries<S> series) {
+    public void removeSeries(XYIntervalSeries<S> series) {
         Args.nullNotPermitted(series, "series");
         if (this.data.contains(series)) {
             series.removeChangeListener(this);
@@ -1737,7 +2455,8 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
     public void removeAllSeries() {
         // Unregister the collection as a change listener to each series in
         // the collection.
-        for (XIntervalSeries<S> series : this.data) {
+        for (int i = 0; i < this.data.size(); i++) {
+            XYIntervalSeries<S> series = this.data.get(i);
             series.removeChangeListener(this);
         }
         this.data.clear();
@@ -1756,50 +2475,360 @@ class XIntervalSeriesCollection<S extends Comparable<S>> extends AbstractInterva
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof XIntervalSeriesCollection)) {
+        if (!(obj instanceof XYIntervalSeriesCollection)) {
             return false;
         }
-        XIntervalSeriesCollection<S> that = (XIntervalSeriesCollection<S>) obj;
+        XYIntervalSeriesCollection<S> that = (XYIntervalSeriesCollection) obj;
         return Objects.equals(this.data, that.data);
     }
 
     /**
-     * Returns a clone of this instance.
+     * Returns a clone of this dataset.
      *
-     * @return A clone.
+     * @return A clone of this dataset.
      *
-     * @throws CloneNotSupportedException if there is a problem.
+     * @throws CloneNotSupportedException if there is a problem cloning.
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        XIntervalSeriesCollection clone = (XIntervalSeriesCollection) super.clone();
+        XYIntervalSeriesCollection clone = (XYIntervalSeriesCollection) super.clone();
         clone.data = CloneUtils.cloneList(this.data);
         return clone;
     }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * --------------
+ * AxisSpace.java
+ * --------------
+ * (C) Copyright 2003-present, by David Gilbert and Contributors.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   -;
+ *
+ */
+/**
+ * A record that contains the space required at each edge of a plot.
+ */
+public class AxisSpace implements Cloneable, PublicCloneable, Serializable {
 
     /**
-     * Provides serialization support.
-     *
-     * @param stream  the output stream.
-     *
-     * @throws IOException  if there is an I/O error.
+     * For serialization.
      */
-    private void writeObject(ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
+    private static final long serialVersionUID = -2490732595134766305L;
+
+    /**
+     * The top space.
+     */
+    private double top;
+
+    /**
+     * The bottom space.
+     */
+    private double bottom;
+
+    /**
+     * The left space.
+     */
+    private double left;
+
+    /**
+     * The right space.
+     */
+    private double right;
+
+    /**
+     * Creates a new axis space record.
+     */
+    public AxisSpace() {
+        this.top = 0.0;
+        this.bottom = 0.0;
+        this.left = 0.0;
+        this.right = 0.0;
     }
 
     /**
-     * Provides serialization support.
+     * Returns the space reserved for axes at the top of the plot area.
      *
-     * @param stream  the input stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
+     * @return The space (in Java2D units).
      */
-    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-        for (XIntervalSeries<S> series : this.data) {
-            series.addChangeListener(this);
+    public double getTop() {
+        return this.top;
+    }
+
+    /**
+     * Sets the space reserved for axes at the top of the plot area.
+     *
+     * @param space  the space (in Java2D units).
+     */
+    public void setTop(double space) {
+        this.top = space;
+    }
+
+    /**
+     * Returns the space reserved for axes at the bottom of the plot area.
+     *
+     * @return The space (in Java2D units).
+     */
+    public double getBottom() {
+        return this.bottom;
+    }
+
+    /**
+     * Sets the space reserved for axes at the bottom of the plot area.
+     *
+     * @param space  the space (in Java2D units).
+     */
+    public void setBottom(double space) {
+        this.bottom = space;
+    }
+
+    /**
+     * Returns the space reserved for axes at the left of the plot area.
+     *
+     * @return The space (in Java2D units).
+     */
+    public double getLeft() {
+        return this.left;
+    }
+
+    /**
+     * Sets the space reserved for axes at the left of the plot area.
+     *
+     * @param space  the space (in Java2D units).
+     */
+    public void setLeft(double space) {
+        this.left = space;
+    }
+
+    /**
+     * Returns the space reserved for axes at the right of the plot area.
+     *
+     * @return The space (in Java2D units).
+     */
+    public double getRight() {
+        return this.right;
+    }
+
+    /**
+     * Sets the space reserved for axes at the right of the plot area.
+     *
+     * @param space  the space (in Java2D units).
+     */
+    public void setRight(double space) {
+        this.right = space;
+    }
+
+    /**
+     * Adds space to the top, bottom, left or right edge of the plot area.
+     *
+     * @param space  the space (in Java2D units).
+     * @param edge  the edge ({@code null} not permitted).
+     */
+    public void add(double space, RectangleEdge edge) {
+        Args.nullNotPermitted(edge, "edge");
+        if (edge == RectangleEdge.TOP) {
+            this.top += space;
+        } else if (edge == RectangleEdge.BOTTOM) {
+            this.bottom += space;
+        } else if (edge == RectangleEdge.LEFT) {
+            this.left += space;
+        } else if (edge == RectangleEdge.RIGHT) {
+            this.right += space;
+        } else {
+            throw new IllegalStateException("Unrecognised 'edge' argument.");
         }
+    }
+
+    /**
+     * Ensures that this object reserves at least as much space as another.
+     *
+     * @param space  the other space.
+     */
+    public void ensureAtLeast(AxisSpace space) {
+        this.top = Math.max(this.top, space.top);
+        this.bottom = Math.max(this.bottom, space.bottom);
+        this.left = Math.max(this.left, space.left);
+        this.right = Math.max(this.right, space.right);
+    }
+
+    /**
+     * Ensures there is a minimum amount of space at the edge corresponding to
+     * the specified axis location.
+     *
+     * @param space  the space.
+     * @param edge  the location.
+     */
+    public void ensureAtLeast(double space, RectangleEdge edge) {
+        if (edge == RectangleEdge.TOP) {
+            if (this.top < space) {
+                this.top = space;
+            }
+        } else if (edge == RectangleEdge.BOTTOM) {
+            if (this.bottom < space) {
+                this.bottom = space;
+            }
+        } else if (edge == RectangleEdge.LEFT) {
+            if (this.left < space) {
+                this.left = space;
+            }
+        } else if (edge == RectangleEdge.RIGHT) {
+            if (this.right < space) {
+                this.right = space;
+            }
+        } else {
+            throw new IllegalStateException("AxisSpace.ensureAtLeast(): unrecognised AxisLocation.");
+        }
+    }
+
+    /**
+     * Shrinks an area by the space attributes.
+     *
+     * @param area  the area to shrink.
+     * @param result  an optional carrier for the result.
+     *
+     * @return The result.
+     */
+    public Rectangle2D shrink(Rectangle2D area, Rectangle2D result) {
+        if (result == null) {
+            result = new Rectangle2D.Double();
+        }
+        result.setRect(area.getX() + this.left, area.getY() + this.top, area.getWidth() - this.left - this.right, area.getHeight() - this.top - this.bottom);
+        return result;
+    }
+
+    /**
+     * Expands an area by the amount of space represented by this object.
+     *
+     * @param area  the area to expand.
+     * @param result  an optional carrier for the result.
+     *
+     * @return The result.
+     */
+    public Rectangle2D expand(Rectangle2D area, Rectangle2D result) {
+        if (result == null) {
+            result = new Rectangle2D.Double();
+        }
+        result.setRect(area.getX() - this.left, area.getY() - this.top, area.getWidth() + this.left + this.right, area.getHeight() + this.top + this.bottom);
+        return result;
+    }
+
+    /**
+     * Calculates the reserved area.
+     *
+     * @param area  the area.
+     * @param edge  the edge.
+     *
+     * @return The reserved area.
+     */
+    public Rectangle2D reserved(Rectangle2D area, RectangleEdge edge) {
+        Rectangle2D result = null;
+        if (edge == RectangleEdge.TOP) {
+            result = new Rectangle2D.Double(area.getX(), area.getY(), area.getWidth(), this.top);
+        } else if (edge == RectangleEdge.BOTTOM) {
+            result = new Rectangle2D.Double(area.getX(), area.getMaxY() - this.top, area.getWidth(), this.bottom);
+        } else if (edge == RectangleEdge.LEFT) {
+            result = new Rectangle2D.Double(area.getX(), area.getY(), this.left, area.getHeight());
+        } else if (edge == RectangleEdge.RIGHT) {
+            result = new Rectangle2D.Double(area.getMaxX() - this.right, area.getY(), this.right, area.getHeight());
+        }
+        return result;
+    }
+
+    /**
+     * Returns a clone of the object.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException This class won't throw this exception,
+     *         but subclasses (if any) might.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Tests this object for equality with another object.
+     *
+     * @param obj  the object to compare against.
+     *
+     * @return {@code true} or {@code false}.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof AxisSpace)) {
+            return false;
+        }
+        AxisSpace that = (AxisSpace) obj;
+        if (this.top != that.top) {
+            return false;
+        }
+        if (this.bottom != that.bottom) {
+            return false;
+        }
+        if (this.left != that.left) {
+            return false;
+        }
+        if (this.right != that.right) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this object.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result = 23;
+        long l = Double.doubleToLongBits(this.top);
+        result = 37 * result + (int) (l ^ (l >>> 32));
+        l = Double.doubleToLongBits(this.bottom);
+        result = 37 * result + (int) (l ^ (l >>> 32));
+        l = Double.doubleToLongBits(this.left);
+        result = 37 * result + (int) (l ^ (l >>> 32));
+        l = Double.doubleToLongBits(this.right);
+        result = 37 * result + (int) (l ^ (l >>> 32));
+        return result;
+    }
+
+    /**
+     * Returns a string representing the object (for debugging purposes).
+     *
+     * @return A string.
+     */
+    @Override
+    public String toString() {
+        return super.toString() + "[left=" + this.left + ",right=" + this.right + ",top=" + this.top + ",bottom=" + this.bottom + "]";
     }
 }

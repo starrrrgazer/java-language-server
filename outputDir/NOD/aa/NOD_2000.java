@@ -22,815 +22,677 @@ package NOD.aa;
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
  * USA.
  *
- * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates.
  * Other names may be trademarks of their respective owners.]
  *
- * -----------------------------
- * DefaultPolarItemRenderer.java
- * -----------------------------
- * (C) Copyright 2004-2021, by Solution Engineering, Inc. and
- *     Contributors.
+ * -------------------------
+ * CombinedDomainXYPlot.java
+ * -------------------------
+ * (C) Copyright 2001-present, by Bill Kelemen and Contributors.
  *
- * Original Author:  Daniel Bridenbecker, Solution Engineering, Inc.;
+ * Original Author:  Bill Kelemen;
  * Contributor(s):   David Gilbert;
- *                   Martin Hoeller (patch 2850344);
- * 
+ *                   Anthony Boulestreau;
+ *                   David Basten;
+ *                   Kevin Frechette (for ISTI);
+ *                   Nicolas Brodu;
+ *                   Petr Kubanek (bug 1606205);
+ *                   Vladimir Shirokov (bug 986);
  */
 /**
- * A renderer that can be used with the {@link PolarPlot} class.
+ * An extension of {@link XYPlot} that contains multiple subplots that share a
+ * common domain axis.
+ *
+ * @param <S> the subplot key type.
  */
-class DefaultPolarItemRenderer extends AbstractRenderer implements PolarItemRenderer {
+public class CombinedDomainXYPlot<S extends Comparable<S>> extends XYPlot<S> implements PlotChangeListener {
 
     /**
-     * The plot that the renderer is assigned to.
+     * For serialization.
      */
-    private PolarPlot plot;
+    private static final long serialVersionUID = -7765545541261907383L;
 
     /**
-     * Flags that control whether the renderer fills each series or not.
+     * Storage for the subplot references (possibly empty but never null).
      */
-    private Map<Integer, Boolean> seriesFilledMap;
+    private List<XYPlot> subplots;
 
     /**
-     * Flag that controls whether an outline is drawn for filled series or
-     * not.
+     * The gap between subplots.
      */
-    private boolean drawOutlineWhenFilled;
+    private double gap = 5.0;
 
     /**
-     * The composite to use when filling series.
+     * Temporary storage for the subplot areas.
      */
-    private transient Composite fillComposite;
+    private transient Rectangle2D[] subplotAreas;
 
+    // TODO:  the subplot areas needs to be moved out of the plot into the plot
+    //        state
     /**
-     * A flag that controls whether the fill paint is used for filling
-     * shapes.
+     * Default constructor.
      */
-    private boolean useFillPaint;
-
-    /**
-     * The shape that is used to represent a line in the legend.
-     */
-    private transient Shape legendLine;
-
-    /**
-     * Flag that controls whether item shapes are visible or not.
-     */
-    private boolean shapesVisible;
-
-    /**
-     * Flag that controls if the first and last point of the dataset should be
-     * connected or not.
-     */
-    private boolean connectFirstAndLastPoint;
-
-    /**
-     * A list of tool tip generators (one per series).
-     */
-    private Map<Integer, XYToolTipGenerator> toolTipGeneratorMap;
-
-    /**
-     * The default tool tip generator.
-     */
-    private XYToolTipGenerator defaultToolTipGenerator;
-
-    /**
-     * The URL text generator.
-     */
-    private XYURLGenerator urlGenerator;
-
-    /**
-     * The legend item tool tip generator.
-     */
-    private XYSeriesLabelGenerator legendItemToolTipGenerator;
-
-    /**
-     * The legend item URL generator.
-     */
-    private XYSeriesLabelGenerator legendItemURLGenerator;
-
-    /**
-     * Creates a new instance of DefaultPolarItemRenderer
-     */
-    public DefaultPolarItemRenderer() {
-        this.seriesFilledMap = new HashMap<>();
-        this.drawOutlineWhenFilled = true;
-        this.fillComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.3f);
-        // use item paint for fills by default
-        this.useFillPaint = false;
-        this.legendLine = new Line2D.Double(-7.0, 0.0, 7.0, 0.0);
-        this.shapesVisible = true;
-        this.connectFirstAndLastPoint = true;
-        this.toolTipGeneratorMap = new HashMap<>();
-        this.urlGenerator = null;
-        this.legendItemToolTipGenerator = null;
-        this.legendItemURLGenerator = null;
+    public CombinedDomainXYPlot() {
+        this(new NumberAxis());
     }
 
     /**
-     * Set the plot associated with this renderer.
+     * Creates a new combined plot that shares a domain axis among multiple
+     * subplots.
      *
-     * @param plot  the plot.
+     * @param domainAxis  the shared axis.
+     */
+    public CombinedDomainXYPlot(ValueAxis domainAxis) {
+        super(// no data in the parent plot
+        // no range axis
+        null, // no range axis
+        domainAxis, // no renderer
+        null, null);
+        this.subplots = new ArrayList<>();
+    }
+
+    /**
+     * Returns a string describing the type of plot.
      *
-     * @see #getPlot()
+     * @return The type of plot.
      */
     @Override
-    public void setPlot(PolarPlot plot) {
-        this.plot = plot;
+    public String getPlotType() {
+        return "Combined_Domain_XYPlot";
     }
 
     /**
-     * Return the plot associated with this renderer.
+     * Returns the gap between subplots, measured in Java2D units.
      *
-     * @return The plot.
+     * @return The gap (in Java2D units).
      *
-     * @see #setPlot(PolarPlot)
+     * @see #setGap(double)
      */
-    @Override
-    public PolarPlot getPlot() {
-        return this.plot;
+    public double getGap() {
+        return this.gap;
     }
 
     /**
-     * Returns {@code true} if the renderer will draw an outline around
-     * a filled polygon, {@code false} otherwise.
+     * Sets the amount of space between subplots and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
      *
-     * @return A boolean.
-     */
-    public boolean getDrawOutlineWhenFilled() {
-        return this.drawOutlineWhenFilled;
-    }
-
-    /**
-     * Set the flag that controls whether the outline around a filled
-     * polygon will be drawn or not and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
+     * @param gap  the gap between subplots (in Java2D units).
      *
-     * @param drawOutlineWhenFilled  the flag.
+     * @see #getGap()
      */
-    public void setDrawOutlineWhenFilled(boolean drawOutlineWhenFilled) {
-        this.drawOutlineWhenFilled = drawOutlineWhenFilled;
+    public void setGap(double gap) {
+        this.gap = gap;
         fireChangeEvent();
     }
 
     /**
-     * Get the composite that is used for filling.
+     * Returns {@code true} if the range is pannable for at least one subplot,
+     * and {@code false} otherwise.
      *
-     * @return The composite (never {@code null}).
+     * @return A boolean.
      */
-    public Composite getFillComposite() {
-        return this.fillComposite;
+    @Override
+    public boolean isRangePannable() {
+        for (XYPlot subplot : this.subplots) {
+            if (subplot.isRangePannable()) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
-     * Sets the composite which will be used for filling polygons and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Sets the flag, on each of the subplots, that controls whether the
+     * range is pannable.
      *
-     * @param composite  the composite to use ({@code null} not permitted).
+     * @param pannable  the new flag value.
      */
-    public void setFillComposite(Composite composite) {
-        Args.nullNotPermitted(composite, "composite");
-        this.fillComposite = composite;
+    @Override
+    public void setRangePannable(boolean pannable) {
+        for (XYPlot subplot : this.subplots) {
+            subplot.setRangePannable(pannable);
+        }
+    }
+
+    /**
+     * Sets the orientation for the plot (also changes the orientation for all
+     * the subplots to match).
+     *
+     * @param orientation  the orientation ({@code null} not allowed).
+     */
+    @Override
+    public void setOrientation(PlotOrientation orientation) {
+        super.setOrientation(orientation);
+        for (XYPlot p : this.subplots) {
+            p.setOrientation(orientation);
+        }
+    }
+
+    /**
+     * Sets the shadow generator for the plot (and all subplots) and sends
+     * a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param generator  the new generator ({@code null} permitted).
+     */
+    @Override
+    public void setShadowGenerator(ShadowGenerator generator) {
+        setNotify(false);
+        super.setShadowGenerator(generator);
+        for (XYPlot p : this.subplots) {
+            p.setShadowGenerator(generator);
+        }
+        setNotify(true);
+    }
+
+    /**
+     * Returns a range representing the extent of the data values in this plot
+     * (obtained from the subplots) that will be rendered against the specified
+     * axis.  NOTE: This method is intended for internal JFreeChart use, and
+     * is public only so that code in the axis classes can call it.  Since
+     * only the domain axis is shared between subplots, the JFreeChart code
+     * will only call this method for the domain values (although this is not
+     * checked/enforced).
+     *
+     * @param axis  the axis.
+     *
+     * @return The range (possibly {@code null}).
+     */
+    @Override
+    public Range getDataRange(ValueAxis axis) {
+        if (this.subplots == null) {
+            return null;
+        }
+        Range result = null;
+        for (XYPlot p : this.subplots) {
+            result = Range.combine(result, p.getDataRange(axis));
+        }
+        return result;
+    }
+
+    /**
+     * Adds a subplot (with a default 'weight' of 1) and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
+     * <P>
+     * The domain axis for the subplot will be set to {@code null}.  You
+     * must ensure that the subplot has a non-null range axis.
+     *
+     * @param subplot  the subplot ({@code null} not permitted).
+     */
+    public void add(XYPlot subplot) {
+        // defer argument checking
+        add(subplot, 1);
+    }
+
+    /**
+     * Adds a subplot with the specified weight and sends a
+     * {@link PlotChangeEvent} to all registered listeners.  The weight
+     * determines how much space is allocated to the subplot relative to all
+     * the other subplots.
+     * <P>
+     * The domain axis for the subplot will be set to {@code null}.  You
+     * must ensure that the subplot has a non-null range axis.
+     *
+     * @param subplot  the subplot ({@code null} not permitted).
+     * @param weight  the weight (must be &gt;= 1).
+     */
+    public void add(XYPlot subplot, int weight) {
+        Args.nullNotPermitted(subplot, "subplot");
+        if (weight <= 0) {
+            throw new IllegalArgumentException("Require weight >= 1.");
+        }
+        // store the plot and its weight
+        subplot.setParent(this);
+        subplot.setWeight(weight);
+        subplot.setInsets(RectangleInsets.ZERO_INSETS, false);
+        subplot.setDomainAxis(null);
+        subplot.addChangeListener(this);
+        this.subplots.add(subplot);
+        ValueAxis axis = getDomainAxis();
+        if (axis != null) {
+            axis.configure();
+        }
         fireChangeEvent();
     }
 
     /**
-     * Returns {@code true} if a shape will be drawn for every item, or
-     * {@code false} if not.
+     * Removes a subplot from the combined chart and sends a
+     * {@link PlotChangeEvent} to all registered listeners.
      *
-     * @return A boolean.
+     * @param subplot  the subplot ({@code null} not permitted).
      */
-    public boolean getShapesVisible() {
-        return this.shapesVisible;
+    public void remove(XYPlot subplot) {
+        Args.nullNotPermitted(subplot, "subplot");
+        int position = -1;
+        int size = this.subplots.size();
+        int i = 0;
+        while (position == -1 && i < size) {
+            if (this.subplots.get(i) == subplot) {
+                position = i;
+            }
+            i++;
+        }
+        if (position != -1) {
+            this.subplots.remove(position);
+            subplot.setParent(null);
+            subplot.removeChangeListener(this);
+            ValueAxis domain = getDomainAxis();
+            if (domain != null) {
+                domain.configure();
+            }
+            fireChangeEvent();
+        }
     }
 
     /**
-     * Set the flag that controls whether a shape will be drawn for every
-     * item, or not and sends a {@link RendererChangeEvent} to all registered
+     * Returns the list of subplots.  The returned list may be empty, but is
+     * never {@code null}.
+     *
+     * @return An unmodifiable list of subplots.
+     */
+    public List<XYPlot> getSubplots() {
+        return Collections.unmodifiableList(this.subplots);
+    }
+
+    /**
+     * Calculates the axis space required.
+     *
+     * @param g2  the graphics device.
+     * @param plotArea  the plot area.
+     *
+     * @return The space.
+     */
+    @Override
+    protected AxisSpace calculateAxisSpace(Graphics2D g2, Rectangle2D plotArea) {
+        AxisSpace space = new AxisSpace();
+        PlotOrientation orientation = getOrientation();
+        // work out the space required by the domain axis...
+        AxisSpace fixed = getFixedDomainAxisSpace();
+        if (fixed != null) {
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                space.setLeft(fixed.getLeft());
+                space.setRight(fixed.getRight());
+            } else if (orientation == PlotOrientation.VERTICAL) {
+                space.setTop(fixed.getTop());
+                space.setBottom(fixed.getBottom());
+            }
+        } else {
+            ValueAxis xAxis = getDomainAxis();
+            RectangleEdge xEdge = Plot.resolveDomainAxisLocation(getDomainAxisLocation(), orientation);
+            if (xAxis != null) {
+                space = xAxis.reserveSpace(g2, this, plotArea, xEdge, space);
+            }
+        }
+        Rectangle2D adjustedPlotArea = space.shrink(plotArea, null);
+        // work out the maximum height or width of the non-shared axes...
+        int n = this.subplots.size();
+        int totalWeight = 0;
+        for (int i = 0; i < n; i++) {
+            XYPlot sub = (XYPlot) this.subplots.get(i);
+            totalWeight += sub.getWeight();
+        }
+        this.subplotAreas = new Rectangle2D[n];
+        double x = adjustedPlotArea.getX();
+        double y = adjustedPlotArea.getY();
+        double usableSize = 0.0;
+        if (orientation == PlotOrientation.HORIZONTAL) {
+            usableSize = adjustedPlotArea.getWidth() - this.gap * (n - 1);
+        } else if (orientation == PlotOrientation.VERTICAL) {
+            usableSize = adjustedPlotArea.getHeight() - this.gap * (n - 1);
+        }
+        for (int i = 0; i < n; i++) {
+            XYPlot plot = (XYPlot) this.subplots.get(i);
+            // calculate sub-plot area
+            if (orientation == PlotOrientation.HORIZONTAL) {
+                double w = usableSize * plot.getWeight() / totalWeight;
+                this.subplotAreas[i] = new Rectangle2D.Double(x, y, w, adjustedPlotArea.getHeight());
+                x = x + w + this.gap;
+            } else if (orientation == PlotOrientation.VERTICAL) {
+                double h = usableSize * plot.getWeight() / totalWeight;
+                this.subplotAreas[i] = new Rectangle2D.Double(x, y, adjustedPlotArea.getWidth(), h);
+                y = y + h + this.gap;
+            }
+            AxisSpace subSpace = plot.calculateRangeAxisSpace(g2, this.subplotAreas[i], null);
+            space.ensureAtLeast(subSpace);
+        }
+        return space;
+    }
+
+    /**
+     * Receives a chart element visitor.  Many plot subclasses will override
+     * this method to handle their subcomponents.
+     *
+     * @param visitor  the visitor ({@code null} not permitted).
+     */
+    @Override
+    public void receive(ChartElementVisitor visitor) {
+        subplots.forEach(subplot -> {
+            subplot.receive(visitor);
+        });
+        super.receive(visitor);
+    }
+
+    /**
+     * Draws the plot within the specified area on a graphics device.
+     *
+     * @param g2  the graphics device.
+     * @param area  the plot area (in Java2D space).
+     * @param anchor  an anchor point in Java2D space ({@code null}
+     *                permitted).
+     * @param parentState  the state from the parent plot, if there is one
+     *                     ({@code null} permitted).
+     * @param info  collects chart drawing information ({@code null}
+     *              permitted).
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
+        // set up info collection...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+        // adjust the drawing area for plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+        setFixedRangeAxisSpaceForSubplots(null);
+        AxisSpace space = calculateAxisSpace(g2, area);
+        Rectangle2D dataArea = space.shrink(area, null);
+        // set the width and height of non-shared axis of all sub-plots
+        setFixedRangeAxisSpaceForSubplots(space);
+        // draw the shared axis
+        ValueAxis axis = getDomainAxis();
+        RectangleEdge edge = getDomainAxisEdge();
+        double cursor = RectangleEdge.coordinate(dataArea, edge);
+        AxisState axisState = axis.draw(g2, cursor, area, dataArea, edge, info);
+        if (parentState == null) {
+            parentState = new PlotState();
+        }
+        parentState.getSharedAxisStates().put(axis, axisState);
+        // draw all the subplots
+        for (int i = 0; i < this.subplots.size(); i++) {
+            XYPlot plot = (XYPlot) this.subplots.get(i);
+            PlotRenderingInfo subplotInfo = null;
+            if (info != null) {
+                subplotInfo = new PlotRenderingInfo(info.getOwner());
+                info.addSubplotInfo(subplotInfo);
+            }
+            plot.draw(g2, this.subplotAreas[i], anchor, parentState, subplotInfo);
+        }
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+    }
+
+    /**
+     * Returns a collection of legend items for the plot.
+     *
+     * @return The legend items.
+     */
+    @Override
+    public LegendItemCollection getLegendItems() {
+        LegendItemCollection result = getFixedLegendItems();
+        if (result == null) {
+            result = new LegendItemCollection();
+            if (this.subplots != null) {
+                for (XYPlot plot : this.subplots) {
+                    LegendItemCollection more = plot.getLegendItems();
+                    result.addAll(more);
+                }
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Multiplies the range on the range axis/axes by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info ({@code null} not permitted).
+     * @param source  the source point ({@code null} not permitted).
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source) {
+        zoomRangeAxes(factor, info, source, false);
+    }
+
+    /**
+     * Multiplies the range on the range axis/axes by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param state  the plot state.
+     * @param source  the source point (in Java2D coordinates).
+     * @param useAnchor  use source point as zoom anchor?
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo state, Point2D source, boolean useAnchor) {
+        // delegate 'state' and 'source' argument checks...
+        XYPlot<S> subplot = findSubplot(state, source);
+        if (subplot != null) {
+            subplot.zoomRangeAxes(factor, state, source, useAnchor);
+        } else {
+            // if the source point doesn't fall within a subplot, we do the
+            // zoom on all subplots...
+            for (XYPlot p : this.subplots) {
+                p.zoomRangeAxes(factor, state, source, useAnchor);
+            }
+        }
+    }
+
+    /**
+     * Zooms in on the range axes.
+     *
+     * @param lowerPercent  the lower bound.
+     * @param upperPercent  the upper bound.
+     * @param info  the plot rendering info ({@code null} not permitted).
+     * @param source  the source point ({@code null} not permitted).
+     */
+    @Override
+    public void zoomRangeAxes(double lowerPercent, double upperPercent, PlotRenderingInfo info, Point2D source) {
+        // delegate 'info' and 'source' argument checks...
+        XYPlot subplot = findSubplot(info, source);
+        if (subplot != null) {
+            subplot.zoomRangeAxes(lowerPercent, upperPercent, info, source);
+        } else {
+            // if the source point doesn't fall within a subplot, we do the
+            // zoom on all subplots...
+            for (XYPlot p : this.subplots) {
+                p.zoomRangeAxes(lowerPercent, upperPercent, info, source);
+            }
+        }
+    }
+
+    /**
+     * Pans all range axes by the specified percentage.
+     *
+     * @param panRange the distance to pan (as a percentage of the axis length).
+     * @param info  the plot info ({@code null} not permitted).
+     * @param source the source point where the pan action started.
+     */
+    @Override
+    public void panRangeAxes(double panRange, PlotRenderingInfo info, Point2D source) {
+        XYPlot subplot = findSubplot(info, source);
+        if (subplot == null) {
+            return;
+        }
+        if (!subplot.isRangePannable()) {
+            return;
+        }
+        PlotRenderingInfo subplotInfo = info.getSubplotInfo(info.getSubplotIndex(source));
+        if (subplotInfo == null) {
+            return;
+        }
+        for (int i = 0; i < subplot.getRangeAxisCount(); i++) {
+            ValueAxis rangeAxis = subplot.getRangeAxis(i);
+            if (rangeAxis != null) {
+                rangeAxis.pan(panRange);
+            }
+        }
+    }
+
+    /**
+     * Returns the subplot (if any) that contains the (x, y) point (specified
+     * in Java2D space).
+     *
+     * @param info  the chart rendering info ({@code null} not permitted).
+     * @param source  the source point ({@code null} not permitted).
+     *
+     * @return A subplot (possibly {@code null}).
+     */
+    public XYPlot<S> findSubplot(PlotRenderingInfo info, Point2D source) {
+        Args.nullNotPermitted(info, "info");
+        Args.nullNotPermitted(source, "source");
+        int subplotIndex = info.getSubplotIndex(source);
+        if (subplotIndex >= 0) {
+            return this.subplots.get(subplotIndex);
+        }
+        return null;
+    }
+
+    /**
+     * Sets the item renderer FOR ALL SUBPLOTS.  Registered listeners are
+     * notified that the plot has been modified.
+     * <P>
+     * Note: usually you will want to set the renderer independently for each
+     * subplot, which is NOT what this method does.
+     *
+     * @param renderer the new renderer.
+     */
+    @Override
+    public void setRenderer(XYItemRenderer renderer) {
+        // not strictly necessary, since the
+        super.setRenderer(renderer);
+        // renderer set for the
+        // parent plot is not used
+        for (XYPlot p : this.subplots) {
+            p.setRenderer(renderer);
+        }
+    }
+
+    /**
+     * Sets the fixed range axis space and sends a {@link PlotChangeEvent} to
+     * all registered listeners.
+     *
+     * @param space  the space ({@code null} permitted).
+     */
+    @Override
+    public void setFixedRangeAxisSpace(AxisSpace space) {
+        super.setFixedRangeAxisSpace(space);
+        setFixedRangeAxisSpaceForSubplots(space);
+        fireChangeEvent();
+    }
+
+    /**
+     * Sets the size (width or height, depending on the orientation of the
+     * plot) for the domain axis of each subplot.
+     *
+     * @param space  the space.
+     */
+    protected void setFixedRangeAxisSpaceForSubplots(AxisSpace space) {
+        for (XYPlot p : this.subplots) {
+            p.setFixedRangeAxisSpace(space, false);
+        }
+    }
+
+    /**
+     * Handles a 'click' on the plot by updating the anchor values.
+     *
+     * @param x  x-coordinate, where the click occurred.
+     * @param y  y-coordinate, where the click occurred.
+     * @param info  object containing information about the plot dimensions.
+     */
+    @Override
+    public void handleClick(int x, int y, PlotRenderingInfo info) {
+        Rectangle2D dataArea = info.getDataArea();
+        if (dataArea.contains(x, y)) {
+            for (int i = 0; i < this.subplots.size(); i++) {
+                XYPlot subplot = (XYPlot) this.subplots.get(i);
+                PlotRenderingInfo subplotInfo = info.getSubplotInfo(i);
+                subplot.handleClick(x, y, subplotInfo);
+            }
+        }
+    }
+
+    /**
+     * Receives notification of a change to the plot's dataset.
+     * <P>
+     * The axis ranges are updated if necessary.
+     *
+     * @param event  information about the event (not used here).
+     */
+    @Override
+    public void datasetChanged(DatasetChangeEvent event) {
+        super.datasetChanged(event);
+        if (this.subplots == null) {
+            // this can happen during plot construction
+            return;
+        }
+        XYDataset dataset = null;
+        if (event.getDataset() instanceof XYDataset) {
+            dataset = (XYDataset) event.getDataset();
+        }
+        for (XYPlot subplot : this.subplots) {
+            if (subplot.indexOf(dataset) >= 0) {
+                subplot.configureRangeAxes();
+            }
+        }
+    }
+
+    /**
+     * Receives a {@link PlotChangeEvent} and responds by notifying all
      * listeners.
      *
-     * @param visible  the flag.
-     */
-    public void setShapesVisible(boolean visible) {
-        this.shapesVisible = visible;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns {@code true} if first and last point of a series will be
-     * connected, {@code false} otherwise.
-     *
-     * @return The current status of the flag.
-     */
-    public boolean getConnectFirstAndLastPoint() {
-        return this.connectFirstAndLastPoint;
-    }
-
-    /**
-     * Set the flag that controls whether the first and last point of a series
-     * will be connected or not and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param connect the flag.
-     */
-    public void setConnectFirstAndLastPoint(boolean connect) {
-        this.connectFirstAndLastPoint = connect;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the drawing supplier from the plot.
-     *
-     * @return The drawing supplier.
+     * @param event  the event.
      */
     @Override
-    public DrawingSupplier getDrawingSupplier() {
-        DrawingSupplier result = null;
-        PolarPlot p = getPlot();
-        if (p != null) {
-            result = p.getDrawingSupplier();
-        }
-        return result;
+    public void plotChanged(PlotChangeEvent event) {
+        notifyListeners(event);
     }
 
     /**
-     * Returns {@code true} if the renderer should fill the specified
-     * series, and {@code false} otherwise.
+     * Tests this plot for equality with another object.
      *
-     * @param series  the series index (zero-based).
+     * @param obj  the other object.
      *
-     * @return A boolean.
-     */
-    public boolean isSeriesFilled(int series) {
-        boolean result = false;
-        Boolean b = this.seriesFilledMap.get(series);
-        if (b != null) {
-            result = b;
-        }
-        return result;
-    }
-
-    /**
-     * Sets a flag that controls whether a series is filled.
-     *
-     * @param series  the series index.
-     * @param filled  the flag.
-     */
-    public void setSeriesFilled(int series, boolean filled) {
-        this.seriesFilledMap.put(series, filled);
-    }
-
-    /**
-     * Returns {@code true} if the renderer should use the fill paint
-     * setting to fill shapes, and {@code false} if it should just
-     * use the regular paint.
-     *
-     * @return A boolean.
-     *
-     * @see #setUseFillPaint(boolean)
-     */
-    public boolean getUseFillPaint() {
-        return this.useFillPaint;
-    }
-
-    /**
-     * Sets the flag that controls whether the fill paint is used to fill
-     * shapes, and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param flag  the flag.
-     *
-     * @see #getUseFillPaint()
-     */
-    public void setUseFillPaint(boolean flag) {
-        this.useFillPaint = flag;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the shape used to represent a line in the legend.
-     *
-     * @return The legend line (never {@code null}).
-     *
-     * @see #setLegendLine(Shape)
-     */
-    public Shape getLegendLine() {
-        return this.legendLine;
-    }
-
-    /**
-     * Sets the shape used as a line in each legend item and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param line  the line ({@code null} not permitted).
-     *
-     * @see #getLegendLine()
-     */
-    public void setLegendLine(Shape line) {
-        Args.nullNotPermitted(line, "line");
-        this.legendLine = line;
-        fireChangeEvent();
-    }
-
-    /**
-     * Adds an entity to the collection.
-     *
-     * @param entities  the entity collection being populated.
-     * @param area  the entity area (if {@code null} a default will be
-     *              used).
-     * @param dataset  the dataset.
-     * @param series  the series.
-     * @param item  the item.
-     * @param entityX  the entity's center x-coordinate in user space (only
-     *                 used if {@code area} is {@code null}).
-     * @param entityY  the entity's center y-coordinate in user space (only
-     *                 used if {@code area} is {@code null}).
-     */
-    protected void addEntity(EntityCollection entities, Shape area, XYDataset dataset, int series, int item, double entityX, double entityY) {
-        if (!getItemCreateEntity(series, item)) {
-            return;
-        }
-        Shape hotspot = area;
-        if (hotspot == null) {
-            double r = getDefaultEntityRadius();
-            double w = r * 2;
-            if (getPlot().getOrientation() == PlotOrientation.VERTICAL) {
-                hotspot = new Ellipse2D.Double(entityX - r, entityY - r, w, w);
-            } else {
-                hotspot = new Ellipse2D.Double(entityY - r, entityX - r, w, w);
-            }
-        }
-        String tip = null;
-        XYToolTipGenerator generator = getToolTipGenerator(series, item);
-        if (generator != null) {
-            tip = generator.generateToolTip(dataset, series, item);
-        }
-        String url = null;
-        if (getURLGenerator() != null) {
-            url = getURLGenerator().generateURL(dataset, series, item);
-        }
-        XYItemEntity entity = new XYItemEntity(hotspot, dataset, series, item, tip, url);
-        entities.add(entity);
-    }
-
-    /**
-     * Plots the data for a given series.
-     *
-     * @param g2  the drawing surface.
-     * @param dataArea  the data area.
-     * @param info  collects plot rendering info.
-     * @param plot  the plot.
-     * @param dataset  the dataset.
-     * @param seriesIndex  the series index.
-     */
-    @Override
-    public void drawSeries(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, PolarPlot plot, XYDataset dataset, int seriesIndex) {
-        final int numPoints = dataset.getItemCount(seriesIndex);
-        if (numPoints == 0) {
-            return;
-        }
-        GeneralPath poly = null;
-        ValueAxis axis = plot.getAxisForDataset(plot.indexOf(dataset));
-        for (int i = 0; i < numPoints; i++) {
-            double theta = dataset.getXValue(seriesIndex, i);
-            double radius = dataset.getYValue(seriesIndex, i);
-            Point p = plot.translateToJava2D(theta, radius, axis, dataArea);
-            if (poly == null) {
-                poly = new GeneralPath();
-                poly.moveTo(p.x, p.y);
-            } else {
-                poly.lineTo(p.x, p.y);
-            }
-        }
-        assert poly != null;
-        if (getConnectFirstAndLastPoint()) {
-            poly.closePath();
-        }
-        g2.setPaint(lookupSeriesPaint(seriesIndex));
-        g2.setStroke(lookupSeriesStroke(seriesIndex));
-        if (isSeriesFilled(seriesIndex)) {
-            Composite savedComposite = g2.getComposite();
-            g2.setComposite(this.fillComposite);
-            g2.fill(poly);
-            g2.setComposite(savedComposite);
-            if (this.drawOutlineWhenFilled) {
-                // draw the outline of the filled polygon
-                g2.setPaint(lookupSeriesOutlinePaint(seriesIndex));
-                g2.draw(poly);
-            }
-        } else {
-            // just the lines, no filling
-            g2.draw(poly);
-        }
-        // draw the item shapes
-        if (this.shapesVisible) {
-            // setup for collecting optional entity info...
-            EntityCollection entities = null;
-            if (info != null) {
-                entities = info.getOwner().getEntityCollection();
-            }
-            PathIterator pi = poly.getPathIterator(null);
-            int i = 0;
-            while (!pi.isDone()) {
-                final float[] coords = new float[6];
-                final int segType = pi.currentSegment(coords);
-                pi.next();
-                if (segType != PathIterator.SEG_LINETO && segType != PathIterator.SEG_MOVETO) {
-                    continue;
-                }
-                final int x = Math.round(coords[0]);
-                final int y = Math.round(coords[1]);
-                final Shape shape = ShapeUtils.createTranslatedShape(getItemShape(seriesIndex, i++), x, y);
-                Paint paint;
-                if (useFillPaint) {
-                    paint = lookupSeriesFillPaint(seriesIndex);
-                } else {
-                    paint = lookupSeriesPaint(seriesIndex);
-                }
-                g2.setPaint(paint);
-                g2.fill(shape);
-                if (isSeriesFilled(seriesIndex) && this.drawOutlineWhenFilled) {
-                    g2.setPaint(lookupSeriesOutlinePaint(seriesIndex));
-                    g2.setStroke(lookupSeriesOutlineStroke(seriesIndex));
-                    g2.draw(shape);
-                }
-                // add an entity for the item, but only if it falls within the
-                // data area...
-                if (entities != null && ShapeUtils.isPointInRect(dataArea, x, y)) {
-                    addEntity(entities, shape, dataset, seriesIndex, i - 1, x, y);
-                }
-            }
-        }
-    }
-
-    /**
-     * Draw the angular gridlines - the spokes.
-     *
-     * @param g2  the drawing surface.
-     * @param plot  the plot ({@code null} not permitted).
-     * @param ticks  the ticks ({@code null} not permitted).
-     * @param dataArea  the data area.
-     */
-    @Override
-    public void drawAngularGridLines(Graphics2D g2, PolarPlot plot, List ticks, Rectangle2D dataArea) {
-        g2.setFont(plot.getAngleLabelFont());
-        g2.setStroke(plot.getAngleGridlineStroke());
-        g2.setPaint(plot.getAngleGridlinePaint());
-        ValueAxis axis = plot.getAxis();
-        double centerValue, outerValue;
-        if (axis.isInverted()) {
-            outerValue = axis.getLowerBound();
-            centerValue = axis.getUpperBound();
-        } else {
-            outerValue = axis.getUpperBound();
-            centerValue = axis.getLowerBound();
-        }
-        Point center = plot.translateToJava2D(0, centerValue, axis, dataArea);
-        for (Object o : ticks) {
-            NumberTick tick = (NumberTick) o;
-            double tickVal = tick.getNumber().doubleValue();
-            Point p = plot.translateToJava2D(tickVal, outerValue, axis, dataArea);
-            g2.setPaint(plot.getAngleGridlinePaint());
-            g2.drawLine(center.x, center.y, p.x, p.y);
-            if (plot.isAngleLabelsVisible()) {
-                int x = p.x;
-                int y = p.y;
-                g2.setPaint(plot.getAngleLabelPaint());
-                TextUtils.drawAlignedString(tick.getText(), g2, x, y, tick.getTextAnchor());
-            }
-        }
-    }
-
-    /**
-     * Draw the radial gridlines - the rings.
-     *
-     * @param g2  the drawing surface ({@code null} not permitted).
-     * @param plot  the plot ({@code null} not permitted).
-     * @param radialAxis  the radial axis ({@code null} not permitted).
-     * @param ticks  the ticks ({@code null} not permitted).
-     * @param dataArea  the data area.
-     */
-    @Override
-    public void drawRadialGridLines(Graphics2D g2, PolarPlot plot, ValueAxis radialAxis, List ticks, Rectangle2D dataArea) {
-        Args.nullNotPermitted(radialAxis, "radialAxis");
-        g2.setFont(radialAxis.getTickLabelFont());
-        g2.setPaint(plot.getRadiusGridlinePaint());
-        g2.setStroke(plot.getRadiusGridlineStroke());
-        double centerValue;
-        if (radialAxis.isInverted()) {
-            centerValue = radialAxis.getUpperBound();
-        } else {
-            centerValue = radialAxis.getLowerBound();
-        }
-        Point center = plot.translateToJava2D(0, centerValue, radialAxis, dataArea);
-        for (Object o : ticks) {
-            NumberTick tick = (NumberTick) o;
-            double angleDegrees = plot.isCounterClockwise() ? plot.getAngleOffset() : -plot.getAngleOffset();
-            Point p = plot.translateToJava2D(angleDegrees, tick.getNumber().doubleValue(), radialAxis, dataArea);
-            int r = p.x - center.x;
-            int upperLeftX = center.x - r;
-            int upperLeftY = center.y - r;
-            int d = 2 * r;
-            Ellipse2D ring = new Ellipse2D.Double(upperLeftX, upperLeftY, d, d);
-            g2.setPaint(plot.getRadiusGridlinePaint());
-            g2.draw(ring);
-        }
-    }
-
-    /**
-     * Return the legend for the given series.
-     *
-     * @param series  the series index.
-     *
-     * @return The legend item.
-     */
-    @Override
-    public LegendItem getLegendItem(int series) {
-        LegendItem result;
-        PolarPlot plot = getPlot();
-        if (plot == null) {
-            return null;
-        }
-        XYDataset dataset = plot.getDataset(plot.getIndexOf(this));
-        if (dataset == null) {
-            return null;
-        }
-        String toolTipText = null;
-        if (getLegendItemToolTipGenerator() != null) {
-            toolTipText = getLegendItemToolTipGenerator().generateLabel(dataset, series);
-        }
-        String urlText = null;
-        if (getLegendItemURLGenerator() != null) {
-            urlText = getLegendItemURLGenerator().generateLabel(dataset, series);
-        }
-        Comparable seriesKey = dataset.getSeriesKey(series);
-        String label = seriesKey.toString();
-        String description = label;
-        Shape shape = lookupSeriesShape(series);
-        Paint paint;
-        if (this.useFillPaint) {
-            paint = lookupSeriesFillPaint(series);
-        } else {
-            paint = lookupSeriesPaint(series);
-        }
-        Stroke stroke = lookupSeriesStroke(series);
-        Paint outlinePaint = lookupSeriesOutlinePaint(series);
-        Stroke outlineStroke = lookupSeriesOutlineStroke(series);
-        boolean shapeOutlined = isSeriesFilled(series) && this.drawOutlineWhenFilled;
-        result = new LegendItem(label, description, toolTipText, urlText, getShapesVisible(), shape, /* shapeFilled=*/
-        true, paint, shapeOutlined, outlinePaint, outlineStroke, /* lineVisible= */
-        true, this.legendLine, stroke, paint);
-        result.setToolTipText(toolTipText);
-        result.setURLText(urlText);
-        result.setDataset(dataset);
-        result.setSeriesKey(seriesKey);
-        result.setSeriesIndex(series);
-        return result;
-    }
-
-    /**
-     * Returns the tooltip generator for the specified series and item.
-     *
-     * @param series  the series index.
-     * @param item  the item index.
-     *
-     * @return The tooltip generator (possibly {@code null}).
-     */
-    @Override
-    public XYToolTipGenerator getToolTipGenerator(int series, int item) {
-        XYToolTipGenerator generator = this.toolTipGeneratorMap.get(series);
-        if (generator == null) {
-            generator = this.defaultToolTipGenerator;
-        }
-        return generator;
-    }
-
-    /**
-     * Returns the tool tip generator for the specified series.
-     *
-     * @return The tooltip generator (possibly {@code null}).
-     */
-    @Override
-    public XYToolTipGenerator getSeriesToolTipGenerator(int series) {
-        return this.toolTipGeneratorMap.get(series);
-    }
-
-    /**
-     * Sets the tooltip generator for the specified series.
-     *
-     * @param series  the series index.
-     * @param generator  the tool tip generator ({@code null} permitted).
-     */
-    @Override
-    public void setSeriesToolTipGenerator(int series, XYToolTipGenerator generator) {
-        this.toolTipGeneratorMap.put(series, generator);
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the default tool tip generator.
-     *
-     * @return The default tool tip generator (possibly {@code null}).
-     */
-    @Override
-    public XYToolTipGenerator getDefaultToolTipGenerator() {
-        return this.defaultToolTipGenerator;
-    }
-
-    /**
-     * Sets the default tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     */
-    @Override
-    public void setDefaultToolTipGenerator(XYToolTipGenerator generator) {
-        this.defaultToolTipGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the URL generator.
-     *
-     * @return The URL generator (possibly {@code null}).
-     */
-    @Override
-    public XYURLGenerator getURLGenerator() {
-        return this.urlGenerator;
-    }
-
-    /**
-     * Sets the URL generator.
-     *
-     * @param urlGenerator  the generator ({@code null} permitted)
-     */
-    @Override
-    public void setURLGenerator(XYURLGenerator urlGenerator) {
-        this.urlGenerator = urlGenerator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend item tool tip generator.
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setLegendItemToolTipGenerator(XYSeriesLabelGenerator)
-     */
-    public XYSeriesLabelGenerator getLegendItemToolTipGenerator() {
-        return this.legendItemToolTipGenerator;
-    }
-
-    /**
-     * Sets the legend item tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemToolTipGenerator()
-     */
-    public void setLegendItemToolTipGenerator(XYSeriesLabelGenerator generator) {
-        this.legendItemToolTipGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Returns the legend item URL generator.
-     *
-     * @return The URL generator (possibly {@code null}).
-     *
-     * @see #setLegendItemURLGenerator(XYSeriesLabelGenerator)
-     */
-    public XYSeriesLabelGenerator getLegendItemURLGenerator() {
-        return this.legendItemURLGenerator;
-    }
-
-    /**
-     * Sets the legend item URL generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getLegendItemURLGenerator()
-     */
-    public void setLegendItemURLGenerator(XYSeriesLabelGenerator generator) {
-        this.legendItemURLGenerator = generator;
-        fireChangeEvent();
-    }
-
-    /**
-     * Tests this renderer for equality with an arbitrary object.
-     *
-     * @param obj  the object ({@code null} not permitted).
-     *
-     * @return {@code true} if this renderer is equal to {@code obj},
-     *     and {@code false} otherwise.
+     * @return {@code true} or {@code false}.
      */
     @Override
     public boolean equals(Object obj) {
-        if (obj == null) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof CombinedDomainXYPlot)) {
             return false;
         }
-        if (!(obj instanceof DefaultPolarItemRenderer)) {
+        CombinedDomainXYPlot that = (CombinedDomainXYPlot) obj;
+        if (this.gap != that.gap) {
             return false;
         }
-        DefaultPolarItemRenderer that = (DefaultPolarItemRenderer) obj;
-        if (!this.seriesFilledMap.equals(that.seriesFilledMap)) {
-            return false;
-        }
-        if (this.drawOutlineWhenFilled != that.drawOutlineWhenFilled) {
-            return false;
-        }
-        if (!Objects.equals(this.fillComposite, that.fillComposite)) {
-            return false;
-        }
-        if (this.useFillPaint != that.useFillPaint) {
-            return false;
-        }
-        if (!ShapeUtils.equal(this.legendLine, that.legendLine)) {
-            return false;
-        }
-        if (this.shapesVisible != that.shapesVisible) {
-            return false;
-        }
-        if (this.connectFirstAndLastPoint != that.connectFirstAndLastPoint) {
-            return false;
-        }
-        if (!this.toolTipGeneratorMap.equals(that.toolTipGeneratorMap)) {
-            return false;
-        }
-        if (!Objects.equals(this.defaultToolTipGenerator, that.defaultToolTipGenerator)) {
-            return false;
-        }
-        if (!Objects.equals(this.urlGenerator, that.urlGenerator)) {
-            return false;
-        }
-        if (!Objects.equals(this.legendItemToolTipGenerator, that.legendItemToolTipGenerator)) {
-            return false;
-        }
-        if (!Objects.equals(this.legendItemURLGenerator, that.legendItemURLGenerator)) {
+        if (!Objects.equals(this.subplots, that.subplots)) {
             return false;
         }
         return super.equals(obj);
     }
 
     /**
-     * Returns a clone of the renderer.
+     * Returns a clone of the annotation.
      *
      * @return A clone.
      *
-     * @throws CloneNotSupportedException if the renderer cannot be cloned.
+     * @throws CloneNotSupportedException  this class will not throw this
+     *         exception, but subclasses (if any) might.
      */
     @Override
     public Object clone() throws CloneNotSupportedException {
-        DefaultPolarItemRenderer clone = (DefaultPolarItemRenderer) super.clone();
-        clone.legendLine = CloneUtils.clone(this.legendLine);
-        clone.seriesFilledMap = new HashMap<>(this.seriesFilledMap);
-        clone.toolTipGeneratorMap = CloneUtils.cloneMapValues(this.toolTipGeneratorMap);
-        if (clone.defaultToolTipGenerator instanceof PublicCloneable) {
-            clone.defaultToolTipGenerator = CloneUtils.clone(this.defaultToolTipGenerator);
+        CombinedDomainXYPlot<S> result = (CombinedDomainXYPlot) super.clone();
+        result.subplots = CloneUtils.cloneList(this.subplots);
+        for (XYPlot<S> child : result.subplots) {
+            child.setParent(result);
         }
-        if (clone.urlGenerator instanceof PublicCloneable) {
-            clone.urlGenerator = CloneUtils.clone(this.urlGenerator);
+        // after setting up all the subplots, the shared domain axis may need
+        // reconfiguring
+        ValueAxis domainAxis = result.getDomainAxis();
+        if (domainAxis != null) {
+            domainAxis.configure();
         }
-        if (clone.legendItemToolTipGenerator instanceof PublicCloneable) {
-            clone.legendItemToolTipGenerator = CloneUtils.clone(this.legendItemToolTipGenerator);
-        }
-        if (clone.legendItemURLGenerator instanceof PublicCloneable) {
-            clone.legendItemURLGenerator = CloneUtils.clone(this.legendItemURLGenerator);
-        }
-        //        clone.defaultToolTipGenerator = CloneUtils.copy(this.defaultToolTipGenerator);
-        //        clone.urlGenerator = CloneUtils.copy(this.urlGenerator);
-        //        clone.legendItemToolTipGenerator = CloneUtils.copy(this.legendItemToolTipGenerator);
-        //        clone.legendItemURLGenerator = CloneUtils.copy(this.legendItemURLGenerator);
-        return clone;
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the input stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     * @throws ClassNotFoundException  if there is a classpath problem.
-     */
-    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-        stream.defaultReadObject();
-        this.legendLine = SerialUtils.readShape(stream);
-        this.fillComposite = SerialUtils.readComposite(stream);
-    }
-
-    /**
-     * Provides serialization support.
-     *
-     * @param stream  the output stream.
-     *
-     * @throws IOException  if there is an I/O error.
-     */
-    private void writeObject(ObjectOutputStream stream) throws IOException {
-        stream.defaultWriteObject();
-        SerialUtils.writeShape(this.legendLine, stream);
-        SerialUtils.writeComposite(this.fillComposite, stream);
+        return result;
     }
 }
 /* ======================================================
@@ -859,41 +721,222 @@ class DefaultPolarItemRenderer extends AbstractRenderer implements PolarItemRend
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * --------------------
- * PieURLGenerator.java
- * --------------------
- * (C) Copyright 2002-2020, by Richard Atkinson and Contributors.
- *
- * Original Author:  Richard Atkinson;
- * Contributors:     David Gilbert;
- *
  */
 /**
- * Interface for a URL generator for plots that use data from a
- * {@link PieDataset}.  Classes that implement this interface:
- * <ul>
- * <li>are responsible for correctly escaping any text that is derived from the
- *     dataset, as this may be user-specified and could pose a security
- *     risk;</li>
- * <li>should be either (a) immutable, or (b) cloneable via the
- *     {@link PublicCloneable} interface. This provides a mechanism for the referring plot to clone
- *     the generator if necessary.</li>
- * </ul>
- *
- * @param <K> the dataset key type
+ * Specialised layout manager for a grid of components.
  */
-interface PieURLGenerator<K extends Comparable<K>> {
+public class LCBLayout implements LayoutManager, Serializable {
 
     /**
-     * Generates a URL for one item in a {@link PieDataset}. As a guideline,
-     * the URL should be valid within the context of an XHTML 1.0 document.
-     *
-     * @param dataset  the dataset ({@code null} not permitted).
-     * @param key  the item key ({@code null} not permitted).
-     * @param pieIndex  the pie index (differentiates between pies in a
-     *                  'multi' pie chart).
-     *
-     * @return A string containing the URL.
+     * For serialization.
      */
-    String generateURL(PieDataset<K> dataset, K key, int pieIndex);
+    private static final long serialVersionUID = -2531780832406163833L;
+
+    /**
+     * A constant for the number of columns in the layout.
+     */
+    private static final int COLUMNS = 3;
+
+    /**
+     * Tracks the column widths.
+     */
+    private int[] colWidth;
+
+    /**
+     * Tracks the row heights.
+     */
+    private int[] rowHeight;
+
+    /**
+     * The gap between each label and component.
+     */
+    private int labelGap;
+
+    /**
+     * The gap between each component and button.
+     */
+    private int buttonGap;
+
+    /**
+     * The gap between rows.
+     */
+    private int vGap;
+
+    /**
+     * Creates a new LCBLayout with the specified maximum number of rows.
+     *
+     * @param maxrows  the maximum number of rows.
+     */
+    public LCBLayout(int maxrows) {
+        this.labelGap = 10;
+        this.buttonGap = 6;
+        this.vGap = 2;
+        this.colWidth = new int[COLUMNS];
+        this.rowHeight = new int[maxrows];
+    }
+
+    /**
+     * Returns the preferred size using this layout manager.
+     *
+     * @param parent  the parent.
+     *
+     * @return the preferred size using this layout manager.
+     */
+    @Override
+    public Dimension preferredLayoutSize(Container parent) {
+        synchronized (parent.getTreeLock()) {
+            Insets insets = parent.getInsets();
+            int ncomponents = parent.getComponentCount();
+            int nrows = ncomponents / COLUMNS;
+            for (int c = 0; c < COLUMNS; c++) {
+                for (int r = 0; r < nrows; r++) {
+                    Component component = parent.getComponent(r * COLUMNS + c);
+                    Dimension d = component.getPreferredSize();
+                    if (this.colWidth[c] < d.width) {
+                        this.colWidth[c] = d.width;
+                    }
+                    if (this.rowHeight[r] < d.height) {
+                        this.rowHeight[r] = d.height;
+                    }
+                }
+            }
+            int totalHeight = this.vGap * (nrows - 1);
+            for (int r = 0; r < nrows; r++) {
+                totalHeight = totalHeight + this.rowHeight[r];
+            }
+            int totalWidth = this.colWidth[0] + this.labelGap + this.colWidth[1] + this.buttonGap + this.colWidth[2];
+            return new Dimension(insets.left + insets.right + totalWidth + this.labelGap + this.buttonGap, insets.top + insets.bottom + totalHeight + this.vGap);
+        }
+    }
+
+    /**
+     * Returns the minimum size using this layout manager.
+     *
+     * @param parent  the parent.
+     *
+     * @return the minimum size using this layout manager.
+     */
+    @Override
+    public Dimension minimumLayoutSize(Container parent) {
+        synchronized (parent.getTreeLock()) {
+            Insets insets = parent.getInsets();
+            int ncomponents = parent.getComponentCount();
+            int nrows = ncomponents / COLUMNS;
+            for (int c = 0; c < COLUMNS; c++) {
+                for (int r = 0; r < nrows; r++) {
+                    Component component = parent.getComponent(r * COLUMNS + c);
+                    Dimension d = component.getMinimumSize();
+                    if (this.colWidth[c] < d.width) {
+                        this.colWidth[c] = d.width;
+                    }
+                    if (this.rowHeight[r] < d.height) {
+                        this.rowHeight[r] = d.height;
+                    }
+                }
+            }
+            int totalHeight = this.vGap * (nrows - 1);
+            for (int r = 0; r < nrows; r++) {
+                totalHeight = totalHeight + this.rowHeight[r];
+            }
+            int totalWidth = this.colWidth[0] + this.labelGap + this.colWidth[1] + this.buttonGap + this.colWidth[2];
+            return new Dimension(insets.left + insets.right + totalWidth + this.labelGap + this.buttonGap, insets.top + insets.bottom + totalHeight + this.vGap);
+        }
+    }
+
+    /**
+     * Lays out the components.
+     *
+     * @param parent  the parent.
+     */
+    @Override
+    public void layoutContainer(Container parent) {
+        synchronized (parent.getTreeLock()) {
+            Insets insets = parent.getInsets();
+            int ncomponents = parent.getComponentCount();
+            int nrows = ncomponents / COLUMNS;
+            for (int c = 0; c < COLUMNS; c++) {
+                for (int r = 0; r < nrows; r++) {
+                    Component component = parent.getComponent(r * COLUMNS + c);
+                    Dimension d = component.getPreferredSize();
+                    if (this.colWidth[c] < d.width) {
+                        this.colWidth[c] = d.width;
+                    }
+                    if (this.rowHeight[r] < d.height) {
+                        this.rowHeight[r] = d.height;
+                    }
+                }
+            }
+            int totalHeight = this.vGap * (nrows - 1);
+            for (int r = 0; r < nrows; r++) {
+                totalHeight = totalHeight + this.rowHeight[r];
+            }
+            int totalWidth = this.colWidth[0] + this.colWidth[1] + this.colWidth[2];
+            // adjust the width of the second column to use up all of parent
+            int available = parent.getWidth() - insets.left - insets.right - this.labelGap - this.buttonGap;
+            this.colWidth[1] = this.colWidth[1] + (available - totalWidth);
+            // *** DO THE LAYOUT ***
+            int x = insets.left;
+            for (int c = 0; c < COLUMNS; c++) {
+                int y = insets.top;
+                for (int r = 0; r < nrows; r++) {
+                    int i = r * COLUMNS + c;
+                    if (i < ncomponents) {
+                        Component component = parent.getComponent(i);
+                        Dimension d = component.getPreferredSize();
+                        int h = d.height;
+                        int adjust = (this.rowHeight[r] - h) / 2;
+                        parent.getComponent(i).setBounds(x, y + adjust, this.colWidth[c], h);
+                    }
+                    y = y + this.rowHeight[r] + this.vGap;
+                }
+                x = x + this.colWidth[c];
+                if (c == 0) {
+                    x = x + this.labelGap;
+                }
+                if (c == 1) {
+                    x = x + this.buttonGap;
+                }
+            }
+        }
+    }
+
+    /**
+     * Not used.
+     *
+     * @param comp  the component.
+     */
+    public void addLayoutComponent(Component comp) {
+        // not used
+    }
+
+    /**
+     * Not used.
+     *
+     * @param comp  the component.
+     */
+    @Override
+    public void removeLayoutComponent(Component comp) {
+        // not used
+    }
+
+    /**
+     * Not used.
+     *
+     * @param name  the component name.
+     * @param comp  the component.
+     */
+    @Override
+    public void addLayoutComponent(String name, Component comp) {
+        // not used
+    }
+
+    /**
+     * Not used.
+     *
+     * @param name  the component name.
+     * @param comp  the component.
+     */
+    public void removeLayoutComponent(String name, Component comp) {
+        // not used
+    }
 }

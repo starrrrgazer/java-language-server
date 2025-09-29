@@ -25,914 +25,438 @@ package DEF.by;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -------------
- * XYSeries.java
- * -------------
- * (C) Copyright 2001-present, David Gilbert and Contributors.
+ * --------
+ * Day.java
+ * --------
+ * (C) Copyright 2001-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Aaron Metzger;
- *                   Jonathan Gabbai;
- *                   Richard Atkinson;
- *                   Michel Santos;
- *                   Ted Schwartz (fix for bug 1955483);
+ * Contributor(s):   -;
+ *
  */
 /**
- * Represents a sequence of zero or more data items in the form (x, y).  By
- * default, items in the series will be sorted into ascending order by x-value,
- * and duplicate x-values are permitted.  Both the sorting and duplicate
- * defaults can be changed in the constructor.  Y-values can be
- * {@code null} to represent missing values.
- *
- * @param <K> the series key type.
+ * Represents a single day in the range 1-Jan-1900 to 31-Dec-9999.  This class
+ * is immutable, which is a requirement for all {@link RegularTimePeriod}
+ * subclasses.
  */
-class XYSeries<K extends Comparable<K>> extends Series<K> implements Cloneable, Serializable {
+public class Day extends RegularTimePeriod implements Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = -5908509288197150436L;
-
-    // In version 0.9.12, in response to several developer requests, I changed
-    // the 'data' attribute from 'private' to 'protected', so that others can
-    // make subclasses that work directly with the underlying data structure.
-    /**
-     * Storage for the data items in the series.
-     */
-    protected List<XYDataItem> data;
+    private static final long serialVersionUID = -7082667380758962755L;
 
     /**
-     * The maximum number of items for the series.
+     * A date formatter - used for parsing, therefore we fix the locale
+     * so we get dependable results.
      */
-    private int maximumItemCount = Integer.MAX_VALUE;
+    protected static final DateFormat DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd", Locale.UK);
 
     /**
-     * A flag that controls whether the items are automatically sorted
-     * (by x-value ascending).
+     * A date formatter for the default locale.
      */
-    private final boolean autoSort;
+    protected static final DateFormat DATE_FORMAT_SHORT = DateFormat.getDateInstance(DateFormat.SHORT);
 
     /**
-     * A flag that controls whether duplicate x-values are allowed.
+     * A date formatter for the default locale.
      */
-    private final boolean allowDuplicateXValues;
+    protected static final DateFormat DATE_FORMAT_MEDIUM = DateFormat.getDateInstance(DateFormat.MEDIUM);
 
     /**
-     * The lowest x-value in the series, excluding Double.NaN values.
+     * A date formatter for the default locale.
      */
-    private double minX;
+    protected static final DateFormat DATE_FORMAT_LONG = DateFormat.getDateInstance(DateFormat.LONG);
 
     /**
-     * The highest x-value in the series, excluding Double.NaN values.
+     * The day (uses SerialDate for convenience).
      */
-    private double maxX;
+    private SerialDate serialDate;
 
     /**
-     * The lowest y-value in the series, excluding Double.NaN values.
+     * The first millisecond.
      */
-    private double minY;
+    private long firstMillisecond;
 
     /**
-     * The highest y-value in the series, excluding Double.NaN values.
+     * The last millisecond.
      */
-    private double maxY;
+    private long lastMillisecond;
 
     /**
-     * Creates a new empty series.  By default, items added to the series will
-     * be sorted into ascending order by x-value, and duplicate x-values will
-     * be allowed (these defaults can be modified with another constructor).
-     *
-     * @param key  the series key ({@code null} not permitted).
+     * Creates a new instance, derived from the system date/time.
+     * The time zone and locale are determined by the calendar
+     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
      */
-    public XYSeries(K key) {
-        this(key, true, true);
+    public Day() {
+        this(new Date());
     }
 
     /**
-     * Constructs a new empty series, with the auto-sort flag set as requested,
-     * and duplicate values allowed.
+     * Constructs a new one day time period.
+     * The time zone and locale are determined by the calendar
+     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
      *
-     * @param key  the series key ({@code null} not permitted).
-     * @param autoSort  a flag that controls whether the items in the
-     *                  series are sorted.
+     * @param day  the day-of-the-month.
+     * @param month  the month (1 to 12).
+     * @param year  the year (1900 &lt;= year &lt;= 9999).
      */
-    public XYSeries(K key, boolean autoSort) {
-        this(key, autoSort, true);
+    public Day(int day, int month, int year) {
+        super();
+        this.serialDate = SerialDate.createInstance(day, month, year);
+        peg(getCalendarInstance());
     }
 
     /**
-     * Constructs a new xy-series that contains no data.  You can specify
-     * whether duplicate x-values are allowed for the series.
+     * Constructs a new one day time period.
+     * The time zone and locale are determined by the calendar
+     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
      *
-     * @param key  the series key ({@code null} not permitted).
-     * @param autoSort  a flag that controls whether the items in the
-     *                  series are sorted.
-     * @param allowDuplicateXValues  a flag that controls whether duplicate
-     *                               x-values are allowed.
+     * @param serialDate  the day ({@code null} not permitted).
      */
-    public XYSeries(K key, boolean autoSort, boolean allowDuplicateXValues) {
-        super(key);
-        this.data = new java.util.ArrayList<>();
-        this.autoSort = autoSort;
-        this.allowDuplicateXValues = allowDuplicateXValues;
-        this.minX = Double.NaN;
-        this.maxX = Double.NaN;
-        this.minY = Double.NaN;
-        this.maxY = Double.NaN;
+    public Day(SerialDate serialDate) {
+        super();
+        Args.nullNotPermitted(serialDate, "serialDate");
+        this.serialDate = serialDate;
+        peg(getCalendarInstance());
     }
 
     /**
-     * Returns the smallest x-value in the series, ignoring any Double.NaN
-     * values.  This method returns Double.NaN if there is no smallest x-value
-     * (for example, when the series is empty).
+     * Constructs a new instance, based on a particular date/time.
+     * The time zone and locale are determined by the calendar
+     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
      *
-     * @return The smallest x-value.
+     * @param time  the time ({@code null} not permitted).
      *
-     * @see #getMaxX()
-     *
-     * @since 1.0.13
+     * @see #Day(Date, TimeZone, Locale)
      */
-    public double getMinX() {
-        return this.minX;
+    public Day(Date time) {
+        // defer argument checking...
+        this(time, getCalendarInstance());
     }
 
     /**
-     * Returns the largest x-value in the series, ignoring any Double.NaN
-     * values.  This method returns Double.NaN if there is no largest x-value
-     * (for example, when the series is empty).
+     * Constructs a new instance, based on a particular date/time and time zone.
      *
-     * @return The largest x-value.
-     *
-     * @see #getMinX()
-     *
-     * @since 1.0.13
+     * @param time  the date/time ({@code null} not permitted).
+     * @param zone  the time zone ({@code null} not permitted).
+     * @param locale  the locale ({@code null} not permitted).
      */
-    public double getMaxX() {
-        return this.maxX;
+    public Day(Date time, TimeZone zone, Locale locale) {
+        super();
+        Args.nullNotPermitted(time, "time");
+        Args.nullNotPermitted(zone, "zone");
+        Args.nullNotPermitted(locale, "locale");
+        Calendar calendar = Calendar.getInstance(zone, locale);
+        calendar.setTime(time);
+        initUsing(calendar);
+        peg(calendar);
     }
 
     /**
-     * Returns the smallest y-value in the series, ignoring any null and
-     * Double.NaN values.  This method returns Double.NaN if there is no
-     * smallest y-value (for example, when the series is empty).
+     * Constructs a new instance, based on a particular date/time.
+     * The time zone and locale are determined by the {@code calendar}
+     * parameter.
      *
-     * @return The smallest y-value.
-     *
-     * @see #getMaxY()
-     *
-     * @since 1.0.13
+     * @param time the date/time ({@code null} not permitted).
+     * @param calendar the calendar to use for calculations ({@code null} not permitted).
      */
-    public double getMinY() {
-        return this.minY;
+    public Day(Date time, Calendar calendar) {
+        super();
+        Args.nullNotPermitted(time, "time");
+        Args.nullNotPermitted(calendar, "calendar");
+        calendar.setTime(time);
+        initUsing(calendar);
+        peg(calendar);
+    }
+
+    private void initUsing(Calendar calendar) {
+        int d = calendar.get(Calendar.DAY_OF_MONTH);
+        int m = calendar.get(Calendar.MONTH) + 1;
+        int y = calendar.get(Calendar.YEAR);
+        this.serialDate = SerialDate.createInstance(d, m, y);
     }
 
     /**
-     * Returns the largest y-value in the series, ignoring any Double.NaN
-     * values.  This method returns Double.NaN if there is no largest y-value
-     * (for example, when the series is empty).
+     * Returns the day as a {@link SerialDate}.  Note: the reference that is
+     * returned should be an instance of an immutable {@link SerialDate}
+     * (otherwise the caller could use the reference to alter the state of
+     * this {@code Day} instance, and {@code Day} is supposed
+     * to be immutable).
      *
-     * @return The largest y-value.
-     *
-     * @see #getMinY()
-     *
-     * @since 1.0.13
+     * @return The day as a {@link SerialDate}.
      */
-    public double getMaxY() {
-        return this.maxY;
+    public SerialDate getSerialDate() {
+        return this.serialDate;
     }
 
     /**
-     * Updates the cached values for the minimum and maximum data values.
+     * Returns the year.
      *
-     * @param item  the item added ({@code null} not permitted).
-     *
-     * @since 1.0.13
+     * @return The year.
      */
-    private void updateBoundsForAddedItem(XYDataItem item) {
-        double x = item.getXValue();
-        this.minX = minIgnoreNaN(this.minX, x);
-        this.maxX = maxIgnoreNaN(this.maxX, x);
-        if (item.getY() != null) {
-            double y = item.getYValue();
-            this.minY = minIgnoreNaN(this.minY, y);
-            this.maxY = maxIgnoreNaN(this.maxY, y);
-        }
+    public int getYear() {
+        return this.serialDate.getYYYY();
     }
 
     /**
-     * Updates the cached values for the minimum and maximum data values on
-     * the basis that the specified item has just been removed.
+     * Returns the month.
      *
-     * @param item  the item added ({@code null} not permitted).
-     *
-     * @since 1.0.13
+     * @return The month.
      */
-    private void updateBoundsForRemovedItem(XYDataItem item) {
-        boolean itemContributesToXBounds = false;
-        boolean itemContributesToYBounds = false;
-        double x = item.getXValue();
-        if (!Double.isNaN(x)) {
-            if (x <= this.minX || x >= this.maxX) {
-                itemContributesToXBounds = true;
-            }
-        }
-        if (item.getY() != null) {
-            double y = item.getYValue();
-            if (!Double.isNaN(y)) {
-                if (y <= this.minY || y >= this.maxY) {
-                    itemContributesToYBounds = true;
-                }
-            }
-        }
-        if (itemContributesToYBounds) {
-            findBoundsByIteration();
-        } else if (itemContributesToXBounds) {
-            if (getAutoSort()) {
-                this.minX = getX(0).doubleValue();
-                this.maxX = getX(getItemCount() - 1).doubleValue();
-            } else {
-                findBoundsByIteration();
-            }
-        }
+    public int getMonth() {
+        return this.serialDate.getMonth();
     }
 
     /**
-     * Finds the bounds of the x and y values for the series, by iterating
-     * through all the data items.
+     * Returns the day of the month.
      *
-     * @since 1.0.13
+     * @return The day of the month.
      */
-    private void findBoundsByIteration() {
-        this.minX = Double.NaN;
-        this.maxX = Double.NaN;
-        this.minY = Double.NaN;
-        this.maxY = Double.NaN;
-        for (XYDataItem item : this.data) {
-            updateBoundsForAddedItem(item);
-        }
+    public int getDayOfMonth() {
+        return this.serialDate.getDayOfMonth();
     }
 
     /**
-     * Returns the flag that controls whether the items in the series are
-     * automatically sorted.  There is no setter for this flag, it must be
-     * defined in the series constructor.
+     * Returns the first millisecond of the day.  This will be determined
+     * relative to the time zone specified in the constructor, or in the
+     * calendar instance passed in the most recent call to the
+     * {@link #peg(Calendar)} method.
      *
-     * @return A boolean.
-     */
-    public boolean getAutoSort() {
-        return this.autoSort;
-    }
-
-    /**
-     * Returns a flag that controls whether duplicate x-values are allowed.
-     * This flag can only be set in the constructor.
+     * @return The first millisecond of the day.
      *
-     * @return A boolean.
-     */
-    public boolean getAllowDuplicateXValues() {
-        return this.allowDuplicateXValues;
-    }
-
-    /**
-     * Returns the number of items in the series.
-     *
-     * @return The item count.
-     *
-     * @see #getItems()
+     * @see #getLastMillisecond()
      */
     @Override
-    public int getItemCount() {
-        return this.data.size();
+    public long getFirstMillisecond() {
+        return this.firstMillisecond;
     }
 
     /**
-     * Returns the list of data items for the series (the list contains
-     * {@link XYDataItem} objects and is unmodifiable).
+     * Returns the last millisecond of the day.  This will be
+     * determined relative to the time zone specified in the constructor, or
+     * in the calendar instance passed in the most recent call to the
+     * {@link #peg(Calendar)} method.
      *
-     * @return The list of data items.
+     * @return The last millisecond of the day.
+     *
+     * @see #getFirstMillisecond()
      */
-    public List<XYDataItem> getItems() {
-        return Collections.unmodifiableList(this.data);
+    @Override
+    public long getLastMillisecond() {
+        return this.lastMillisecond;
     }
 
     /**
-     * Returns the maximum number of items that will be retained in the series.
-     * The default value is {@code Integer.MAX_VALUE}.
+     * Recalculates the start date/time and end date/time for this time period
+     * relative to the supplied calendar (which incorporates a time zone).
      *
-     * @return The maximum item count.
+     * @param calendar  the calendar ({@code null} not permitted).
      *
-     * @see #setMaximumItemCount(int)
+     * @since 1.0.3
      */
-    public int getMaximumItemCount() {
-        return this.maximumItemCount;
+    @Override
+    public void peg(Calendar calendar) {
+        this.firstMillisecond = getFirstMillisecond(calendar);
+        this.lastMillisecond = getLastMillisecond(calendar);
     }
 
     /**
-     * Sets the maximum number of items that will be retained in the series.
-     * If you add a new item to the series such that the number of items will
-     * exceed the maximum item count, then the first element in the series is
-     * automatically removed, ensuring that the maximum item count is not
-     * exceeded.
-     * <p>
-     * Typically this value is set before the series is populated with data,
-     * but if it is applied later, it may cause some items to be removed from
-     * the series (in which case a {@link SeriesChangeEvent} will be sent to
-     * all registered listeners).
+     * Returns the day preceding this one.
+     * No matter what time zone and locale this instance was created with,
+     * the returned instance will use the default calendar for time
+     * calculations, obtained with {@link RegularTimePeriod#getCalendarInstance()}.
      *
-     * @param maximum  the maximum number of items for the series.
+     * @return The day preceding this one.
      */
-    public void setMaximumItemCount(int maximum) {
-        this.maximumItemCount = maximum;
-        int remove = this.data.size() - maximum;
-        if (remove > 0) {
-            this.data.subList(0, remove).clear();
-            findBoundsByIteration();
-            fireSeriesChanged();
-        }
-    }
-
-    /**
-     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
-     * all registered listeners.
-     *
-     * @param item  the (x, y) item ({@code null} not permitted).
-     */
-    public void add(XYDataItem item) {
-        // argument checking delegated...
-        add(item, true);
-    }
-
-    /**
-     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
-     * all registered listeners.
-     *
-     * @param x  the x value.
-     * @param y  the y value.
-     */
-    public void add(double x, double y) {
-        add(Double.valueOf(x), Double.valueOf(y), true);
-    }
-
-    /**
-     * Adds a data item to the series and, if requested, sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param x  the x value.
-     * @param y  the y value.
-     * @param notify  a flag that controls whether a
-     *                {@link SeriesChangeEvent} is sent to all registered
-     *                listeners.
-     */
-    public void add(double x, double y, boolean notify) {
-        add(Double.valueOf(x), Double.valueOf(y), notify);
-    }
-
-    /**
-     * Adds a data item to the series and sends a {@link SeriesChangeEvent} to
-     * all registered listeners.  The unusual pairing of parameter types is to
-     * make it easier to add {@code null} y-values.
-     *
-     * @param x  the x value.
-     * @param y  the y value ({@code null} permitted).
-     */
-    public void add(double x, Number y) {
-        add(Double.valueOf(x), y);
-    }
-
-    /**
-     * Adds a data item to the series and, if requested, sends a
-     * {@link SeriesChangeEvent} to all registered listeners.  The unusual
-     * pairing of parameter types is to make it easier to add null y-values.
-     *
-     * @param x  the x value.
-     * @param y  the y value ({@code null} permitted).
-     * @param notify  a flag that controls whether a
-     *                {@link SeriesChangeEvent} is sent to all registered
-     *                listeners.
-     */
-    public void add(double x, Number y, boolean notify) {
-        add(Double.valueOf(x), y, notify);
-    }
-
-    /**
-     * Adds a new data item to the series (in the correct position if the
-     * {@code autoSort} flag is set for the series) and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     * <P>
-     * Throws an exception if the x-value is a duplicate AND the
-     * allowDuplicateXValues flag is false.
-     *
-     * @param x  the x-value ({@code null} not permitted).
-     * @param y  the y-value ({@code null} permitted).
-     *
-     * @throws SeriesException if the x-value is a duplicate and the
-     *     {@code allowDuplicateXValues} flag is not set for this series.
-     */
-    public void add(Number x, Number y) {
-        // argument checking delegated...
-        add(x, y, true);
-    }
-
-    /**
-     * Adds new data to the series and, if requested, sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     * <P>
-     * Throws an exception if the x-value is a duplicate AND the
-     * allowDuplicateXValues flag is false.
-     *
-     * @param x  the x-value ({@code null} not permitted).
-     * @param y  the y-value ({@code null} permitted).
-     * @param notify  a flag the controls whether a
-     *                {@link SeriesChangeEvent} is sent to all registered
-     *                listeners.
-     */
-    public void add(Number x, Number y, boolean notify) {
-        // delegate argument checking to XYDataItem...
-        XYDataItem item = new XYDataItem(x, y);
-        add(item, notify);
-    }
-
-    /**
-     * Adds a data item to the series and, if requested, sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param item  the (x, y) item ({@code null} not permitted).
-     * @param notify  a flag that controls whether a
-     *                {@link SeriesChangeEvent} is sent to all registered
-     *                listeners.
-     */
-    public void add(XYDataItem item, boolean notify) {
-        Args.nullNotPermitted(item, "item");
-        XYDataItem clone = (XYDataItem) item.clone();
-        if (this.autoSort) {
-            int index = Collections.binarySearch(this.data, item);
-            if (index < 0) {
-                this.data.add(-index - 1, clone);
-            } else {
-                if (this.allowDuplicateXValues) {
-                    // need to make sure we are adding *after* any duplicates
-                    int size = this.data.size();
-                    while (index < size && item.compareTo(this.data.get(index)) == 0) {
-                        index++;
-                    }
-                    if (index < this.data.size()) {
-                        this.data.add(index, clone);
-                    } else {
-                        this.data.add(clone);
-                    }
-                } else {
-                    throw new SeriesException("X-value already exists.");
-                }
-            }
+    @Override
+    public RegularTimePeriod previous() {
+        int serial = this.serialDate.toSerial();
+        if (serial > SerialDate.SERIAL_LOWER_BOUND) {
+            SerialDate yesterday = SerialDate.createInstance(serial - 1);
+            return new Day(yesterday);
         } else {
-            if (!this.allowDuplicateXValues) {
-                // can't allow duplicate values, so we need to check whether
-                // there is an item with the given x-value already
-                int index = indexOf(item.getX());
-                if (index >= 0) {
-                    throw new SeriesException("X-value already exists.");
-                }
-            }
-            this.data.add(item);
-        }
-        updateBoundsForAddedItem(item);
-        if (getItemCount() > this.maximumItemCount) {
-            XYDataItem removed = this.data.remove(0);
-            updateBoundsForRemovedItem(removed);
-        }
-        if (notify) {
-            fireSeriesChanged();
-        }
-    }
-
-    /**
-     * Deletes a range of items from the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param start  the start index (zero-based).
-     * @param end  the end index (zero-based).
-     */
-    public void delete(int start, int end) {
-        this.data.subList(start, end + 1).clear();
-        findBoundsByIteration();
-        fireSeriesChanged();
-    }
-
-    /**
-     * Removes the item at the specified index and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param index  the index.
-     *
-     * @return The item removed.
-     */
-    public XYDataItem remove(int index) {
-        XYDataItem removed = this.data.remove(index);
-        updateBoundsForRemovedItem(removed);
-        fireSeriesChanged();
-        return removed;
-    }
-
-    /**
-     * Removes an item with the specified x-value and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.  Note that when
-     * a series permits multiple items with the same x-value, this method
-     * could remove any one of the items with that x-value.
-     *
-     * @param x  the x-value.
-     *
-     * @return The item removed.
-     */
-    public XYDataItem remove(Number x) {
-        return remove(indexOf(x));
-    }
-
-    /**
-     * Removes all data items from the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     */
-    public void clear() {
-        if (!this.data.isEmpty()) {
-            this.data.clear();
-            this.minX = Double.NaN;
-            this.maxX = Double.NaN;
-            this.minY = Double.NaN;
-            this.maxY = Double.NaN;
-            fireSeriesChanged();
-        }
-    }
-
-    /**
-     * Returns a copy of the data item with the specified index.
-     *
-     * @param index  the index.
-     *
-     * @return The data item with the specified index.
-     */
-    public XYDataItem getDataItem(int index) {
-        XYDataItem item = this.data.get(index);
-        return (XYDataItem) item.clone();
-    }
-
-    /**
-     * Return the data item with the specified index.
-     *
-     * @param index  the index.
-     *
-     * @return The data item with the specified index.
-     *
-     * @since 1.0.14
-     */
-    XYDataItem getRawDataItem(int index) {
-        return this.data.get(index);
-    }
-
-    /**
-     * Returns the x-value at the specified index.
-     *
-     * @param index  the index (zero-based).
-     *
-     * @return The x-value (never {@code null}).
-     */
-    public Number getX(int index) {
-        return getRawDataItem(index).getX();
-    }
-
-    /**
-     * Returns the y-value at the specified index.
-     *
-     * @param index  the index (zero-based).
-     *
-     * @return The y-value (possibly {@code null}).
-     */
-    public Number getY(int index) {
-        return getRawDataItem(index).getY();
-    }
-
-    /**
-     * A function to find the minimum of two values, but ignoring any
-     * Double.NaN values.
-     *
-     * @param a  the first value.
-     * @param b  the second value.
-     *
-     * @return The minimum of the two values.
-     */
-    private double minIgnoreNaN(double a, double b) {
-        if (Double.isNaN(a)) {
-            return b;
-        }
-        if (Double.isNaN(b)) {
-            return a;
-        }
-        return Math.min(a, b);
-    }
-
-    /**
-     * A function to find the maximum of two values, but ignoring any
-     * Double.NaN values.
-     *
-     * @param a  the first value.
-     * @param b  the second value.
-     *
-     * @return The maximum of the two values.
-     */
-    private double maxIgnoreNaN(double a, double b) {
-        if (Double.isNaN(a)) {
-            return b;
-        }
-        if (Double.isNaN(b)) {
-            return a;
-        }
-        return Math.max(a, b);
-    }
-
-    /**
-     * Updates the value of an item in the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param index  the item (zero based index).
-     * @param y  the new value ({@code null} permitted).
-     *
-     * @since 1.0.1
-     */
-    public void updateByIndex(int index, Number y) {
-        XYDataItem item = getRawDataItem(index);
-        // figure out if we need to iterate through all the y-values
-        boolean iterate = false;
-        double oldY = item.getYValue();
-        if (!Double.isNaN(oldY)) {
-            iterate = oldY <= this.minY || oldY >= this.maxY;
-        }
-        item.setY(y);
-        if (iterate) {
-            findBoundsByIteration();
-        } else if (y != null) {
-            double yy = y.doubleValue();
-            this.minY = minIgnoreNaN(this.minY, yy);
-            this.maxY = maxIgnoreNaN(this.maxY, yy);
-        }
-        fireSeriesChanged();
-    }
-
-    /**
-     * Updates an item in the series.
-     *
-     * @param x  the x-value ({@code null} not permitted).
-     * @param y  the y-value ({@code null} permitted).
-     *
-     * @throws SeriesException if there is no existing item with the specified
-     *         x-value.
-     */
-    public void update(Number x, Number y) {
-        int index = indexOf(x);
-        if (index < 0) {
-            throw new SeriesException("No observation for x = " + x);
-        }
-        updateByIndex(index, y);
-    }
-
-    /**
-     * Adds or updates an item in the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param x  the x-value.
-     * @param y  the y-value.
-     *
-     * @return The item that was overwritten, if any.
-     *
-     * @since 1.0.10
-     */
-    public XYDataItem addOrUpdate(double x, double y) {
-        return addOrUpdate(Double.valueOf(x), Double.valueOf(y));
-    }
-
-    /**
-     * Adds or updates an item in the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param x  the x-value ({@code null} not permitted).
-     * @param y  the y-value ({@code null} permitted).
-     *
-     * @return A copy of the overwritten data item, or {@code null} if no
-     *         item was overwritten.
-     */
-    public XYDataItem addOrUpdate(Number x, Number y) {
-        // defer argument checking
-        return addOrUpdate(new XYDataItem(x, y));
-    }
-
-    /**
-     * Adds or updates an item in the series and sends a
-     * {@link SeriesChangeEvent} to all registered listeners.
-     *
-     * @param item  the data item ({@code null} not permitted).
-     *
-     * @return A copy of the overwritten data item, or {@code null} if no
-     *         item was overwritten.
-     *
-     * @since 1.0.14
-     */
-    public XYDataItem addOrUpdate(XYDataItem item) {
-        Args.nullNotPermitted(item, "item");
-        if (this.allowDuplicateXValues) {
-            add(item);
             return null;
         }
-        // if we get to here, we know that duplicate X values are not permitted
-        XYDataItem overwritten = null;
-        int index = indexOf(item.getX());
-        if (index >= 0) {
-            XYDataItem existing = this.data.get(index);
-            overwritten = (XYDataItem) existing.clone();
-            // figure out if we need to iterate through all the y-values
-            boolean iterate = false;
-            double oldY = existing.getYValue();
-            if (!Double.isNaN(oldY)) {
-                iterate = oldY <= this.minY || oldY >= this.maxY;
-            }
-            existing.setY(item.getY());
-            if (iterate) {
-                findBoundsByIteration();
-            } else if (item.getY() != null) {
-                double yy = item.getY().doubleValue();
-                this.minY = minIgnoreNaN(this.minY, yy);
-                this.maxY = maxIgnoreNaN(this.maxY, yy);
-            }
-        } else {
-            // if the series is sorted, the negative index is a result from
-            // Collections.binarySearch() and tells us where to insert the
-            // new item...otherwise it will be just -1 and we should just
-            // append the value to the list...
-            item = (XYDataItem) item.clone();
-            if (this.autoSort) {
-                this.data.add(-index - 1, item);
-            } else {
-                this.data.add(item);
-            }
-            updateBoundsForAddedItem(item);
-            // check if this addition will exceed the maximum item count...
-            if (getItemCount() > this.maximumItemCount) {
-                XYDataItem removed = this.data.remove(0);
-                updateBoundsForRemovedItem(removed);
-            }
-        }
-        fireSeriesChanged();
-        return overwritten;
     }
 
     /**
-     * Returns the index of the item with the specified x-value, or a negative
-     * index if the series does not contain an item with that x-value.  Be
-     * aware that for an unsorted series, the index is found by iterating
-     * through all items in the series.
+     * Returns the day following this one, or {@code null} if some limit
+     * has been reached.
+     * No matter what time zone and locale this instance was created with,
+     * the returned instance will use the default calendar for time
+     * calculations, obtained with {@link RegularTimePeriod#getCalendarInstance()}.
      *
-     * @param x  the x-value ({@code null} not permitted).
-     *
-     * @return The index.
-     */
-    public int indexOf(Number x) {
-        if (this.autoSort) {
-            return Collections.binarySearch(this.data, new XYDataItem(x, null));
-        } else {
-            for (int i = 0; i < this.data.size(); i++) {
-                XYDataItem item = this.data.get(i);
-                if (item.getX().equals(x)) {
-                    return i;
-                }
-            }
-            return -1;
-        }
-    }
-
-    /**
-     * Returns a new array containing the x and y values from this series.
-     *
-     * @return A new array containing the x and y values from this series.
-     *
-     * @since 1.0.4
-     */
-    public double[][] toArray() {
-        int itemCount = getItemCount();
-        double[][] result = new double[2][itemCount];
-        for (int i = 0; i < itemCount; i++) {
-            result[0][i] = this.getX(i).doubleValue();
-            Number y = getY(i);
-            if (y != null) {
-                result[1][i] = y.doubleValue();
-            } else {
-                result[1][i] = Double.NaN;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a clone of the series.
-     *
-     * @return A clone of the series.
-     *
-     * @throws CloneNotSupportedException if there is a cloning problem.
+     * @return The day following this one, or {@code null} if some limit
+     *         has been reached.
      */
     @Override
-    @SuppressWarnings("unchecked")
-    public Object clone() throws CloneNotSupportedException {
-        XYSeries<K> clone = (XYSeries) super.clone();
-        clone.data = CloneUtils.cloneList(this.data);
-        return clone;
-    }
-
-    /**
-     * Creates a new series by copying a subset of the data in this time series.
-     *
-     * @param start  the index of the first item to copy.
-     * @param end  the index of the last item to copy.
-     *
-     * @return A series containing a copy of this series from start until end.
-     *
-     * @throws CloneNotSupportedException if there is a cloning problem.
-     */
-    @SuppressWarnings("unchecked")
-    public XYSeries<K> createCopy(int start, int end) throws CloneNotSupportedException {
-        XYSeries<K> copy = (XYSeries) super.clone();
-        copy.data = new ArrayList<>();
-        if (!this.data.isEmpty()) {
-            for (int index = start; index <= end; index++) {
-                XYDataItem item = this.data.get(index);
-                XYDataItem clone = CloneUtils.clone(item);
-                try {
-                    copy.add(clone);
-                } catch (SeriesException e) {
-                    throw new RuntimeException("Unable to add cloned data item.", e);
-                }
-            }
+    public RegularTimePeriod next() {
+        int serial = this.serialDate.toSerial();
+        if (serial < SerialDate.SERIAL_UPPER_BOUND) {
+            SerialDate tomorrow = SerialDate.createInstance(serial + 1);
+            return new Day(tomorrow);
+        } else {
+            return null;
         }
-        return copy;
     }
 
     /**
-     * Tests this series for equality with an arbitrary object.
+     * Returns a serial index number for the day.
      *
-     * @param obj  the object to test against for equality
-     *             ({@code null} permitted).
-     *
-     * @return A boolean.
+     * @return The serial index number.
      */
     @Override
-    @SuppressWarnings("unchecked")
+    public long getSerialIndex() {
+        return this.serialDate.toSerial();
+    }
+
+    /**
+     * Returns the first millisecond of the day, evaluated using the supplied
+     * calendar (which determines the time zone).
+     *
+     * @param calendar  calendar to use ({@code null} not permitted).
+     *
+     * @return The start of the day as milliseconds since 01-01-1970.
+     *
+     * @throws NullPointerException if {@code calendar} is
+     *     {@code null}.
+     */
+    @Override
+    public long getFirstMillisecond(Calendar calendar) {
+        int year = this.serialDate.getYYYY();
+        int month = this.serialDate.getMonth();
+        int day = this.serialDate.getDayOfMonth();
+        calendar.clear();
+        calendar.set(year, month - 1, day, 0, 0, 0);
+        calendar.set(Calendar.MILLISECOND, 0);
+        return calendar.getTimeInMillis();
+    }
+
+    /**
+     * Returns the last millisecond of the day, evaluated using the supplied
+     * calendar (which determines the time zone).
+     *
+     * @param calendar  calendar to use ({@code null} not permitted).
+     *
+     * @return The end of the day as milliseconds since 01-01-1970.
+     *
+     * @throws NullPointerException if {@code calendar} is
+     *     {@code null}.
+     */
+    @Override
+    public long getLastMillisecond(Calendar calendar) {
+        int year = this.serialDate.getYYYY();
+        int month = this.serialDate.getMonth();
+        int day = this.serialDate.getDayOfMonth();
+        calendar.clear();
+        calendar.set(year, month - 1, day, 23, 59, 59);
+        calendar.set(Calendar.MILLISECOND, 999);
+        return calendar.getTimeInMillis();
+    }
+
+    /**
+     * Tests the equality of this Day object to an arbitrary object.  Returns
+     * true if the target is a Day instance or a SerialDate instance
+     * representing the same day as this object. In all other cases,
+     * returns false.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A flag indicating whether an object is equal to this day.
+     */
+    @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof XYSeries)) {
+        if (!(obj instanceof Day)) {
             return false;
         }
-        if (!super.equals(obj)) {
-            return false;
-        }
-        XYSeries<K> that = (XYSeries) obj;
-        if (this.maximumItemCount != that.maximumItemCount) {
-            return false;
-        }
-        if (this.autoSort != that.autoSort) {
-            return false;
-        }
-        if (this.allowDuplicateXValues != that.allowDuplicateXValues) {
-            return false;
-        }
-        if (!Objects.equals(this.data, that.data)) {
+        Day that = (Day) obj;
+        if (!this.serialDate.equals(that.getSerialDate())) {
             return false;
         }
         return true;
     }
 
     /**
-     * Returns a hash code.
+     * Returns a hash code for this object instance.  The approach described by
+     * Joshua Bloch in "Effective Java" has been used here:
+     * <p>
+     * {@code http://developer.java.sun.com/developer/Books/effectivejava
+     * /Chapter3.pdf}
      *
      * @return A hash code.
      */
     @Override
     public int hashCode() {
-        int result = super.hashCode();
-        // it is too slow to look at every data item, so let's just look at
-        // the first, middle and last items...
-        int count = getItemCount();
-        if (count > 0) {
-            XYDataItem item = getRawDataItem(0);
-            result = 29 * result + item.hashCode();
+        return this.serialDate.hashCode();
+    }
+
+    /**
+     * Returns an integer indicating the order of this Day object relative to
+     * the specified object:
+     * <p>
+     * negative == before, zero == same, positive == after.
+     *
+     * @param o1  the object to compare.
+     *
+     * @return negative == before, zero == same, positive == after.
+     */
+    @Override
+    public int compareTo(TimePeriod o1) {
+        int result;
+        // CASE 1 : Comparing to another Day object
+        // ----------------------------------------
+        if (o1 instanceof Day) {
+            Day d = (Day) o1;
+            result = -d.getSerialDate().compare(this.serialDate);
+        } else // CASE 2 : Comparing to another TimePeriod object
+        // -----------------------------------------------
+        if (o1 instanceof RegularTimePeriod) {
+            // more difficult case - evaluate later...
+            result = 0;
+        } else // CASE 3 : Comparing to a non-TimePeriod object
+        // ---------------------------------------------
+        {
+            // consider time periods to be ordered after general objects
+            result = 1;
         }
-        if (count > 1) {
-            XYDataItem item = getRawDataItem(count - 1);
-            result = 29 * result + item.hashCode();
-        }
-        if (count > 2) {
-            XYDataItem item = getRawDataItem(count / 2);
-            result = 29 * result + item.hashCode();
-        }
-        result = 29 * result + this.maximumItemCount;
-        result = 29 * result + (this.autoSort ? 1 : 0);
-        result = 29 * result + (this.allowDuplicateXValues ? 1 : 0);
         return result;
+    }
+
+    /**
+     * Returns a string representing the day.
+     *
+     * @return A string representing the day.
+     */
+    @Override
+    public String toString() {
+        return this.serialDate.toString();
+    }
+
+    /**
+     * Parses the string argument as a day.
+     * <P>
+     * This method is required to recognise YYYY-MM-DD as a valid format.
+     * Anything else, for now, is a bonus.
+     *
+     * @param s  the date string to parse.
+     *
+     * @return {@code null} if the string does not contain any parseable
+     *      string, the day otherwise.
+     */
+    public static Day parseDay(String s) {
+        try {
+            return new Day(Day.DATE_FORMAT.parse(s));
+        } catch (ParseException e1) {
+            try {
+                return new Day(Day.DATE_FORMAT_SHORT.parse(s));
+            } catch (ParseException e2) {
+                // ignore
+            }
+        }
+        return null;
     }
 }
 /* ======================================================
@@ -961,51 +485,761 @@ class XYSeries<K extends Comparable<K>> extends Series<K> implements Cloneable, 
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ----------------
- * DatasetTags.java
- * ----------------
- * (C) Copyright 2003-present, by David Gilbert and Contributors.
+ * --------------
+ * TextTitle.java
+ * --------------
+ * (C) Copyright 2000-present, by David Berry and Contributors.
  *
- * Original Author:  David Gilbert;
- * Contributor(s):   -;
- *
- * Changes
- * -------
- * 23-Jan-2003 : Version 1 (DG);
- *
+ * Original Author:  David Berry;
+ * Contributor(s):   David Gilbert;
+ *                   Nicolas Brodu;
+ *                   Peter Kolb - patch 2603321;
  */
 /**
- * Constants for the tags that identify the elements in the XML files.
+ * A chart title that displays a text string with automatic wrapping as
+ * required.
  */
-interface DatasetTags {
+public class TextTitle extends Title implements Serializable, Cloneable, PublicCloneable {
 
     /**
-     * The 'PieDataset' element name.
+     * For serialization.
      */
-    String PIEDATASET_TAG = "PieDataset";
+    private static final long serialVersionUID = 8372008692127477443L;
 
     /**
-     * The 'CategoryDataset' element name.
+     * The default font.
      */
-    String CATEGORYDATASET_TAG = "CategoryDataset";
+    public static final Font DEFAULT_FONT = new Font("SansSerif", Font.BOLD, 12);
 
     /**
-     * The 'Series' element name.
+     * The default text color.
      */
-    String SERIES_TAG = "Series";
+    public static final Paint DEFAULT_TEXT_PAINT = Color.BLACK;
 
     /**
-     * The 'Item' element name.
+     * The title text.
      */
-    String ITEM_TAG = "Item";
+    private String text;
 
     /**
-     * The 'Key' element name.
+     * The font used to display the title.
      */
-    String KEY_TAG = "Key";
+    private Font font;
 
     /**
-     * The 'Value' element name.
+     * The text alignment.
      */
-    String VALUE_TAG = "Value";
+    private HorizontalAlignment textAlignment;
+
+    /**
+     * The paint used to display the title text.
+     */
+    private transient Paint paint;
+
+    /**
+     * The background paint.
+     */
+    private transient Paint backgroundPaint;
+
+    /**
+     * The tool tip text (can be {@code null}).
+     */
+    private String toolTipText;
+
+    /**
+     * The URL text (can be {@code null}).
+     */
+    private String urlText;
+
+    /**
+     * The content.
+     */
+    private TextBlock content;
+
+    /**
+     * A flag that controls whether the title expands to fit the available
+     * space..
+     */
+    private boolean expandToFitSpace = false;
+
+    /**
+     * The maximum number of lines to display.
+     */
+    private int maximumLinesToDisplay = Integer.MAX_VALUE;
+
+    /**
+     * Creates a new title, using default attributes where necessary.
+     */
+    public TextTitle() {
+        this("");
+    }
+
+    /**
+     * Creates a new title, using default attributes where necessary.
+     *
+     * @param text  the title text ({@code null} not permitted).
+     */
+    public TextTitle(String text) {
+        this(text, TextTitle.DEFAULT_FONT, TextTitle.DEFAULT_TEXT_PAINT, Title.DEFAULT_POSITION, Title.DEFAULT_HORIZONTAL_ALIGNMENT, Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING);
+    }
+
+    /**
+     * Creates a new title, using default attributes where necessary.
+     *
+     * @param text  the title text ({@code null} not permitted).
+     * @param font  the title font ({@code null} not permitted).
+     */
+    public TextTitle(String text, Font font) {
+        this(text, font, TextTitle.DEFAULT_TEXT_PAINT, Title.DEFAULT_POSITION, Title.DEFAULT_HORIZONTAL_ALIGNMENT, Title.DEFAULT_VERTICAL_ALIGNMENT, Title.DEFAULT_PADDING);
+    }
+
+    /**
+     * Creates a new title with the specified attributes.
+     *
+     * @param text  the text for the title ({@code null} not permitted).
+     * @param font  the title font ({@code null} not permitted).
+     * @param paint  the title paint ({@code null} not permitted).
+     * @param position  the title position ({@code null} not permitted).
+     * @param horizontalAlignment  the horizontal alignment ({@code null}
+     *                             not permitted).
+     * @param verticalAlignment  the vertical alignment ({@code null} not
+     *                           permitted).
+     * @param padding  the space to leave around the outside of the title.
+     */
+    public TextTitle(String text, Font font, Paint paint, RectangleEdge position, HorizontalAlignment horizontalAlignment, VerticalAlignment verticalAlignment, RectangleInsets padding) {
+        super(position, horizontalAlignment, verticalAlignment, padding);
+        Args.nullNotPermitted(text, "text");
+        Args.nullNotPermitted(font, "font");
+        Args.nullNotPermitted(paint, "paint");
+        this.text = text;
+        this.font = font;
+        this.paint = paint;
+        // the textAlignment and the horizontalAlignment are separate things,
+        // but it makes sense for the default textAlignment to match the
+        // title's horizontal alignment...
+        this.textAlignment = horizontalAlignment;
+        this.backgroundPaint = null;
+        this.content = null;
+        this.toolTipText = null;
+        this.urlText = null;
+    }
+
+    /**
+     * Returns the title text.
+     *
+     * @return The text (never {@code null}).
+     *
+     * @see #setText(String)
+     */
+    public String getText() {
+        return this.text;
+    }
+
+    /**
+     * Sets the title to the specified text and sends a
+     * {@link TitleChangeEvent} to all registered listeners.
+     *
+     * @param text  the text ({@code null} not permitted).
+     */
+    public void setText(String text) {
+        Args.nullNotPermitted(text, "text");
+        if (!this.text.equals(text)) {
+            this.text = text;
+            notifyListeners(new TitleChangeEvent(this));
+        }
+    }
+
+    /**
+     * Returns the text alignment.  This controls how the text is aligned
+     * within the title's bounds, whereas the title's horizontal alignment
+     * controls how the title's bounding rectangle is aligned within the
+     * drawing space.
+     *
+     * @return The text alignment.
+     */
+    public HorizontalAlignment getTextAlignment() {
+        return this.textAlignment;
+    }
+
+    /**
+     * Sets the text alignment and sends a {@link TitleChangeEvent} to
+     * all registered listeners.
+     *
+     * @param alignment  the alignment ({@code null} not permitted).
+     */
+    public void setTextAlignment(HorizontalAlignment alignment) {
+        Args.nullNotPermitted(alignment, "alignment");
+        this.textAlignment = alignment;
+        notifyListeners(new TitleChangeEvent(this));
+    }
+
+    /**
+     * Returns the font used to display the title string.
+     *
+     * @return The font (never {@code null}).
+     *
+     * @see #setFont(Font)
+     */
+    public Font getFont() {
+        return this.font;
+    }
+
+    /**
+     * Sets the font used to display the title string.  Registered listeners
+     * are notified that the title has been modified.
+     *
+     * @param font  the new font ({@code null} not permitted).
+     *
+     * @see #getFont()
+     */
+    public void setFont(Font font) {
+        Args.nullNotPermitted(font, "font");
+        if (!this.font.equals(font)) {
+            this.font = font;
+            notifyListeners(new TitleChangeEvent(this));
+        }
+    }
+
+    /**
+     * Returns the paint used to display the title string.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setPaint(Paint)
+     */
+    public Paint getPaint() {
+        return this.paint;
+    }
+
+    /**
+     * Sets the paint used to display the title string.  Registered listeners
+     * are notified that the title has been modified.
+     *
+     * @param paint  the new paint ({@code null} not permitted).
+     *
+     * @see #getPaint()
+     */
+    public void setPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        if (!this.paint.equals(paint)) {
+            this.paint = paint;
+            notifyListeners(new TitleChangeEvent(this));
+        }
+    }
+
+    /**
+     * Returns the background paint (defaults to {@code null} which makes the
+     * background transparent).
+     *
+     * @return The paint (possibly {@code null}).
+     */
+    public Paint getBackgroundPaint() {
+        return this.backgroundPaint;
+    }
+
+    /**
+     * Sets the background paint and sends a {@link TitleChangeEvent} to all
+     * registered listeners.  If you set this attribute to {@code null},
+     * no background is painted (which makes the title background transparent).
+     *
+     * @param paint  the background paint ({@code null} permitted).
+     */
+    public void setBackgroundPaint(Paint paint) {
+        this.backgroundPaint = paint;
+        notifyListeners(new TitleChangeEvent(this));
+    }
+
+    /**
+     * Returns the tool tip text.
+     *
+     * @return The tool tip text (possibly {@code null}).
+     */
+    public String getToolTipText() {
+        return this.toolTipText;
+    }
+
+    /**
+     * Sets the tool tip text to the specified text and sends a
+     * {@link TitleChangeEvent} to all registered listeners.
+     *
+     * @param text  the text ({@code null} permitted).
+     */
+    public void setToolTipText(String text) {
+        this.toolTipText = text;
+        notifyListeners(new TitleChangeEvent(this));
+    }
+
+    /**
+     * Returns the URL text.
+     *
+     * @return The URL text (possibly {@code null}).
+     */
+    public String getURLText() {
+        return this.urlText;
+    }
+
+    /**
+     * Sets the URL text to the specified text and sends a
+     * {@link TitleChangeEvent} to all registered listeners.
+     *
+     * @param text  the text ({@code null} permitted).
+     */
+    public void setURLText(String text) {
+        this.urlText = text;
+        notifyListeners(new TitleChangeEvent(this));
+    }
+
+    /**
+     * Returns the flag that controls whether the title expands to fit
+     * the available space.
+     *
+     * @return The flag.
+     */
+    public boolean getExpandToFitSpace() {
+        return this.expandToFitSpace;
+    }
+
+    /**
+     * Sets the flag that controls whether the title expands to fit the
+     * available space, and sends a {@link TitleChangeEvent} to all registered
+     * listeners.
+     *
+     * @param expand  the flag.
+     */
+    public void setExpandToFitSpace(boolean expand) {
+        this.expandToFitSpace = expand;
+        notifyListeners(new TitleChangeEvent(this));
+    }
+
+    /**
+     * Returns the maximum number of lines to display.
+     *
+     * @return The maximum.
+     *
+     * @see #setMaximumLinesToDisplay(int)
+     */
+    public int getMaximumLinesToDisplay() {
+        return this.maximumLinesToDisplay;
+    }
+
+    /**
+     * Sets the maximum number of lines to display and sends a
+     * {@link TitleChangeEvent} to all registered listeners.
+     *
+     * @param max  the maximum.
+     *
+     * @see #getMaximumLinesToDisplay()
+     */
+    public void setMaximumLinesToDisplay(int max) {
+        this.maximumLinesToDisplay = max;
+        notifyListeners(new TitleChangeEvent(this));
+    }
+
+    /**
+     * Arranges the contents of the block, within the given constraints, and
+     * returns the block size.
+     *
+     * @param g2  the graphics device.
+     * @param constraint  the constraint ({@code null} not permitted).
+     *
+     * @return The block size (in Java2D units, never {@code null}).
+     */
+    @Override
+    public Size2D arrange(Graphics2D g2, RectangleConstraint constraint) {
+        RectangleConstraint cc = toContentConstraint(constraint);
+        LengthConstraintType w = cc.getWidthConstraintType();
+        LengthConstraintType h = cc.getHeightConstraintType();
+        Size2D contentSize = null;
+        if (w == LengthConstraintType.NONE) {
+            if (h == LengthConstraintType.NONE) {
+                contentSize = arrangeNN(g2);
+            } else if (h == LengthConstraintType.RANGE) {
+                throw new RuntimeException("Not yet implemented.");
+            } else if (h == LengthConstraintType.FIXED) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+        } else if (w == LengthConstraintType.RANGE) {
+            if (h == LengthConstraintType.NONE) {
+                contentSize = arrangeRN(g2, cc.getWidthRange());
+            } else if (h == LengthConstraintType.RANGE) {
+                contentSize = arrangeRR(g2, cc.getWidthRange(), cc.getHeightRange());
+            } else if (h == LengthConstraintType.FIXED) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+        } else if (w == LengthConstraintType.FIXED) {
+            if (h == LengthConstraintType.NONE) {
+                contentSize = arrangeFN(g2, cc.getWidth());
+            } else if (h == LengthConstraintType.RANGE) {
+                throw new RuntimeException("Not yet implemented.");
+            } else if (h == LengthConstraintType.FIXED) {
+                throw new RuntimeException("Not yet implemented.");
+            }
+        }
+        // suppress compiler warning
+        assert contentSize != null;
+        return new Size2D(calculateTotalWidth(contentSize.getWidth()), calculateTotalHeight(contentSize.getHeight()));
+    }
+
+    /**
+     * Arranges the content for this title assuming no bounds on the width
+     * or the height, and returns the required size.  This will reflect the
+     * fact that a text title positioned on the left or right of a chart will
+     * be rotated by 90 degrees.
+     *
+     * @param g2  the graphics target.
+     *
+     * @return The content size.
+     */
+    protected Size2D arrangeNN(Graphics2D g2) {
+        Range max = new Range(0.0, Float.MAX_VALUE);
+        return arrangeRR(g2, max, max);
+    }
+
+    /**
+     * Arranges the content for this title assuming a fixed width and no bounds
+     * on the height, and returns the required size.  This will reflect the
+     * fact that a text title positioned on the left or right of a chart will
+     * be rotated by 90 degrees.
+     *
+     * @param g2  the graphics target.
+     * @param w  the width.
+     *
+     * @return The content size.
+     */
+    protected Size2D arrangeFN(Graphics2D g2, double w) {
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
+            float maxWidth = (float) w;
+            g2.setFont(this.font);
+            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+            if (this.expandToFitSpace) {
+                return new Size2D(maxWidth, contentSize.getHeight());
+            } else {
+                return contentSize;
+            }
+        } else if (position == RectangleEdge.LEFT || position == RectangleEdge.RIGHT) {
+            float maxWidth = Float.MAX_VALUE;
+            g2.setFont(this.font);
+            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+            // transpose the dimensions, because the title is rotated
+            if (this.expandToFitSpace) {
+                return new Size2D(contentSize.getHeight(), maxWidth);
+            } else {
+                return new Size2D(contentSize.height, contentSize.width);
+            }
+        } else {
+            throw new RuntimeException("Unrecognised exception.");
+        }
+    }
+
+    /**
+     * Arranges the content for this title assuming a range constraint for the
+     * width and no bounds on the height, and returns the required size.  This
+     * will reflect the fact that a text title positioned on the left or right
+     * of a chart will be rotated by 90 degrees.
+     *
+     * @param g2  the graphics target.
+     * @param widthRange  the range for the width.
+     *
+     * @return The content size.
+     */
+    protected Size2D arrangeRN(Graphics2D g2, Range widthRange) {
+        Size2D s = arrangeNN(g2);
+        if (widthRange.contains(s.getWidth())) {
+            return s;
+        }
+        double ww = widthRange.constrain(s.getWidth());
+        return arrangeFN(g2, ww);
+    }
+
+    /**
+     * Returns the content size for the title.  This will reflect the fact that
+     * a text title positioned on the left or right of a chart will be rotated
+     * 90 degrees.
+     *
+     * @param g2  the graphics device.
+     * @param widthRange  the width range.
+     * @param heightRange  the height range.
+     *
+     * @return The content size.
+     */
+    protected Size2D arrangeRR(Graphics2D g2, Range widthRange, Range heightRange) {
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
+            float maxWidth = (float) widthRange.getUpperBound();
+            g2.setFont(this.font);
+            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+            if (this.expandToFitSpace) {
+                return new Size2D(maxWidth, contentSize.getHeight());
+            } else {
+                return contentSize;
+            }
+        } else if (position == RectangleEdge.LEFT || position == RectangleEdge.RIGHT) {
+            float maxWidth = (float) heightRange.getUpperBound();
+            g2.setFont(this.font);
+            this.content = TextUtils.createTextBlock(this.text, this.font, this.paint, maxWidth, this.maximumLinesToDisplay, new G2TextMeasurer(g2));
+            this.content.setLineAlignment(this.textAlignment);
+            Size2D contentSize = this.content.calculateDimensions(g2);
+            // transpose the dimensions, because the title is rotated
+            if (this.expandToFitSpace) {
+                return new Size2D(contentSize.getHeight(), maxWidth);
+            } else {
+                return new Size2D(contentSize.height, contentSize.width);
+            }
+        } else {
+            throw new RuntimeException("Unrecognised exception.");
+        }
+    }
+
+    /**
+     * Draws the title on a Java 2D graphics device (such as the screen or a
+     * printer).
+     *
+     * @param g2  the graphics device.
+     * @param area  the area allocated for the title.
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area) {
+        draw(g2, area, null);
+    }
+
+    /**
+     * Draws the block within the specified area.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area.
+     * @param params  if this is an instance of {@link EntityBlockParams} it
+     *                is used to determine whether an
+     *                {@link EntityCollection} is returned by this method.
+     *
+     * @return An {@link EntityCollection} containing a chart entity for the
+     *         title, or {@code null}.
+     */
+    @Override
+    public Object draw(Graphics2D g2, Rectangle2D area, Object params) {
+        if (this.content == null) {
+            return null;
+        }
+        area = trimMargin(area);
+        drawBorder(g2, area);
+        if (this.text.equals("")) {
+            return null;
+        }
+        ChartEntity entity = null;
+        if (params instanceof EntityBlockParams) {
+            EntityBlockParams p = (EntityBlockParams) params;
+            if (p.getGenerateEntities()) {
+                entity = new TitleEntity(area, this, this.toolTipText, this.urlText);
+            }
+        }
+        area = trimBorder(area);
+        if (this.backgroundPaint != null) {
+            g2.setPaint(this.backgroundPaint);
+            g2.fill(area);
+        }
+        area = trimPadding(area);
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP || position == RectangleEdge.BOTTOM) {
+            drawHorizontal(g2, area);
+        } else if (position == RectangleEdge.LEFT || position == RectangleEdge.RIGHT) {
+            drawVertical(g2, area);
+        }
+        BlockResult result = new BlockResult();
+        if (entity != null) {
+            StandardEntityCollection sec = new StandardEntityCollection();
+            sec.add(entity);
+            result.setEntityCollection(sec);
+        }
+        return result;
+    }
+
+    /**
+     * Draws a the title horizontally within the specified area.  This method
+     * will be called from the {@link #draw(Graphics2D, Rectangle2D) draw}
+     * method.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area for the title.
+     */
+    protected void drawHorizontal(Graphics2D g2, Rectangle2D area) {
+        Rectangle2D titleArea = (Rectangle2D) area.clone();
+        g2.setFont(this.font);
+        g2.setPaint(this.paint);
+        TextBlockAnchor anchor = null;
+        float x = 0.0f;
+        HorizontalAlignment horizontalAlignment = getHorizontalAlignment();
+        if (horizontalAlignment == HorizontalAlignment.LEFT) {
+            x = (float) titleArea.getX();
+            anchor = TextBlockAnchor.TOP_LEFT;
+        } else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
+            x = (float) titleArea.getMaxX();
+            anchor = TextBlockAnchor.TOP_RIGHT;
+        } else if (horizontalAlignment == HorizontalAlignment.CENTER) {
+            x = (float) titleArea.getCenterX();
+            anchor = TextBlockAnchor.TOP_CENTER;
+        }
+        float y = 0.0f;
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.TOP) {
+            y = (float) titleArea.getY();
+        } else if (position == RectangleEdge.BOTTOM) {
+            y = (float) titleArea.getMaxY();
+            if (horizontalAlignment == HorizontalAlignment.LEFT) {
+                anchor = TextBlockAnchor.BOTTOM_LEFT;
+            } else if (horizontalAlignment == HorizontalAlignment.CENTER) {
+                anchor = TextBlockAnchor.BOTTOM_CENTER;
+            } else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
+                anchor = TextBlockAnchor.BOTTOM_RIGHT;
+            }
+        }
+        this.content.draw(g2, x, y, anchor);
+    }
+
+    /**
+     * Draws a the title vertically within the specified area.  This method
+     * will be called from the {@link #draw(Graphics2D, Rectangle2D) draw}
+     * method.
+     *
+     * @param g2  the graphics device.
+     * @param area  the area for the title.
+     */
+    protected void drawVertical(Graphics2D g2, Rectangle2D area) {
+        Rectangle2D titleArea = (Rectangle2D) area.clone();
+        g2.setFont(this.font);
+        g2.setPaint(this.paint);
+        TextBlockAnchor anchor = null;
+        float y = 0.0f;
+        VerticalAlignment verticalAlignment = getVerticalAlignment();
+        if (verticalAlignment == VerticalAlignment.TOP) {
+            y = (float) titleArea.getY();
+            anchor = TextBlockAnchor.TOP_RIGHT;
+        } else if (verticalAlignment == VerticalAlignment.BOTTOM) {
+            y = (float) titleArea.getMaxY();
+            anchor = TextBlockAnchor.TOP_LEFT;
+        } else if (verticalAlignment == VerticalAlignment.CENTER) {
+            y = (float) titleArea.getCenterY();
+            anchor = TextBlockAnchor.TOP_CENTER;
+        }
+        float x = 0.0f;
+        RectangleEdge position = getPosition();
+        if (position == RectangleEdge.LEFT) {
+            x = (float) titleArea.getX();
+        } else if (position == RectangleEdge.RIGHT) {
+            x = (float) titleArea.getMaxX();
+            if (verticalAlignment == VerticalAlignment.TOP) {
+                anchor = TextBlockAnchor.BOTTOM_RIGHT;
+            } else if (verticalAlignment == VerticalAlignment.CENTER) {
+                anchor = TextBlockAnchor.BOTTOM_CENTER;
+            } else if (verticalAlignment == VerticalAlignment.BOTTOM) {
+                anchor = TextBlockAnchor.BOTTOM_LEFT;
+            }
+        }
+        this.content.draw(g2, x, y, anchor, x, y, -Math.PI / 2.0);
+    }
+
+    /**
+     * Tests this title for equality with another object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return {@code true} or {@code false}.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof TextTitle)) {
+            return false;
+        }
+        TextTitle that = (TextTitle) obj;
+        if (!Objects.equals(this.text, that.text)) {
+            return false;
+        }
+        if (!Objects.equals(this.font, that.font)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.paint, that.paint)) {
+            return false;
+        }
+        if (this.textAlignment != that.textAlignment) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.backgroundPaint, that.backgroundPaint)) {
+            return false;
+        }
+        if (this.maximumLinesToDisplay != that.maximumLinesToDisplay) {
+            return false;
+        }
+        if (this.expandToFitSpace != that.expandToFitSpace) {
+            return false;
+        }
+        if (!Objects.equals(this.toolTipText, that.toolTipText)) {
+            return false;
+        }
+        if (!Objects.equals(this.urlText, that.urlText)) {
+            return false;
+        }
+        return super.equals(obj);
+    }
+
+    /**
+     * Returns a hash code.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = 29 * result + (this.text != null ? this.text.hashCode() : 0);
+        result = 29 * result + (this.font != null ? this.font.hashCode() : 0);
+        result = 29 * result + (this.paint != null ? this.paint.hashCode() : 0);
+        result = 29 * result + (this.backgroundPaint != null ? this.backgroundPaint.hashCode() : 0);
+        return result;
+    }
+
+    /**
+     * Returns a clone of this object.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException never.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.paint, stream);
+        SerialUtils.writePaint(this.backgroundPaint, stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.paint = SerialUtils.readPaint(stream);
+        this.backgroundPaint = SerialUtils.readPaint(stream);
+    }
 }

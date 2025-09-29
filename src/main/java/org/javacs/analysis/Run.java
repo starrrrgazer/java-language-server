@@ -22,8 +22,6 @@ public class Run {
             ProcessBuilder processBuilder = new ProcessBuilder(
                     "java",
                     "-Dfile.encoding=UTF-8",
-                    "-Xss8m",
-                    "-Xint",
                     "-Dsun.jnu.encoding=UTF-8",
                     "-Duser.language=en",
                     "-Duser.country=US",
@@ -47,6 +45,7 @@ public class Run {
 
             System.out.println("正在启动 JAR 文件: " + jarPath);
 
+
             // 启动进程
             Process process = processBuilder.start();
 
@@ -62,6 +61,7 @@ public class Run {
             // 等待进程完成
             int exitCode = process.waitFor();
             System.out.println("进程执行完成，退出码: " + exitCode);
+
 
         } catch (IOException e) {
             System.err.println("运行 JAR 文件时发生 IO 错误: " + e.getMessage());

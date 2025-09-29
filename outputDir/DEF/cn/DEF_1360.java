@@ -61,7 +61,7 @@ package DEF.cn;
  *
  * @param <S>The type for the series keys.
  */
-class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
+public class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pannable, Zoomable, RendererChangeListener, Cloneable, PublicCloneable, Serializable {
 
     /**
      * For serialization.
@@ -5134,1520 +5134,1860 @@ class XYPlot<S extends Comparable<S>> extends Plot implements ValueAxisPlot, Pan
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -------------------------
- * CategoryItemRenderer.java
- * -------------------------
- *
- * (C) Copyright 2001-present, by David Gilbert and Contributors.
+ * --------------------
+ * FastScatterPlot.java
+ * --------------------
+ * (C) Copyright 2002-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Mark Watson (www.markwatson.com);
+ * Contributor(s):   Arnaud Lelievre;
+ *                   Ulrich Voigt (patch #307);
  *
  */
 /**
- * A plug-in object that is used by the {@link CategoryPlot} class to display
- * individual data items from a {@link CategoryDataset}.
- * <p>
- * This interface defines the methods that must be provided by all renderers.
- * If you are implementing a custom renderer, you should consider extending the
- * {@link AbstractCategoryItemRenderer} class.
- * <p>
- * Most renderer attributes are defined using a two layer approach.  When
- * looking up an attribute (for example, the outline paint) the renderer first
- * checks to see if there is a setting that applies to a specific series
- * that the renderer draws.  If there is, that setting is used, but if it is
- * {@code null} the renderer looks up the default setting.  Some attributes
- * allow the base setting to be {@code null}, while other attributes enforce
- * non-{@code null} values.
+ * A fast scatter plot.
  */
-interface CategoryItemRenderer extends ChartElement, LegendItemSource {
+public class FastScatterPlot extends Plot implements ValueAxisPlot, Pannable, Zoomable, Cloneable, Serializable {
 
     /**
-     * Returns the number of passes through the dataset required by the
-     * renderer.  Usually this will be one, but some renderers may use
-     * a second or third pass to overlay items on top of things that were
-     * drawn in an earlier pass.
-     *
-     * @return The pass count.
+     * For serialization.
      */
-    int getPassCount();
+    private static final long serialVersionUID = 7871545897358563521L;
 
     /**
-     * Returns the plot that the renderer has been assigned to (where
-     * {@code null} indicates that the renderer is not currently assigned
-     * to a plot).
-     *
-     * @return The plot (possibly {@code null}).
-     *
-     * @see #setPlot(CategoryPlot)
+     * The default grid line stroke.
      */
-    CategoryPlot<?, ?> getPlot();
+    public static final Stroke DEFAULT_GRIDLINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0.0f, new float[] { 2.0f, 2.0f }, 0.0f);
 
     /**
-     * Sets the plot that the renderer has been assigned to.  This method is
-     * usually called by the {@link CategoryPlot}, in normal usage you
-     * shouldn't need to call this method directly.
-     *
-     * @param plot  the plot ({@code null} not permitted).
-     *
-     * @see #getPlot()
+     * The default grid line paint.
      */
-    void setPlot(CategoryPlot<?, ?> plot);
+    public static final Paint DEFAULT_GRIDLINE_PAINT = Color.lightGray;
 
     /**
-     * Adds a change listener.
-     *
-     * @param listener  the listener.
-     *
-     * @see #removeChangeListener(RendererChangeListener)
+     * The data.
      */
-    void addChangeListener(RendererChangeListener listener);
+    private float[][] data;
 
     /**
-     * Removes a change listener.
-     *
-     * @param listener  the listener.
-     *
-     * @see #addChangeListener(RendererChangeListener)
+     * The x data range.
      */
-    void removeChangeListener(RendererChangeListener listener);
+    private final Range xDataRange;
 
     /**
-     * Returns the range of values the renderer requires to display all the
-     * items from the specified dataset.
-     *
-     * @param dataset  the dataset ({@code null} permitted).
-     *
-     * @return The range (or {@code null} if the dataset is
-     *         {@code null} or empty).
+     * The y data range.
      */
-    Range findRangeBounds(CategoryDataset<?, ?> dataset);
+    private final Range yDataRange;
 
     /**
-     * Initialises the renderer.  This method will be called before the first
-     * item is rendered, giving the renderer an opportunity to initialise any
-     * state information it wants to maintain. The renderer can do nothing if
-     * it chooses.
-     *
-     * @param g2  the graphics device.
-     * @param dataArea  the area inside the axes.
-     * @param plot  the plot.
-     * @param rendererIndex  the renderer index.
-     * @param info  collects chart rendering information for return to caller.
-     *
-     * @return A state object (maintains state information relevant to one
-     *         chart drawing).
+     * The domain axis (used for the x-values).
      */
-    CategoryItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, CategoryPlot<?, ?> plot, int rendererIndex, PlotRenderingInfo info);
+    private ValueAxis domainAxis;
 
     /**
-     * Returns a boolean that indicates whether the specified item
-     * should be drawn (this is typically used to hide an entire series).
-     *
-     * @param series  the series index.
-     * @param item  the item index.
-     *
-     * @return A boolean.
+     * The range axis (used for the y-values).
      */
-    boolean getItemVisible(int series, int item);
+    private ValueAxis rangeAxis;
 
     /**
-     * Returns a boolean that indicates whether the specified series
-     * should be drawn (this is typically used to hide an entire series).
-     *
-     * @param series  the series index.
-     *
-     * @return A boolean.
+     * The paint used to plot data points.
      */
-    boolean isSeriesVisible(int series);
+    private transient Paint paint;
 
     /**
-     * Returns the flag that controls whether a series is visible.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The flag (possibly {@code null}).
-     *
-     * @see #setSeriesVisible(int, Boolean)
+     * A flag that controls whether the domain grid-lines are visible.
      */
-    Boolean getSeriesVisible(int series);
+    private boolean domainGridlinesVisible;
 
     /**
-     * Sets the flag that controls whether a series is visible and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag ({@code null} permitted).
-     *
-     * @see #getSeriesVisible(int)
+     * The stroke used to draw the domain grid-lines.
      */
-    void setSeriesVisible(int series, Boolean visible);
+    private transient Stroke domainGridlineStroke;
 
     /**
-     * Sets the flag that controls whether a series is visible and, if
-     * requested, sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index.
-     * @param visible  the flag ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getSeriesVisible(int)
+     * The paint used to draw the domain grid-lines.
      */
-    void setSeriesVisible(int series, Boolean visible, boolean notify);
+    private transient Paint domainGridlinePaint;
 
     /**
-     * Returns the default visibility for all series.
-     *
-     * @return The default visibility.
-     *
-     * @see #setDefaultSeriesVisible(boolean)
+     * A flag that controls whether the range grid-lines are visible.
      */
-    boolean getDefaultSeriesVisible();
+    private boolean rangeGridlinesVisible;
 
     /**
-     * Sets the default visibility and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param visible  the flag.
-     *
-     * @see #getDefaultSeriesVisible()
+     * The stroke used to draw the range grid-lines.
      */
-    void setDefaultSeriesVisible(boolean visible);
+    private transient Stroke rangeGridlineStroke;
 
     /**
-     * Sets the default visibility and, if requested, sends
-     * a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the visibility.
-     * @param notify  notify listeners?
-     *
-     * @see #getDefaultSeriesVisible()
+     * The paint used to draw the range grid-lines.
      */
-    void setDefaultSeriesVisible(boolean visible, boolean notify);
+    private transient Paint rangeGridlinePaint;
 
-    // SERIES VISIBLE IN LEGEND (not yet respected by all renderers)
     /**
-     * Returns {@code true} if the series should be shown in the legend,
-     * and {@code false} otherwise.
-     *
-     * @param series  the series index.
-     *
-     * @return A boolean.
+     * A flag that controls whether panning is enabled for the domain
+     * axis.
      */
-    boolean isSeriesVisibleInLegend(int series);
+    private boolean domainPannable;
 
     /**
-     * Returns the flag that controls whether a series is visible in the
-     * legend.  This method returns only the "per series" settings - to
-     * incorporate the override and base settings as well, you need to use the
-     * {@link #isSeriesVisibleInLegend(int)} method.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The flag (possibly {@code null}).
-     *
-     * @see #setSeriesVisibleInLegend(int, Boolean)
+     * A flag that controls whether panning is enabled for the range
+     * axis.
      */
-    Boolean getSeriesVisibleInLegend(int series);
+    private boolean rangePannable;
 
     /**
-     * Sets the flag that controls whether a series is visible in the legend
-     * and sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag ({@code null} permitted).
-     *
-     * @see #getSeriesVisibleInLegend(int)
+     * The resourceBundle for the localization.
      */
-    void setSeriesVisibleInLegend(int series, Boolean visible);
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.plot.LocalizationBundle");
 
     /**
-     * Sets the flag that controls whether a series is visible in the legend
-     * and, if requested, sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index.
-     * @param visible  the flag ({@code null} permitted).
-     * @param notify  notify listeners?
-     *
-     * @see #getSeriesVisibleInLegend(int)
+     * Creates a new instance of {@code FastScatterPlot} with default
+     * axes.
      */
-    void setSeriesVisibleInLegend(int series, Boolean visible, boolean notify);
+    public FastScatterPlot() {
+        this(null, new NumberAxis("X"), new NumberAxis("Y"));
+    }
 
     /**
-     * Returns the default visibility in the legend for all series.
-     *
-     * @return The default visibility.
-     *
-     * @see #setDefaultSeriesVisibleInLegend(boolean)
-     */
-    boolean getDefaultSeriesVisibleInLegend();
-
-    /**
-     * Sets the default visibility in the legend and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the flag.
-     *
-     * @see #getDefaultSeriesVisibleInLegend()
-     */
-    void setDefaultSeriesVisibleInLegend(boolean visible);
-
-    /**
-     * Sets the default visibility in the legend and, if requested, sends
-     * a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the visibility.
-     * @param notify  notify listeners?
-     *
-     * @see #getDefaultSeriesVisibleInLegend()
-     */
-    void setDefaultSeriesVisibleInLegend(boolean visible, boolean notify);
-
-    //// PAINT /////////////////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to fill data items as they are drawn.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemPaint(int row, int column);
-
-    /**
-     * Returns the paint used to fill an item drawn by the renderer.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesPaint(int, Paint)
-     */
-    Paint getSeriesPaint(int series);
-
-    /**
-     * Sets the paint used for a series and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesPaint(int)
-     */
-    void setSeriesPaint(int series, Paint paint);
-
-    /**
-     * Sets the paint used for a series and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesPaint(int)
-     */
-    void setSeriesPaint(int series, Paint paint, boolean notify);
-
-    /**
-     * Returns the default paint.  During rendering, a renderer will first look
-     * up the series paint and, if this is {@code null}, it will use the
-     * default paint.
-     *
-     * @return The default paint (never {@code null}).
-     *
-     * @see #setDefaultPaint(Paint)
-     */
-    Paint getDefaultPaint();
-
-    /**
-     * Sets the default paint and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultPaint()
-     */
-    void setDefaultPaint(Paint paint);
-
-    /**
-     * Sets the default paint and sends a {@link RendererChangeEvent} to all
-     * registered listeners if requested.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultPaint()
-     */
-    void setDefaultPaint(Paint paint, boolean notify);
-
-    //// FILL PAINT /////////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to fill data items as they are drawn.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemFillPaint(int row, int column);
-
-    /**
-     * Returns the paint used to fill an item drawn by the renderer.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesFillPaint(int, Paint)
-     */
-    Paint getSeriesFillPaint(int series);
-
-    /**
-     * Sets the paint used for a series outline and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesFillPaint(int)
-     */
-    void setSeriesFillPaint(int series, Paint paint);
-
-    /**
-     * Returns the default outline paint.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDefaultFillPaint(Paint)
-     */
-    Paint getDefaultFillPaint();
-
-    /**
-     * Sets the default outline paint and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultFillPaint()
-     */
-    void setDefaultFillPaint(Paint paint);
-
-    //// OUTLINE PAINT /////////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to outline data items as they are drawn.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemOutlinePaint(int row, int column);
-
-    /**
-     * Returns the paint used to outline an item drawn by the renderer.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesOutlinePaint(int, Paint)
-     */
-    Paint getSeriesOutlinePaint(int series);
-
-    /**
-     * Sets the paint used for a series outline and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesOutlinePaint(int)
-     */
-    void setSeriesOutlinePaint(int series, Paint paint);
-
-    /**
-     * Sets the paint used for a series outline and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param paint  the paint ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesOutlinePaint(int)
-     */
-    void setSeriesOutlinePaint(int series, Paint paint, boolean notify);
-
-    /**
-     * Returns the default outline paint.  During rendering, the renderer
-     * will look up the series outline paint and, if this is {@code null}, it
-     * will use the default outline paint.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDefaultOutlinePaint(Paint)
-     */
-    Paint getDefaultOutlinePaint();
-
-    /**
-     * Sets the default outline paint and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultOutlinePaint()
-     */
-    void setDefaultOutlinePaint(Paint paint);
-
-    /**
-     * Sets the default outline paint and sends a {@link RendererChangeEvent} to
-     * all registered listeners if requested.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     * @param notify  send a change event?
-     *
-     * @see #getDefaultOutlinePaint()
-     */
-    void setDefaultOutlinePaint(Paint paint, boolean notify);
-
-    //// STROKE ////////////////////////////////////////////////////////////////
-    /**
-     * Returns the stroke used to draw data items.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The stroke (never {@code null}).
-     */
-    Stroke getItemStroke(int row, int column);
-
-    /**
-     * Returns the stroke used to draw the items in a series.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setSeriesStroke(int, Stroke)
-     */
-    Stroke getSeriesStroke(int series);
-
-    /**
-     * Sets the stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
-     *
-     * @see #getSeriesStroke(int)
-     */
-    void setSeriesStroke(int series, Stroke stroke);
-
-    /**
-     * Sets the stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesStroke(int)
-     */
-    void setSeriesStroke(int series, Stroke stroke, boolean notify);
-
-    /**
-     * Returns the default stroke.
-     *
-     * @return The default stroke (never {@code null}).
-     *
-     * @see #setDefaultStroke(Stroke)
-     */
-    Stroke getDefaultStroke();
-
-    /**
-     * Sets the default stroke and sends a {@link RendererChangeEvent} to all
-     * registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getDefaultStroke()
-     */
-    void setDefaultStroke(Stroke stroke);
-
-    /**
-     * Sets the default stroke and sends a {@link RendererChangeEvent} to all
-     * registered listeners if requested.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultStroke()
-     */
-    void setDefaultStroke(Stroke stroke, boolean notify);
-
-    //// OUTLINE STROKE ////////////////////////////////////////////////////////
-    /**
-     * Returns the stroke used to outline data items.
+     * Creates a new fast scatter plot.
      * <p>
-     * The default implementation passes control to the
-     * lookupSeriesOutlineStroke method.  You can override this method if you
-     * require different behaviour.
+     * The data is an array of x, y values:  data[0][i] = x, data[1][i] = y.
      *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The stroke (never {@code null}).
+     * @param data  the data ({@code null} permitted).
+     * @param domainAxis  the domain (x) axis ({@code null} not permitted).
+     * @param rangeAxis  the range (y) axis ({@code null} not permitted).
      */
-    Stroke getItemOutlineStroke(int row, int column);
+    public FastScatterPlot(float[][] data, ValueAxis domainAxis, ValueAxis rangeAxis) {
+        super();
+        Args.nullNotPermitted(domainAxis, "domainAxis");
+        Args.nullNotPermitted(rangeAxis, "rangeAxis");
+        this.data = data;
+        this.xDataRange = calculateXDataRange(data);
+        this.yDataRange = calculateYDataRange(data);
+        this.domainAxis = domainAxis;
+        this.domainAxis.setPlot(this);
+        this.domainAxis.addChangeListener(this);
+        this.rangeAxis = rangeAxis;
+        this.rangeAxis.setPlot(this);
+        this.rangeAxis.addChangeListener(this);
+        this.paint = Color.RED;
+        this.domainGridlinesVisible = true;
+        this.domainGridlinePaint = FastScatterPlot.DEFAULT_GRIDLINE_PAINT;
+        this.domainGridlineStroke = FastScatterPlot.DEFAULT_GRIDLINE_STROKE;
+        this.rangeGridlinesVisible = true;
+        this.rangeGridlinePaint = FastScatterPlot.DEFAULT_GRIDLINE_PAINT;
+        this.rangeGridlineStroke = FastScatterPlot.DEFAULT_GRIDLINE_STROKE;
+    }
 
     /**
-     * Returns the stroke used to outline the items in a series.
+     * Returns a short string describing the plot type.
      *
-     * @param series  the series (zero-based index).
-     *
-     * @return The stroke (possibly {@code null}).
-     *
-     * @see #setSeriesOutlineStroke(int, Stroke)
+     * @return A short string describing the plot type.
      */
-    Stroke getSeriesOutlineStroke(int series);
+    @Override
+    public String getPlotType() {
+        return localizationResources.getString("Fast_Scatter_Plot");
+    }
 
     /**
-     * Sets the outline stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Returns the data array used by the plot.
      *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
+     * @return The data array (possibly {@code null}).
      *
-     * @see #getSeriesOutlineStroke(int)
+     * @see #setData(float[][])
      */
-    void setSeriesOutlineStroke(int series, Stroke stroke);
+    public float[][] getData() {
+        return this.data;
+    }
 
     /**
-     * Sets the outline stroke used for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param stroke  the stroke ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesOutlineStroke(int)
-     */
-    void setSeriesOutlineStroke(int series, Stroke stroke, boolean notify);
-
-    /**
-     * Returns the default outline stroke.
-     *
-     * @return The stroke (never {@code null}).
-     *
-     * @see #setDefaultOutlineStroke(Stroke)
-     */
-    Stroke getDefaultOutlineStroke();
-
-    /**
-     * Sets the default outline stroke and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     *
-     * @see #getDefaultOutlineStroke()
-     */
-    void setDefaultOutlineStroke(Stroke stroke);
-
-    /**
-     * Sets the default outline stroke and sends a {@link RendererChangeEvent} to
-     * all registered listeners if requested.
-     *
-     * @param stroke  the stroke ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultOutlineStroke()
-     */
-    void setDefaultOutlineStroke(Stroke stroke, boolean notify);
-
-    //// SHAPE /////////////////////////////////////////////////////////////////
-    /**
-     * Returns a shape used to represent a data item.
-     *
-     * @param row  the row (or series) index (zero-based).
-     * @param column  the column (or category) index (zero-based).
-     *
-     * @return The shape (never {@code null}).
-     */
-    Shape getItemShape(int row, int column);
-
-    /**
-     * Returns a shape used to represent the items in a series.
-     *
-     * @param series  the series (zero-based index).
-     *
-     * @return The shape (possibly {@code null}).
-     *
-     * @see #setSeriesShape(int, Shape)
-     */
-    Shape getSeriesShape(int series);
-
-    /**
-     * Sets the shape used for a series and sends a {@link RendererChangeEvent}
+     * Sets the data array used by the plot and sends a {@link PlotChangeEvent}
      * to all registered listeners.
      *
-     * @param series  the series index (zero-based).
-     * @param shape  the shape ({@code null} permitted).
+     * @param data  the data array ({@code null} permitted).
      *
-     * @see #getSeriesShape(int)
+     * @see #getData()
      */
-    void setSeriesShape(int series, Shape shape);
+    public void setData(float[][] data) {
+        this.data = data;
+        fireChangeEvent();
+    }
 
     /**
-     * Sets the shape used for a series and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
+     * Returns the orientation of the plot.
      *
-     * @param series  the series index (zero-based).
-     * @param shape  the shape ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesShape(int)
+     * @return The orientation (always {@link PlotOrientation#VERTICAL}).
      */
-    void setSeriesShape(int series, Shape shape, boolean notify);
+    @Override
+    public PlotOrientation getOrientation() {
+        return PlotOrientation.VERTICAL;
+    }
 
     /**
-     * Returns the default shape.
+     * Returns the domain axis for the plot.
      *
-     * @return The shape (never {@code null}).
+     * @return The domain axis (never {@code null}).
      *
-     * @see #setDefaultShape(Shape)
+     * @see #setDomainAxis(ValueAxis)
      */
-    Shape getDefaultShape();
+    public ValueAxis getDomainAxis() {
+        return this.domainAxis;
+    }
 
     /**
-     * Sets the default shape and sends a {@link RendererChangeEvent} to all
+     * Sets the domain axis and sends a {@link PlotChangeEvent} to all
      * registered listeners.
      *
-     * @param shape  the shape ({@code null} not permitted).
+     * @param axis  the axis ({@code null} not permitted).
      *
-     * @see #getDefaultShape()
+     * @see #getDomainAxis()
      */
-    void setDefaultShape(Shape shape);
+    public void setDomainAxis(ValueAxis axis) {
+        Args.nullNotPermitted(axis, "axis");
+        this.domainAxis = axis;
+        fireChangeEvent();
+    }
 
     /**
-     * Sets the default shape and sends a {@link RendererChangeEvent} to all
-     * registered listeners if requested.
+     * Returns the range axis for the plot.
      *
-     * @param shape  the shape ({@code null} not permitted).
-     * @param notify  send change event?
+     * @return The range axis (never {@code null}).
      *
-     * @see #getDefaultShape()
+     * @see #setRangeAxis(ValueAxis)
      */
-    void setDefaultShape(Shape shape, boolean notify);
+    public ValueAxis getRangeAxis() {
+        return this.rangeAxis;
+    }
 
-    // ITEM LABELS VISIBLE
     /**
-     * Returns {@code true} if an item label is visible, and
+     * Sets the range axis and sends a {@link PlotChangeEvent} to all
+     * registered listeners.
+     *
+     * @param axis  the axis ({@code null} not permitted).
+     *
+     * @see #getRangeAxis()
+     */
+    public void setRangeAxis(ValueAxis axis) {
+        Args.nullNotPermitted(axis, "axis");
+        this.rangeAxis = axis;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint used to plot data points.  The default is
+     * {@code Color.RED}.
+     *
+     * @return The paint.
+     *
+     * @see #setPaint(Paint)
+     */
+    public Paint getPaint() {
+        return this.paint;
+    }
+
+    /**
+     * Sets the color for the data points and sends a {@link PlotChangeEvent}
+     * to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getPaint()
+     */
+    public void setPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.paint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns {@code true} if the domain gridlines are visible, and
      * {@code false} otherwise.
      *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
+     * @return {@code true} or {@code false}.
+     *
+     * @see #setDomainGridlinesVisible(boolean)
+     * @see #setDomainGridlinePaint(Paint)
+     */
+    public boolean isDomainGridlinesVisible() {
+        return this.domainGridlinesVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the domain grid-lines are
+     * visible.  If the flag value is changed, a {@link PlotChangeEvent} is
+     * sent to all registered listeners.
+     *
+     * @param visible  the new value of the flag.
+     *
+     * @see #getDomainGridlinePaint()
+     */
+    public void setDomainGridlinesVisible(boolean visible) {
+        if (this.domainGridlinesVisible != visible) {
+            this.domainGridlinesVisible = visible;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the stroke for the grid-lines (if any) plotted against the
+     * domain axis.
+     *
+     * @return The stroke (never {@code null}).
+     *
+     * @see #setDomainGridlineStroke(Stroke)
+     */
+    public Stroke getDomainGridlineStroke() {
+        return this.domainGridlineStroke;
+    }
+
+    /**
+     * Sets the stroke for the grid lines plotted against the domain axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param stroke  the stroke ({@code null} not permitted).
+     *
+     * @see #getDomainGridlineStroke()
+     */
+    public void setDomainGridlineStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.domainGridlineStroke = stroke;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the grid lines (if any) plotted against the domain
+     * axis.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setDomainGridlinePaint(Paint)
+     */
+    public Paint getDomainGridlinePaint() {
+        return this.domainGridlinePaint;
+    }
+
+    /**
+     * Sets the paint for the grid lines plotted against the domain axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getDomainGridlinePaint()
+     */
+    public void setDomainGridlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.domainGridlinePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns {@code true} if the range axis grid is visible, and
+     * {@code false} otherwise.
+     *
+     * @return {@code true} or {@code false}.
+     *
+     * @see #setRangeGridlinesVisible(boolean)
+     */
+    public boolean isRangeGridlinesVisible() {
+        return this.rangeGridlinesVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the range axis grid lines are
+     * visible.  If the flag value is changed, a {@link PlotChangeEvent} is
+     * sent to all registered listeners.
+     *
+     * @param visible  the new value of the flag.
+     *
+     * @see #isRangeGridlinesVisible()
+     */
+    public void setRangeGridlinesVisible(boolean visible) {
+        if (this.rangeGridlinesVisible != visible) {
+            this.rangeGridlinesVisible = visible;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the stroke for the grid lines (if any) plotted against the range
+     * axis.
+     *
+     * @return The stroke (never {@code null}).
+     *
+     * @see #setRangeGridlineStroke(Stroke)
+     */
+    public Stroke getRangeGridlineStroke() {
+        return this.rangeGridlineStroke;
+    }
+
+    /**
+     * Sets the stroke for the grid lines plotted against the range axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param stroke  the stroke ({@code null} permitted).
+     *
+     * @see #getRangeGridlineStroke()
+     */
+    public void setRangeGridlineStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.rangeGridlineStroke = stroke;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the grid lines (if any) plotted against the range
+     * axis.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setRangeGridlinePaint(Paint)
+     */
+    public Paint getRangeGridlinePaint() {
+        return this.rangeGridlinePaint;
+    }
+
+    /**
+     * Sets the paint for the grid lines plotted against the range axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getRangeGridlinePaint()
+     */
+    public void setRangeGridlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.rangeGridlinePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Receives a chart element visitor.
+     *
+     * @param visitor  the visitor ({@code null} not permitted).
+     */
+    @Override
+    public void receive(ChartElementVisitor visitor) {
+        this.domainAxis.receive(visitor);
+        this.rangeAxis.receive(visitor);
+        super.receive(visitor);
+    }
+
+    /**
+     * Draws the fast scatter plot on a Java 2D graphics device (such as the
+     * screen or a printer).
+     *
+     * @param g2  the graphics device.
+     * @param area   the area within which the plot (including axis labels)
+     *                   should be drawn.
+     * @param anchor  the anchor point ({@code null} permitted).
+     * @param parentState  the state from the parent plot (ignored).
+     * @param info  collects chart drawing information ({@code null}
+     *              permitted).
+     */
+    @Override
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
+        // set up info collection...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+        // adjust the drawing area for plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+        AxisSpace space = new AxisSpace();
+        space = this.domainAxis.reserveSpace(g2, this, area, RectangleEdge.BOTTOM, space);
+        space = this.rangeAxis.reserveSpace(g2, this, area, RectangleEdge.LEFT, space);
+        Rectangle2D dataArea = space.shrink(area, null);
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+        // draw the plot background and axes...
+        drawBackground(g2, dataArea);
+        AxisState domainAxisState = this.domainAxis.draw(g2, dataArea.getMaxY(), area, dataArea, RectangleEdge.BOTTOM, info);
+        AxisState rangeAxisState = this.rangeAxis.draw(g2, dataArea.getMinX(), area, dataArea, RectangleEdge.LEFT, info);
+        drawDomainGridlines(g2, dataArea, domainAxisState.getTicks());
+        drawRangeGridlines(g2, dataArea, rangeAxisState.getTicks());
+        Shape originalClip = g2.getClip();
+        Composite originalComposite = g2.getComposite();
+        g2.clip(dataArea);
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, getForegroundAlpha()));
+        render(g2, dataArea, info, null);
+        g2.setClip(originalClip);
+        g2.setComposite(originalComposite);
+        drawOutline(g2, dataArea);
+    }
+
+    /**
+     * Draws a representation of the data within the dataArea region.  The
+     * {@code info} and {@code crosshairState} arguments may be
+     * {@code null}.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the region in which the data is to be drawn.
+     * @param info  an optional object for collection dimension information.
+     * @param crosshairState  collects crosshair information ({@code null}
+     *                        permitted).
+     */
+    public void render(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, CrosshairState crosshairState) {
+        g2.setPaint(this.paint);
+        // if the axes use a linear scale, you can uncomment the code below and
+        // switch to the alternative transX/transY calculation inside the loop
+        // that follows - it is a little bit faster then.
+        //
+        // int xx = (int) dataArea.getMinX();
+        // int ww = (int) dataArea.getWidth();
+        // int yy = (int) dataArea.getMaxY();
+        // int hh = (int) dataArea.getHeight();
+        // double domainMin = this.domainAxis.getLowerBound();
+        // double domainLength = this.domainAxis.getUpperBound() - domainMin;
+        // double rangeMin = this.rangeAxis.getLowerBound();
+        // double rangeLength = this.rangeAxis.getUpperBound() - rangeMin;
+        if (this.data != null) {
+            for (int i = 0; i < this.data[0].length; i++) {
+                float x = this.data[0][i];
+                float y = this.data[1][i];
+                //int transX = (int) (xx + ww * (x - domainMin) / domainLength);
+                //int transY = (int) (yy - hh * (y - rangeMin) / rangeLength);
+                int transX = (int) this.domainAxis.valueToJava2D(x, dataArea, RectangleEdge.BOTTOM);
+                int transY = (int) this.rangeAxis.valueToJava2D(y, dataArea, RectangleEdge.LEFT);
+                g2.fillRect(transX, transY, 1, 1);
+            }
+        }
+    }
+
+    /**
+     * Draws the gridlines for the plot, if they are visible.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the data area.
+     * @param ticks  the ticks.
+     */
+    protected void drawDomainGridlines(Graphics2D g2, Rectangle2D dataArea, List ticks) {
+        if (!isDomainGridlinesVisible()) {
+            return;
+        }
+        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        for (Object o : ticks) {
+            ValueTick tick = (ValueTick) o;
+            double v = this.domainAxis.valueToJava2D(tick.getValue(), dataArea, RectangleEdge.BOTTOM);
+            Line2D line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
+            g2.setPaint(getDomainGridlinePaint());
+            g2.setStroke(getDomainGridlineStroke());
+            g2.draw(line);
+        }
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+    }
+
+    /**
+     * Draws the gridlines for the plot, if they are visible.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the data area.
+     * @param ticks  the ticks.
+     */
+    protected void drawRangeGridlines(Graphics2D g2, Rectangle2D dataArea, List ticks) {
+        if (!isRangeGridlinesVisible()) {
+            return;
+        }
+        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        for (Object o : ticks) {
+            ValueTick tick = (ValueTick) o;
+            double v = this.rangeAxis.valueToJava2D(tick.getValue(), dataArea, RectangleEdge.LEFT);
+            Line2D line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
+            g2.setPaint(getRangeGridlinePaint());
+            g2.setStroke(getRangeGridlineStroke());
+            g2.draw(line);
+        }
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
+    }
+
+    /**
+     * Returns the range of data values to be plotted along the axis, or
+     * {@code null} if the specified axis isn't the domain axis or the
+     * range axis for the plot.
+     *
+     * @param axis  the axis ({@code null} permitted).
+     *
+     * @return The range (possibly {@code null}).
+     */
+    @Override
+    public Range getDataRange(ValueAxis axis) {
+        Range result = null;
+        if (axis == this.domainAxis) {
+            result = this.xDataRange;
+        } else if (axis == this.rangeAxis) {
+            result = this.yDataRange;
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the X data range.
+     *
+     * @param data  the data ({@code null} permitted).
+     *
+     * @return The range.
+     */
+    private Range calculateXDataRange(float[][] data) {
+        Range result = null;
+        if (data != null) {
+            float lowest = Float.POSITIVE_INFINITY;
+            float highest = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < data[0].length; i++) {
+                float v = data[0][i];
+                if (v < lowest) {
+                    lowest = v;
+                }
+                if (v > highest) {
+                    highest = v;
+                }
+            }
+            if (lowest <= highest) {
+                result = new Range(lowest, highest);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Calculates the Y data range.
+     *
+     * @param data  the data ({@code null} permitted).
+     *
+     * @return The range.
+     */
+    private Range calculateYDataRange(float[][] data) {
+        Range result = null;
+        if (data != null) {
+            float lowest = Float.POSITIVE_INFINITY;
+            float highest = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < data[0].length; i++) {
+                float v = data[1][i];
+                if (v < lowest) {
+                    lowest = v;
+                }
+                if (v > highest) {
+                    highest = v;
+                }
+            }
+            if (lowest <= highest) {
+                result = new Range(lowest, highest);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Multiplies the range on the domain axis by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomDomainAxes(double factor, PlotRenderingInfo info, Point2D source) {
+        this.domainAxis.resizeRange(factor);
+    }
+
+    /**
+     * Multiplies the range on the domain axis by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point (in Java2D space).
+     * @param useAnchor  use source point as zoom anchor?
+     *
+     * @see #zoomRangeAxes(double, PlotRenderingInfo, Point2D, boolean)
+     */
+    @Override
+    public void zoomDomainAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
+        if (useAnchor) {
+            // get the source coordinate - this plot has always a VERTICAL
+            // orientation
+            double sourceX = source.getX();
+            double anchorX = this.domainAxis.java2DToValue(sourceX, info.getDataArea(), RectangleEdge.BOTTOM);
+            this.domainAxis.resizeRange2(factor, anchorX);
+        } else {
+            this.domainAxis.resizeRange(factor);
+        }
+    }
+
+    /**
+     * Zooms in on the domain axes.
+     *
+     * @param lowerPercent  the new lower bound as a percentage of the current
+     *                      range.
+     * @param upperPercent  the new upper bound as a percentage of the current
+     *                      range.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomDomainAxes(double lowerPercent, double upperPercent, PlotRenderingInfo info, Point2D source) {
+        this.domainAxis.zoomRange(lowerPercent, upperPercent);
+    }
+
+    /**
+     * Multiplies the range on the range axis/axes by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source) {
+        this.rangeAxis.resizeRange(factor);
+    }
+
+    /**
+     * Multiplies the range on the range axis by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point (in Java2D space).
+     * @param useAnchor  use source point as zoom anchor?
+     *
+     * @see #zoomDomainAxes(double, PlotRenderingInfo, Point2D, boolean)
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
+        if (useAnchor) {
+            // get the source coordinate - this plot has always a VERTICAL
+            // orientation
+            double sourceY = source.getY();
+            double anchorY = this.rangeAxis.java2DToValue(sourceY, info.getDataArea(), RectangleEdge.LEFT);
+            this.rangeAxis.resizeRange2(factor, anchorY);
+        } else {
+            this.rangeAxis.resizeRange(factor);
+        }
+    }
+
+    /**
+     * Zooms in on the range axes.
+     *
+     * @param lowerPercent  the new lower bound as a percentage of the current
+     *                      range.
+     * @param upperPercent  the new upper bound as a percentage of the current
+     *                      range.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomRangeAxes(double lowerPercent, double upperPercent, PlotRenderingInfo info, Point2D source) {
+        this.rangeAxis.zoomRange(lowerPercent, upperPercent);
+    }
+
+    /**
+     * Returns {@code true}.
      *
      * @return A boolean.
      */
-    boolean isItemLabelVisible(int row, int column);
+    @Override
+    public boolean isDomainZoomable() {
+        return true;
+    }
 
     /**
-     * Returns {@code true} if the item labels for a series are visible,
+     * Returns {@code true}.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean isRangeZoomable() {
+        return true;
+    }
+
+    /**
+     * Returns {@code true} if panning is enabled for the domain axes,
      * and {@code false} otherwise.
      *
-     * @param series  the series index (zero-based).
-     *
      * @return A boolean.
-     *
-     * @see #setSeriesItemLabelsVisible(int, Boolean)
      */
-    boolean isSeriesItemLabelsVisible(int series);
+    @Override
+    public boolean isDomainPannable() {
+        return this.domainPannable;
+    }
 
     /**
-     * Sets a flag that controls the visibility of the item labels for a series.
+     * Sets the flag that enables or disables panning of the plot along the
+     * domain axes.
      *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag.
-     *
-     * @see #isSeriesItemLabelsVisible(int)
+     * @param pannable  the new flag value.
      */
-    void setSeriesItemLabelsVisible(int series, boolean visible);
+    public void setDomainPannable(boolean pannable) {
+        this.domainPannable = pannable;
+    }
 
     /**
-     * Sets a flag that controls the visibility of the item labels for a series.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the flag ({@code null} permitted).
-     *
-     * @see #isSeriesItemLabelsVisible(int)
-     */
-    void setSeriesItemLabelsVisible(int series, Boolean visible);
-
-    /**
-     * Sets the visibility of item labels for a series and, if requested, sends
-     * a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param visible  the visible flag.
-     * @param notify  a flag that controls whether listeners are notified.
-     *
-     * @see #isSeriesItemLabelsVisible(int)
-     */
-    void setSeriesItemLabelsVisible(int series, Boolean visible, boolean notify);
-
-    /**
-     * Returns the default setting for item label visibility.  A {@code null}
-     * result should be interpreted as equivalent to {@code Boolean.FALSE}
-     * (this is an error in the API design, the return value should have been
-     * a boolean primitive).
-     *
-     * @return A flag (possibly {@code null}).
-     *
-     * @see #setDefaultItemLabelsVisible(boolean)
-     */
-    boolean getDefaultItemLabelsVisible();
-
-    /**
-     * Sets the default flag that controls whether item labels are visible
-     * and sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the flag.
-     *
-     * @see #getDefaultItemLabelsVisible()
-     */
-    void setDefaultItemLabelsVisible(boolean visible);
-
-    /**
-     * Sets the default visibility for item labels and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param visible  the visibility flag.
-     * @param notify  a flag that controls whether listeners are notified.
-     *
-     * @see #getDefaultItemLabelsVisible()
-     */
-    void setDefaultItemLabelsVisible(boolean visible, boolean notify);
-
-    // ITEM LABEL GENERATOR
-    /**
-     * Returns the item label generator for the specified data item.
-     *
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    CategoryItemLabelGenerator getItemLabelGenerator(int series, int item);
-
-    /**
-     * Returns the item label generator for a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The label generator (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelGenerator(int, CategoryItemLabelGenerator)
-     */
-    CategoryItemLabelGenerator getSeriesItemLabelGenerator(int series);
-
-    /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator.
-     *
-     * @see #getSeriesItemLabelGenerator(int)
-     */
-    void setSeriesItemLabelGenerator(int series, CategoryItemLabelGenerator generator);
-
-    /**
-     * Sets the item label generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator.
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemLabelGenerator(int)
-     */
-    void setSeriesItemLabelGenerator(int series, CategoryItemLabelGenerator generator, boolean notify);
-
-    /**
-     * Returns the default item label generator.
-     *
-     * @return The generator (possibly {@code null}).
-     *
-     * @see #setDefaultItemLabelGenerator(CategoryItemLabelGenerator)
-     */
-    CategoryItemLabelGenerator getDefaultItemLabelGenerator();
-
-    /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getDefaultItemLabelGenerator()
-     */
-    void setDefaultItemLabelGenerator(CategoryItemLabelGenerator generator);
-
-    /**
-     * Sets the default item label generator and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemLabelGenerator()
-     */
-    void setDefaultItemLabelGenerator(CategoryItemLabelGenerator generator, boolean notify);
-
-    // TOOL TIP GENERATOR
-    /**
-     * Returns the tool tip generator that should be used for the specified
-     * item.  This method looks up the generator using the "three-layer"
-     * approach outlined in the general description of this interface.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     *
-     * @return The generator (possibly {@code null}).
-     */
-    CategoryToolTipGenerator getToolTipGenerator(int row, int column);
-
-    /**
-     * Returns the tool tip generator for the specified series (a "layer 1"
-     * generator).
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setSeriesToolTipGenerator(int, CategoryToolTipGenerator)
-     */
-    CategoryToolTipGenerator getSeriesToolTipGenerator(int series);
-
-    /**
-     * Sets the tool tip generator for a series and sends a
-     * {@link org.jfree.chart.event.RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getSeriesToolTipGenerator(int)
-     */
-    void setSeriesToolTipGenerator(int series, CategoryToolTipGenerator generator);
-
-    /**
-     * Sets the tool tip generator for a series and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesToolTipGenerator(int)
-     */
-    void setSeriesToolTipGenerator(int series, CategoryToolTipGenerator generator, boolean notify);
-
-    /**
-     * Returns the default tool tip generator (the "layer 2" generator).
-     *
-     * @return The tool tip generator (possibly {@code null}).
-     *
-     * @see #setDefaultToolTipGenerator(CategoryToolTipGenerator)
-     */
-    CategoryToolTipGenerator getDefaultToolTipGenerator();
-
-    /**
-     * Sets the default tool tip generator and sends a
-     * {@link org.jfree.chart.event.RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    void setDefaultToolTipGenerator(CategoryToolTipGenerator generator);
-
-    /**
-     * Sets the default tool tip generator and sends a
-     * {@link RendererChangeEvent} to all registered
-     * listeners if requested.
-     *
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultToolTipGenerator()
-     */
-    void setDefaultToolTipGenerator(CategoryToolTipGenerator generator, boolean notify);
-
-    //// ITEM LABEL FONT  //////////////////////////////////////////////////////
-    /**
-     * Returns the font for an item label.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     *
-     * @return The font (never {@code null}).
-     */
-    Font getItemLabelFont(int row, int column);
-
-    /**
-     * Returns the font for all the item labels in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The font (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelFont(int, Font)
-     */
-    Font getSeriesItemLabelFont(int series);
-
-    /**
-     * Sets the item label font for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param font  the font ({@code null} permitted).
-     *
-     * @see #getSeriesItemLabelFont(int)
-     */
-    void setSeriesItemLabelFont(int series, Font font);
-
-    /**
-     * Sets the item label font for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param font  the font ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemLabelFont(int)
-     */
-    void setSeriesItemLabelFont(int series, Font font, boolean notify);
-
-    /**
-     * Returns the default item label font (this is used when no other font
-     * setting is available).
-     *
-     * @return The font (never {@code null}).
-     *
-     * @see #setDefaultItemLabelFont(Font)
-     */
-    Font getDefaultItemLabelFont();
-
-    /**
-     * Sets the default item label font and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param font  the font ({@code null} not permitted).
-     *
-     * @see #getDefaultItemLabelFont()
-     */
-    void setDefaultItemLabelFont(Font font);
-
-    /**
-     * Sets the default item label font and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param font  the font ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemLabelFont()
-     */
-    void setDefaultItemLabelFont(Font font, boolean notify);
-
-    //// ITEM LABEL PAINT  /////////////////////////////////////////////////////
-    /**
-     * Returns the paint used to draw an item label.
-     *
-     * @param row  the row index (zero based).
-     * @param column  the column index (zero based).
-     *
-     * @return The paint (never {@code null}).
-     */
-    Paint getItemLabelPaint(int row, int column);
-
-    /**
-     * Returns the paint used to draw the item labels for a series.
-     *
-     * @param series  the series index (zero based).
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setSeriesItemLabelPaint(int, Paint)
-     */
-    Paint getSeriesItemLabelPaint(int series);
-
-    /**
-     * Sets the item label paint for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series (zero based index).
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getSeriesItemLabelPaint(int)
-     */
-    void setSeriesItemLabelPaint(int series, Paint paint);
-
-    /**
-     * Sets the item label paint for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series (zero based index).
-     * @param paint  the paint ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemLabelPaint(int)
-     */
-    void setSeriesItemLabelPaint(int series, Paint paint, boolean notify);
-
-    /**
-     * Returns the default item label paint.
-     *
-     * @return The paint (never {@code null}).
-     *
-     * @see #setDefaultItemLabelPaint(Paint)
-     */
-    Paint getDefaultItemLabelPaint();
-
-    /**
-     * Sets the default item label paint and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     *
-     * @see #getDefaultItemLabelPaint()
-     */
-    void setDefaultItemLabelPaint(Paint paint);
-
-    /**
-     * Sets the default item label paint and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param paint  the paint ({@code null} not permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemLabelPaint()
-     */
-    void setDefaultItemLabelPaint(Paint paint, boolean notify);
-
-    // POSITIVE ITEM LABEL POSITION...
-    /**
-     * Returns the item label position for positive values.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     *
-     * @return The item label position (never {@code null}).
-     */
-    ItemLabelPosition getPositiveItemLabelPosition(int row, int column);
-
-    /**
-     * Returns the item label position for all positive values in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The item label position.
-     *
-     * @see #setSeriesPositiveItemLabelPosition(int, ItemLabelPosition)
-     */
-    ItemLabelPosition getSeriesPositiveItemLabelPosition(int series);
-
-    /**
-     * Sets the item label position for all positive values in a series and
-     * sends a {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     *
-     * @see #getSeriesPositiveItemLabelPosition(int)
-     */
-    void setSeriesPositiveItemLabelPosition(int series, ItemLabelPosition position);
-
-    /**
-     * Sets the item label position for all positive values in a series and (if
-     * requested) sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     * @param notify  notify registered listeners?
-     *
-     * @see #getSeriesPositiveItemLabelPosition(int)
-     */
-    void setSeriesPositiveItemLabelPosition(int series, ItemLabelPosition position, boolean notify);
-
-    /**
-     * Returns the default positive item label position.
-     *
-     * @return The position.
-     *
-     * @see #setDefaultPositiveItemLabelPosition(ItemLabelPosition)
-     */
-    ItemLabelPosition getDefaultPositiveItemLabelPosition();
-
-    /**
-     * Sets the default positive item label position.
-     *
-     * @param position  the position.
-     *
-     * @see #getDefaultPositiveItemLabelPosition()
-     */
-    void setDefaultPositiveItemLabelPosition(ItemLabelPosition position);
-
-    /**
-     * Sets the default positive item label position and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param position  the position.
-     * @param notify  notify registered listeners?
-     *
-     * @see #getDefaultPositiveItemLabelPosition()
-     */
-    void setDefaultPositiveItemLabelPosition(ItemLabelPosition position, boolean notify);
-
-    // NEGATIVE ITEM LABEL POSITION...
-    /**
-     * Returns the item label position for negative values.  This method can be
-     * overridden to provide customisation of the item label position for
-     * individual data items.
-     *
-     * @param row  the row index (zero-based).
-     * @param column  the column (zero-based).
-     *
-     * @return The item label position.
-     */
-    ItemLabelPosition getNegativeItemLabelPosition(int row, int column);
-
-    /**
-     * Returns the item label position for all negative values in a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The item label position.
-     *
-     * @see #setSeriesNegativeItemLabelPosition(int, ItemLabelPosition)
-     */
-    ItemLabelPosition getSeriesNegativeItemLabelPosition(int series);
-
-    /**
-     * Sets the item label position for negative values in a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     *
-     * @see #getSeriesNegativeItemLabelPosition(int)
-     */
-    void setSeriesNegativeItemLabelPosition(int series, ItemLabelPosition position);
-
-    /**
-     * Sets the item label position for negative values in a series and (if
-     * requested) sends a {@link RendererChangeEvent} to all registered
-     * listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param position  the position ({@code null} permitted).
-     * @param notify  notify registered listeners?
-     *
-     * @see #getSeriesNegativeItemLabelPosition(int)
-     */
-    void setSeriesNegativeItemLabelPosition(int series, ItemLabelPosition position, boolean notify);
-
-    /**
-     * Returns the default item label position for negative values.
-     *
-     * @return The position.
-     *
-     * @see #setDefaultNegativeItemLabelPosition(ItemLabelPosition)
-     */
-    ItemLabelPosition getDefaultNegativeItemLabelPosition();
-
-    /**
-     * Sets the default item label position for negative values and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param position  the position.
-     *
-     * @see #getDefaultNegativeItemLabelPosition()
-     */
-    void setDefaultNegativeItemLabelPosition(ItemLabelPosition position);
-
-    /**
-     * Sets the default negative item label position and, if requested, sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param position  the position.
-     * @param notify  notify registered listeners?
-     *
-     * @see #getDefaultNegativeItemLabelPosition()
-     */
-    void setDefaultNegativeItemLabelPosition(ItemLabelPosition position, boolean notify);
-
-    // CREATE ENTITIES
-    /**
-     * Returns a flag that determines whether an entity is generated
-     * for the specified item.  The standard implementation of this method
-     * will typically return the flag for the series or, if that is
-     * {@code null}, the value returned by {@link #getDefaultCreateEntities()}.
-     *
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
+     * Returns {@code true} if panning is enabled for the range axes,
+     * and {@code false} otherwise.
      *
      * @return A boolean.
      */
-    boolean getItemCreateEntity(int series, int item);
+    @Override
+    public boolean isRangePannable() {
+        return this.rangePannable;
+    }
 
     /**
-     * Returns a boolean indicating whether entities should be created
-     * for the items in a series.
+     * Sets the flag that enables or disables panning of the plot along
+     * the range axes.
      *
-     * @param series  the series index (zero-based).
-     *
-     * @return A boolean (possibly {@code null}).
+     * @param pannable  the new flag value.
      */
-    Boolean getSeriesCreateEntities(int series);
+    public void setRangePannable(boolean pannable) {
+        this.rangePannable = pannable;
+    }
 
     /**
-     * Sets a flag that indicates whether entities should be created during
-     * rendering for the items in the specified series, and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
+     * Pans the domain axes by the specified percentage.
      *
-     * @param series  the series index (zero-based).
-     * @param create  the new flag value ({@code null} permitted).
+     * @param percent  the distance to pan (as a percentage of the axis length).
+     * @param info the plot info
+     * @param source the source point where the pan action started.
      */
-    void setSeriesCreateEntities(int series, Boolean create);
+    @Override
+    public void panDomainAxes(double percent, PlotRenderingInfo info, Point2D source) {
+        if (!isDomainPannable() || this.domainAxis == null) {
+            return;
+        }
+        double length = this.domainAxis.getRange().getLength();
+        double adj = percent * length;
+        if (this.domainAxis.isInverted()) {
+            adj = -adj;
+        }
+        this.domainAxis.setRange(this.domainAxis.getLowerBound() + adj, this.domainAxis.getUpperBound() + adj);
+    }
 
     /**
-     * Sets a flag that indicates whether entities should be created during
-     * rendering for the items in the specified series, and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
+     * Pans the range axes by the specified percentage.
      *
-     * @param series  the series index (zero-based).
-     * @param create  the new flag value ({@code null} permitted).
-     * @param notify  send change event?
+     * @param percent  the distance to pan (as a percentage of the axis length).
+     * @param info the plot info
+     * @param source the source point where the pan action started.
      */
-    void setSeriesCreateEntities(int series, Boolean create, boolean notify);
+    @Override
+    public void panRangeAxes(double percent, PlotRenderingInfo info, Point2D source) {
+        if (!isRangePannable() || this.rangeAxis == null) {
+            return;
+        }
+        double length = this.rangeAxis.getRange().getLength();
+        double adj = percent * length;
+        if (this.rangeAxis.isInverted()) {
+            adj = -adj;
+        }
+        this.rangeAxis.setRange(this.rangeAxis.getLowerBound() + adj, this.rangeAxis.getUpperBound() + adj);
+    }
 
     /**
-     * Returns the default value for the flag that controls whether
-     * an entity is created for an item during rendering.
+     * Tests an arbitrary object for equality with this plot.  Note that
+     * {@code FastScatterPlot} carries its data around with it (rather
+     * than referencing a dataset), and the data is included in the
+     * equality test.
+     *
+     * @param obj  the object ({@code null} permitted).
      *
      * @return A boolean.
      */
-    boolean getDefaultCreateEntities();
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!super.equals(obj)) {
+            return false;
+        }
+        if (!(obj instanceof FastScatterPlot)) {
+            return false;
+        }
+        FastScatterPlot that = (FastScatterPlot) obj;
+        if (this.domainPannable != that.domainPannable) {
+            return false;
+        }
+        if (this.rangePannable != that.rangePannable) {
+            return false;
+        }
+        if (!ArrayUtils.equal(this.data, that.data)) {
+            return false;
+        }
+        if (!Objects.equals(this.domainAxis, that.domainAxis)) {
+            return false;
+        }
+        if (!Objects.equals(this.rangeAxis, that.rangeAxis)) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.paint, that.paint)) {
+            return false;
+        }
+        if (this.domainGridlinesVisible != that.domainGridlinesVisible) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.domainGridlinePaint, that.domainGridlinePaint)) {
+            return false;
+        }
+        if (!Objects.equals(this.domainGridlineStroke, that.domainGridlineStroke)) {
+            return false;
+        }
+        if (!this.rangeGridlinesVisible == that.rangeGridlinesVisible) {
+            return false;
+        }
+        if (!PaintUtils.equal(this.rangeGridlinePaint, that.rangeGridlinePaint)) {
+            return false;
+        }
+        if (!Objects.equals(this.rangeGridlineStroke, that.rangeGridlineStroke)) {
+            return false;
+        }
+        return true;
+    }
 
     /**
-     * Sets the default setting for whether entities should be created
-     * for items during rendering, and sends a {@link RendererChangeEvent} to
-     * all registered listeners.
+     * Returns a clone of the plot.
      *
-     * @param create  the new flag value.
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if some component of the plot does
+     *                                    not support cloning.
      */
-    void setDefaultCreateEntities(boolean create);
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        FastScatterPlot clone = (FastScatterPlot) super.clone();
+        if (this.data != null) {
+            clone.data = ArrayUtils.clone(this.data);
+        }
+        if (this.domainAxis != null) {
+            clone.domainAxis = (ValueAxis) this.domainAxis.clone();
+            clone.domainAxis.setPlot(clone);
+            clone.domainAxis.addChangeListener(clone);
+        }
+        if (this.rangeAxis != null) {
+            clone.rangeAxis = (ValueAxis) this.rangeAxis.clone();
+            clone.rangeAxis.setPlot(clone);
+            clone.rangeAxis.addChangeListener(clone);
+        }
+        return clone;
+    }
 
     /**
-     * Sets the default setting for whether entities should be created
-     * for items during rendering, and sends a {@link RendererChangeEvent} to
-     * all registered listeners if requested.
+     * Provides serialization support.
      *
-     * @param create  the new flag value.
-     * @param notify  send change event?
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
      */
-    void setDefaultCreateEntities(boolean create, boolean notify);
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writePaint(this.paint, stream);
+        SerialUtils.writeStroke(this.domainGridlineStroke, stream);
+        SerialUtils.writePaint(this.domainGridlinePaint, stream);
+        SerialUtils.writeStroke(this.rangeGridlineStroke, stream);
+        SerialUtils.writePaint(this.rangeGridlinePaint, stream);
+    }
 
-    // ITEM URL GENERATOR
     /**
-     * Returns the URL generator for an item.
+     * Provides serialization support.
      *
-     * @param series  the series index (zero-based).
-     * @param item  the item index (zero-based).
+     * @param stream  the input stream.
      *
-     * @return The item URL generator.
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
      */
-    CategoryURLGenerator getItemURLGenerator(int series, int item);
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.paint = SerialUtils.readPaint(stream);
+        this.domainGridlineStroke = SerialUtils.readStroke(stream);
+        this.domainGridlinePaint = SerialUtils.readPaint(stream);
+        this.rangeGridlineStroke = SerialUtils.readStroke(stream);
+        this.rangeGridlinePaint = SerialUtils.readPaint(stream);
+        if (this.domainAxis != null) {
+            this.domainAxis.addChangeListener(this);
+        }
+        if (this.rangeAxis != null) {
+            this.rangeAxis.addChangeListener(this);
+        }
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * --------------------------
+ * DefaultTableXYDataset.java
+ * --------------------------
+ * (C) Copyright 2003-2021, by Richard Atkinson and Contributors.
+ *
+ * Original Author:  Richard Atkinson;
+ * Contributor(s):   Jody Brownell;
+ *                   David Gilbert;
+ *                   Andreas Schroeder;
+ * 
+ */
+/**
+ * An {@link XYDataset} where every series shares the same x-values (required
+ * for generating stacked area charts).
+ *
+ * @param <S> The type for the series keys.
+ */
+public class DefaultTableXYDataset<S extends Comparable<S>> extends AbstractIntervalXYDataset<S> implements TableXYDataset<S>, IntervalXYDataset<S>, DomainInfo, PublicCloneable {
 
     /**
-     * Returns the item URL generator for a series.
-     *
-     * @param series  the series index (zero-based).
-     *
-     * @return The URL generator.
-     *
-     * @see #setSeriesItemURLGenerator(int, CategoryURLGenerator)
+     * Storage for the data - this list will contain zero, one or many
+     * XYSeries objects.
      */
-    CategoryURLGenerator getSeriesItemURLGenerator(int series);
+    private List<XYSeries<S>> data = null;
 
     /**
-     * Sets the item URL generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     *
-     * @see #getSeriesItemURLGenerator(int)
+     * Storage for the x values.
      */
-    void setSeriesItemURLGenerator(int series, CategoryURLGenerator generator);
+    private HashSet xPoints = null;
 
     /**
-     * Sets the item URL generator for a series and sends a
-     * {@link RendererChangeEvent} to all registered listeners if requested.
-     *
-     * @param series  the series index (zero-based).
-     * @param generator  the generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getSeriesItemURLGenerator(int)
+     * A flag that controls whether events are propogated.
      */
-    void setSeriesItemURLGenerator(int series, CategoryURLGenerator generator, boolean notify);
+    private boolean propagateEvents = true;
 
     /**
-     * Returns the default item URL generator.
-     *
-     * @return The item URL generator (possibly {@code null}).
-     *
-     * @see #setDefaultItemURLGenerator(CategoryURLGenerator)
+     * A flag that controls auto pruning.
      */
-    CategoryURLGenerator getDefaultItemURLGenerator();
+    private boolean autoPrune = false;
 
     /**
-     * Sets the default item URL generator and sends a {@link RendererChangeEvent}
-     * to all registered listeners.
-     *
-     * @param generator  the item URL generator ({@code null} permitted).
-     *
-     * @see #getDefaultItemURLGenerator()
+     * The delegate used to control the interval width.
      */
-    void setDefaultItemURLGenerator(CategoryURLGenerator generator);
+    private IntervalXYDelegate intervalDelegate;
 
     /**
-     * Sets the default item URL generator and sends a {@link RendererChangeEvent}
-     * to all registered listeners if requested.
-     *
-     * @param generator  the item URL generator ({@code null} permitted).
-     * @param notify  send change event?
-     *
-     * @see #getDefaultItemURLGenerator()
+     * Creates a new empty dataset.
      */
-    void setDefaultItemURLGenerator(CategoryURLGenerator generator, boolean notify);
+    public DefaultTableXYDataset() {
+        this(false);
+    }
 
     /**
-     * Returns a legend item for a series.  This method can return
-     * {@code null}, in which case the series will have no entry in the
-     * legend.
+     * Creates a new empty dataset.
      *
-     * @param datasetIndex  the dataset index (zero-based).
+     * @param autoPrune  a flag that controls whether x-values are
+     *                   removed whenever the corresponding y-values are all
+     *                   {@code null}.
+     */
+    public DefaultTableXYDataset(boolean autoPrune) {
+        this.autoPrune = autoPrune;
+        this.data = new ArrayList<>();
+        this.xPoints = new HashSet();
+        this.intervalDelegate = new IntervalXYDelegate(this, false);
+        addChangeListener(this.intervalDelegate);
+    }
+
+    /**
+     * Returns the flag that controls whether x-values are removed from
+     * the dataset when the corresponding y-values are all {@code null}.
+     *
+     * @return A boolean.
+     */
+    public boolean isAutoPrune() {
+        return this.autoPrune;
+    }
+
+    /**
+     * Adds a series to the collection and sends a {@link DatasetChangeEvent}
+     * to all registered listeners.  The series should be configured to NOT
+     * allow duplicate x-values.
+     *
+     * @param series  the series ({@code null} not permitted).
+     */
+    public void addSeries(XYSeries<S> series) {
+        Args.nullNotPermitted(series, "series");
+        if (series.getAllowDuplicateXValues()) {
+            throw new IllegalArgumentException("Cannot accept XYSeries that allow duplicate values. " + "Use XYSeries(seriesName, <sort>, false) constructor.");
+        }
+        updateXPoints(series);
+        this.data.add(series);
+        series.addChangeListener(this);
+        fireDatasetChanged();
+    }
+
+    /**
+     * Adds any unique x-values from 'series' to the dataset, and also adds any
+     * x-values that are in the dataset but not in 'series' to the series.
+     *
+     * @param series  the series ({@code null} not permitted).
+     */
+    private void updateXPoints(XYSeries<S> series) {
+        Args.nullNotPermitted(series, "series");
+        HashSet seriesXPoints = new HashSet();
+        boolean savedState = this.propagateEvents;
+        this.propagateEvents = false;
+        for (int itemNo = 0; itemNo < series.getItemCount(); itemNo++) {
+            Number xValue = series.getX(itemNo);
+            seriesXPoints.add(xValue);
+            if (!this.xPoints.contains(xValue)) {
+                this.xPoints.add(xValue);
+                int seriesCount = this.data.size();
+                for (int seriesNo = 0; seriesNo < seriesCount; seriesNo++) {
+                    XYSeries<S> dataSeries = this.data.get(seriesNo);
+                    if (!dataSeries.equals(series)) {
+                        dataSeries.add(xValue, null);
+                    }
+                }
+            }
+        }
+        for (Object point : this.xPoints) {
+            Number xPoint = (Number) point;
+            if (!seriesXPoints.contains(xPoint)) {
+                series.add(xPoint, null);
+            }
+        }
+        this.propagateEvents = savedState;
+    }
+
+    /**
+     * Updates the x-values for all the series in the dataset.
+     */
+    public void updateXPoints() {
+        this.propagateEvents = false;
+        for (int s = 0; s < this.data.size(); s++) {
+            updateXPoints(this.data.get(s));
+        }
+        if (this.autoPrune) {
+            prune();
+        }
+        this.propagateEvents = true;
+    }
+
+    /**
+     * Returns the number of series in the collection.
+     *
+     * @return The series count.
+     */
+    @Override
+    public int getSeriesCount() {
+        return this.data.size();
+    }
+
+    /**
+     * Returns the number of x values in the dataset.
+     *
+     * @return The number of x values in the dataset.
+     */
+    @Override
+    public int getItemCount() {
+        if (this.xPoints == null) {
+            return 0;
+        } else {
+            return this.xPoints.size();
+        }
+    }
+
+    /**
+     * Returns a series.
+     *
      * @param series  the series (zero-based index).
      *
-     * @return The legend item (possibly {@code null}).
+     * @return The series (never {@code null}).
      */
-    LegendItem getLegendItem(int datasetIndex, int series);
+    public XYSeries<S> getSeries(int series) {
+        Args.requireInRange(series, "series", 0, this.data.size() - 1);
+        return this.data.get(series);
+    }
 
     /**
-     * Draws a background for the data area.
+     * Returns the key for a series.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the data area.
+     * @param series  the series (zero-based index).
+     *
+     * @return The key for a series.
      */
-    void drawBackground(Graphics2D g2, CategoryPlot<?, ?> plot, Rectangle2D dataArea);
+    @Override
+    public S getSeriesKey(int series) {
+        // check arguments...delegated
+        return getSeries(series).getKey();
+    }
 
     /**
-     * Draws an outline for the data area.
+     * Returns the number of items in the specified series.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the data area.
+     * @param series  the series (zero-based index).
+     *
+     * @return The number of items in the specified series.
      */
-    void drawOutline(Graphics2D g2, CategoryPlot<?, ?> plot, Rectangle2D dataArea);
+    @Override
+    public int getItemCount(int series) {
+        // check arguments...delegated
+        return getSeries(series).getItemCount();
+    }
 
     /**
-     * Draws a single data item.
+     * Returns the x-value for the specified series and item.
      *
-     * @param g2  the graphics device.
-     * @param state  state information for one chart.
-     * @param dataArea  the data plot area.
-     * @param plot  the plot.
-     * @param domainAxis  the domain axis.
-     * @param rangeAxis  the range axis.
-     * @param dataset  the data.
-     * @param row  the row index (zero-based).
-     * @param column  the column index (zero-based).
-     * @param pass  the pass index.
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The x-value for the specified series and item.
      */
-    void drawItem(Graphics2D g2, CategoryItemRendererState state, Rectangle2D dataArea, CategoryPlot<?, ?> plot, CategoryAxis domainAxis, ValueAxis rangeAxis, CategoryDataset<?, ?> dataset, int row, int column, int pass);
+    @Override
+    public Number getX(int series, int item) {
+        XYSeries<S> s = this.data.get(series);
+        return s.getX(item);
+    }
 
     /**
-     * Draws a grid line against the domain axis.
+     * Returns the starting X value for the specified series and item.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value.
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The starting X value.
      */
-    void drawDomainGridline(Graphics2D g2, CategoryPlot<?, ?> plot, Rectangle2D dataArea, double value);
+    @Override
+    public Number getStartX(int series, int item) {
+        return this.intervalDelegate.getStartX(series, item);
+    }
 
     /**
-     * Draws a grid line against the range axis.
+     * Returns the ending X value for the specified series and item.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param dataArea  the area for plotting data.
-     * @param value  the value.
-     * @param paint  the paint ({@code null} not permitted).
-     * @param stroke  the line stroke ({@code null} not permitted).
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
+     *
+     * @return The ending X value.
      */
-    void drawRangeLine(Graphics2D g2, CategoryPlot<?, ?> plot, ValueAxis axis, Rectangle2D dataArea, double value, Paint paint, Stroke stroke);
+    @Override
+    public Number getEndX(int series, int item) {
+        return this.intervalDelegate.getEndX(series, item);
+    }
 
     /**
-     * Draws a line (or some other marker) to indicate a particular category on
-     * the domain axis.
+     * Returns the y-value for the specified series and item.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the category axis.
-     * @param marker  the marker.
-     * @param dataArea  the area for plotting data.
+     * @param series  the series (zero-based index).
+     * @param index  the index of the item of interest (zero-based).
      *
-     * @see #drawRangeMarker(Graphics2D, CategoryPlot, ValueAxis, Marker,
-     *     Rectangle2D)
+     * @return The y-value for the specified series and item (possibly
+     *         {@code null}).
      */
-    void drawDomainMarker(Graphics2D g2, CategoryPlot<?, ?> plot, CategoryAxis axis, CategoryMarker marker, Rectangle2D dataArea);
+    @Override
+    public Number getY(int series, int index) {
+        XYSeries<S> s = this.data.get(series);
+        return s.getY(index);
+    }
 
     /**
-     * Draws a line (or some other marker) to indicate a particular value on
-     * the range axis.
+     * Returns the starting Y value for the specified series and item.
      *
-     * @param g2  the graphics device.
-     * @param plot  the plot.
-     * @param axis  the value axis.
-     * @param marker  the marker.
-     * @param dataArea  the area for plotting data.
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
      *
-     * @see #drawDomainMarker(Graphics2D, CategoryPlot, CategoryAxis,
-     *     CategoryMarker, Rectangle2D)
+     * @return The starting Y value.
      */
-    void drawRangeMarker(Graphics2D g2, CategoryPlot<?, ?> plot, ValueAxis axis, Marker marker, Rectangle2D dataArea);
+    @Override
+    public Number getStartY(int series, int item) {
+        return getY(series, item);
+    }
 
     /**
-     * Returns the Java2D coordinate for the middle of the specified data item.
+     * Returns the ending Y value for the specified series and item.
      *
-     * @param rowKey  the row key.
-     * @param columnKey  the column key.
-     * @param dataset  the dataset.
-     * @param axis  the axis.
-     * @param area  the data area.
-     * @param edge  the edge along which the axis lies.
+     * @param series  the series (zero-based index).
+     * @param item  the item (zero-based index).
      *
-     * @return The Java2D coordinate for the middle of the item.
+     * @return The ending Y value.
      */
-    double getItemMiddle(Comparable<?> rowKey, Comparable<?> columnKey, CategoryDataset<?, ?> dataset, CategoryAxis axis, Rectangle2D area, RectangleEdge edge);
+    @Override
+    public Number getEndY(int series, int item) {
+        return getY(series, item);
+    }
+
+    /**
+     * Removes all the series from the collection and sends a
+     * {@link DatasetChangeEvent} to all registered listeners.
+     */
+    public void removeAllSeries() {
+        // Unregister the collection as a change listener to each series in
+        // the collection.
+        for (XYSeries<S> series : this.data) {
+            series.removeChangeListener(this);
+        }
+        // Remove all the series from the collection and notify listeners.
+        this.data.clear();
+        this.xPoints.clear();
+        fireDatasetChanged();
+    }
+
+    /**
+     * Removes a series from the collection and sends a
+     * {@link DatasetChangeEvent} to all registered listeners.
+     *
+     * @param series  the series ({@code null} not permitted).
+     */
+    public void removeSeries(XYSeries<S> series) {
+        Args.nullNotPermitted(series, "series");
+        if (this.data.contains(series)) {
+            series.removeChangeListener(this);
+            this.data.remove(series);
+            if (this.data.isEmpty()) {
+                this.xPoints.clear();
+            }
+            fireDatasetChanged();
+        }
+    }
+
+    /**
+     * Removes a series from the collection and sends a
+     * {@link DatasetChangeEvent} to all registered listeners.
+     *
+     * @param series  the series (zero based index).
+     */
+    public void removeSeries(int series) {
+        Args.requireInRange(series, "series", 0, this.data.size() - 1);
+        // fetch the series, remove the change listener, then remove the series.
+        XYSeries<S> s = this.data.get(series);
+        s.removeChangeListener(this);
+        this.data.remove(series);
+        if (this.data.isEmpty()) {
+            this.xPoints.clear();
+        } else if (this.autoPrune) {
+            prune();
+        }
+        fireDatasetChanged();
+    }
+
+    /**
+     * Removes the items from all series for a given x value.
+     *
+     * @param x  the x-value.
+     */
+    public void removeAllValuesForX(Number x) {
+        Args.nullNotPermitted(x, "x");
+        boolean savedState = this.propagateEvents;
+        this.propagateEvents = false;
+        for (int s = 0; s < this.data.size(); s++) {
+            XYSeries<S> series = this.data.get(s);
+            series.remove(x);
+        }
+        this.propagateEvents = savedState;
+        this.xPoints.remove(x);
+        fireDatasetChanged();
+    }
+
+    /**
+     * Returns {@code true} if all the y-values for the specified x-value
+     * are {@code null} and {@code false} otherwise.
+     *
+     * @param x  the x-value.
+     *
+     * @return A boolean.
+     */
+    protected boolean canPrune(Number x) {
+        for (int s = 0; s < this.data.size(); s++) {
+            XYSeries<S> series = this.data.get(s);
+            if (series.getY(series.indexOf(x)) != null) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Removes all x-values for which all the y-values are {@code null}.
+     */
+    public void prune() {
+        HashSet hs = (HashSet) this.xPoints.clone();
+        for (Object h : hs) {
+            Number x = (Number) h;
+            if (canPrune(x)) {
+                removeAllValuesForX(x);
+            }
+        }
+    }
+
+    /**
+     * This method receives notification when a series belonging to the dataset
+     * changes.  It responds by updating the x-points for the entire dataset
+     * and sending a {@link DatasetChangeEvent} to all registered listeners.
+     *
+     * @param event  information about the change.
+     */
+    @Override
+    public void seriesChanged(SeriesChangeEvent event) {
+        if (this.propagateEvents) {
+            updateXPoints();
+            fireDatasetChanged();
+        }
+    }
+
+    /**
+     * Tests this collection for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof DefaultTableXYDataset)) {
+            return false;
+        }
+        DefaultTableXYDataset that = (DefaultTableXYDataset) obj;
+        if (this.autoPrune != that.autoPrune) {
+            return false;
+        }
+        if (this.propagateEvents != that.propagateEvents) {
+            return false;
+        }
+        if (!this.intervalDelegate.equals(that.intervalDelegate)) {
+            return false;
+        }
+        if (!Objects.equals(this.data, that.data)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result;
+        result = (this.data != null ? this.data.hashCode() : 0);
+        result = 29 * result + (this.xPoints != null ? this.xPoints.hashCode() : 0);
+        result = 29 * result + (this.propagateEvents ? 1 : 0);
+        result = 29 * result + (this.autoPrune ? 1 : 0);
+        return result;
+    }
+
+    /**
+     * Returns an independent copy of this dataset.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if there is some reason that cloning
+     *     cannot be performed.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        DefaultTableXYDataset clone = (DefaultTableXYDataset) super.clone();
+        int seriesCount = this.data.size();
+        clone.data = new ArrayList<>(seriesCount);
+        for (XYSeries<S> series : this.data) {
+            clone.data.add(CloneUtils.clone(series));
+        }
+        clone.intervalDelegate = new IntervalXYDelegate(clone);
+        // need to configure the intervalDelegate to match the original
+        clone.intervalDelegate.setFixedIntervalWidth(getIntervalWidth());
+        clone.intervalDelegate.setAutoWidth(isAutoWidth());
+        clone.intervalDelegate.setIntervalPositionFactor(getIntervalPositionFactor());
+        clone.updateXPoints();
+        return clone;
+    }
+
+    /**
+     * Returns the minimum x-value in the dataset.
+     *
+     * @param includeInterval  a flag that determines whether the
+     *                         x-interval is taken into account.
+     *
+     * @return The minimum value.
+     */
+    @Override
+    public double getDomainLowerBound(boolean includeInterval) {
+        return this.intervalDelegate.getDomainLowerBound(includeInterval);
+    }
+
+    /**
+     * Returns the maximum x-value in the dataset.
+     *
+     * @param includeInterval  a flag that determines whether the
+     *                         x-interval is taken into account.
+     *
+     * @return The maximum value.
+     */
+    @Override
+    public double getDomainUpperBound(boolean includeInterval) {
+        return this.intervalDelegate.getDomainUpperBound(includeInterval);
+    }
+
+    /**
+     * Returns the range of the values in this dataset's domain.
+     *
+     * @param includeInterval  a flag that determines whether the
+     *                         x-interval is taken into account.
+     *
+     * @return The range.
+     */
+    @Override
+    public Range getDomainBounds(boolean includeInterval) {
+        if (includeInterval) {
+            return this.intervalDelegate.getDomainBounds(includeInterval);
+        } else {
+            return DatasetUtils.iterateDomainBounds(this, includeInterval);
+        }
+    }
+
+    /**
+     * Returns the interval position factor.
+     *
+     * @return The interval position factor.
+     */
+    public double getIntervalPositionFactor() {
+        return this.intervalDelegate.getIntervalPositionFactor();
+    }
+
+    /**
+     * Sets the interval position factor. Must be between 0.0 and 1.0 inclusive.
+     * If the factor is 0.5, the gap is in the middle of the x values. If it
+     * is lesser than 0.5, the gap is farther to the left and if greater than
+     * 0.5 it gets farther to the right.
+     *
+     * @param d the new interval position factor.
+     */
+    public void setIntervalPositionFactor(double d) {
+        this.intervalDelegate.setIntervalPositionFactor(d);
+        fireDatasetChanged();
+    }
+
+    /**
+     * returns the full interval width.
+     *
+     * @return The interval width to use.
+     */
+    public double getIntervalWidth() {
+        return this.intervalDelegate.getIntervalWidth();
+    }
+
+    /**
+     * Sets the interval width to a fixed value, and sends a
+     * {@link DatasetChangeEvent} to all registered listeners.
+     *
+     * @param d  the new interval width (must be &gt; 0).
+     */
+    public void setIntervalWidth(double d) {
+        this.intervalDelegate.setFixedIntervalWidth(d);
+        fireDatasetChanged();
+    }
+
+    /**
+     * Returns whether the interval width is automatically calculated or not.
+     *
+     * @return A flag that determines whether the interval width is
+     *         automatically calculated.
+     */
+    public boolean isAutoWidth() {
+        return this.intervalDelegate.isAutoWidth();
+    }
+
+    /**
+     * Sets the flag that indicates whether the interval width is automatically
+     * calculated or not.
+     *
+     * @param b  a boolean.
+     */
+    public void setAutoWidth(boolean b) {
+        this.intervalDelegate.setAutoWidth(b);
+        fireDatasetChanged();
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * ---------------------
+ * FixedMillisecond.java
+ * ---------------------
+ * (C) Copyright 2002-present, by David Gilbert.
+ *
+ * Original Author:  David Gilbert;
+ * Contributor(s):   Ulrich Voigt;
+ *
+ */
+/**
+ * Wrapper for a {@code java.util.Date} object that allows it to be used
+ * as a {@link RegularTimePeriod}.  This class is immutable, which is a
+ * requirement for all {@link RegularTimePeriod} subclasses.
+ */
+public class FixedMillisecond extends RegularTimePeriod implements Serializable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = 7867521484545646931L;
+
+    /**
+     * The millisecond.
+     */
+    private final long time;
+
+    /**
+     * Constructs a millisecond based on the current system time.
+     */
+    public FixedMillisecond() {
+        this(System.currentTimeMillis());
+    }
+
+    /**
+     * Constructs a millisecond.
+     *
+     * @param millisecond  the millisecond (same encoding as java.util.Date).
+     */
+    public FixedMillisecond(long millisecond) {
+        super();
+        this.time = millisecond;
+    }
+
+    /**
+     * Constructs a millisecond.
+     *
+     * @param time  the time ({@code null} not permitted).
+     */
+    public FixedMillisecond(Date time) {
+        this(time.getTime());
+    }
+
+    /**
+     * Returns the date/time (creates a new {@code Date} instance each time
+     * this method is called).
+     *
+     * @return The date/time.
+     */
+    public Date getTime() {
+        return new Date(this.time);
+    }
+
+    /**
+     * This method is overridden to do nothing.
+     *
+     * @param calendar  ignored
+     *
+     * @since 1.0.3
+     */
+    @Override
+    public void peg(Calendar calendar) {
+        // nothing to do
+    }
+
+    /**
+     * Returns the millisecond preceding this one.
+     *
+     * @return The millisecond preceding this one.
+     */
+    @Override
+    public RegularTimePeriod previous() {
+        RegularTimePeriod result = null;
+        long t = this.time;
+        if (t != Long.MIN_VALUE) {
+            result = new FixedMillisecond(t - 1);
+        }
+        return result;
+    }
+
+    /**
+     * Returns the millisecond following this one.
+     *
+     * @return The millisecond following this one.
+     */
+    @Override
+    public RegularTimePeriod next() {
+        RegularTimePeriod result = null;
+        long t = this.time;
+        if (t != Long.MAX_VALUE) {
+            result = new FixedMillisecond(t + 1);
+        }
+        return result;
+    }
+
+    /**
+     * Tests the equality of this object against an arbitrary Object.
+     *
+     * @param object  the object to compare
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object object) {
+        if (object instanceof FixedMillisecond) {
+            FixedMillisecond m = (FixedMillisecond) object;
+            return this.time == m.getFirstMillisecond();
+        } else {
+            return false;
+        }
+    }
+
+    /**
+     * Returns a hash code for this object instance.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        return (int) this.time;
+    }
+
+    /**
+     * Returns an integer indicating the order of this Millisecond object
+     * relative to the specified
+     * object: negative == before, zero == same, positive == after.
+     *
+     * @param o1    the object to compare.
+     *
+     * @return negative == before, zero == same, positive == after.
+     */
+    @Override
+    public int compareTo(TimePeriod o1) {
+        int result;
+        long difference;
+        // CASE 1 : Comparing to another Second object
+        // -------------------------------------------
+        if (o1 instanceof FixedMillisecond) {
+            FixedMillisecond t1 = (FixedMillisecond) o1;
+            difference = this.time - t1.time;
+            if (difference > 0) {
+                result = 1;
+            } else {
+                if (difference < 0) {
+                    result = -1;
+                } else {
+                    result = 0;
+                }
+            }
+        } else // CASE 2 : Comparing to another TimePeriod object
+        // -----------------------------------------------
+        if (o1 instanceof RegularTimePeriod) {
+            // more difficult case - evaluate later...
+            result = 0;
+        } else // CASE 3 : Comparing to a non-TimePeriod object
+        // ---------------------------------------------
+        {
+            // consider time periods to be ordered after general objects
+            result = 1;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the first millisecond of the time period.
+     *
+     * @return The first millisecond of the time period.
+     */
+    @Override
+    public long getFirstMillisecond() {
+        return this.time;
+    }
+
+    /**
+     * Returns the first millisecond of the time period.
+     *
+     * @param calendar  the calendar.
+     *
+     * @return The first millisecond of the time period.
+     */
+    @Override
+    public long getFirstMillisecond(Calendar calendar) {
+        return this.time;
+    }
+
+    /**
+     * Returns the last millisecond of the time period.
+     *
+     * @return The last millisecond of the time period.
+     */
+    @Override
+    public long getLastMillisecond() {
+        return this.time;
+    }
+
+    /**
+     * Returns the last millisecond of the time period.
+     *
+     * @param calendar  the calendar.
+     *
+     * @return The last millisecond of the time period.
+     */
+    @Override
+    public long getLastMillisecond(Calendar calendar) {
+        return this.time;
+    }
+
+    /**
+     * Returns the millisecond closest to the middle of the time period.
+     *
+     * @return The millisecond closest to the middle of the time period.
+     */
+    @Override
+    public long getMiddleMillisecond() {
+        return this.time;
+    }
+
+    /**
+     * Returns the millisecond closest to the middle of the time period.
+     *
+     * @param calendar  the calendar.
+     *
+     * @return The millisecond closest to the middle of the time period.
+     */
+    @Override
+    public long getMiddleMillisecond(Calendar calendar) {
+        return this.time;
+    }
+
+    /**
+     * Returns a serial index number for the millisecond.
+     *
+     * @return The serial index number.
+     */
+    @Override
+    public long getSerialIndex() {
+        return this.time;
+    }
 }
 /* ======================================================
  * JFreeChart : a chart library for the Java(tm) platform
@@ -6676,418 +7016,771 @@ interface CategoryItemRenderer extends ChartElement, LegendItemSource {
  * Other names may be trademarks of their respective owners.]
  *
  * -----------
- * Second.java
+ * Vector.java
  * -----------
- * (C) Copyright 2001-present, by David Gilbert.
+ * (C) Copyright 2007, 2022, by David Gilbert.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
  *
+ * Changes
+ * -------
+ * 30-Jan-2007 : Version 1 (DG);
+ * 24-May-2007 : Added getLength() and getAngle() methods, thanks to
+ *               matinh (DG);
+ * 25-May-2007 : Moved from experimental to the main source tree (DG);
+ *
  */
 /**
- * Represents a second in a particular day.  This class is immutable, which is
- * a requirement for all {@link RegularTimePeriod} subclasses.
+ * A vector.
+ *
+ * @since 1.0.6
  */
-class Second extends RegularTimePeriod implements Serializable {
+public class Vector implements Serializable {
 
     /**
-     * For serialization.
+     * The vector x.
      */
-    private static final long serialVersionUID = -6536564190712383466L;
+    private double x;
 
     /**
-     * Useful constant for the first second in a minute.
+     * The vector y.
      */
-    public static final int FIRST_SECOND_IN_MINUTE = 0;
+    private double y;
 
     /**
-     * Useful constant for the last second in a minute.
+     * Creates a new instance of {@code Vector}.
+     *
+     * @param x  the x-component.
+     * @param y  the y-component.
      */
-    public static final int LAST_SECOND_IN_MINUTE = 59;
-
-    /**
-     * The day.
-     */
-    private final Day day;
-
-    /**
-     * The hour of the day.
-     */
-    private final byte hour;
-
-    /**
-     * The minute.
-     */
-    private final byte minute;
-
-    /**
-     * The second.
-     */
-    private final byte second;
-
-    /**
-     * The first millisecond.  We don't store the last millisecond, because it
-     * is always firstMillisecond + 999L.
-     */
-    private long firstMillisecond;
-
-    /**
-     * Constructs a new Second, based on the system date/time.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
-     */
-    public Second() {
-        this(new Date());
+    public Vector(double x, double y) {
+        this.x = x;
+        this.y = y;
     }
 
     /**
-     * Constructs a new Second.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
+     * Returns the x-value.
      *
-     * @param second  the second (0 to 59).
-     * @param minute  the minute ({@code null} not permitted).
+     * @return The x-value.
      */
-    public Second(int second, Minute minute) {
-        super();
-        Args.requireInRange(second, "second", Second.FIRST_SECOND_IN_MINUTE, Second.LAST_SECOND_IN_MINUTE);
-        Args.nullNotPermitted(minute, "minute");
-        this.day = minute.getDay();
-        this.hour = (byte) minute.getHourValue();
-        this.minute = (byte) minute.getMinute();
-        this.second = (byte) second;
-        peg(getCalendarInstance());
+    public double getX() {
+        return this.x;
     }
 
     /**
-     * Creates a new second.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
+     * Returns the y-value.
      *
-     * @param second  the second (0-59).
-     * @param minute  the minute (0-59).
-     * @param hour  the hour (0-23).
-     * @param day  the day (1-31).
-     * @param month  the month (1-12).
-     * @param year  the year (1900-9999).
+     * @return The y-value.
      */
-    public Second(int second, int minute, int hour, int day, int month, int year) {
-        this(second, new Minute(minute, hour, day, month, year));
+    public double getY() {
+        return this.y;
     }
 
     /**
-     * Constructs a new instance from the specified date/time.
-     * The time zone and locale are determined by the calendar
-     * returned by {@link RegularTimePeriod#getCalendarInstance()}.
+     * Returns the length of the vector.
      *
-     * @param time  the time ({@code null} not permitted).
-     *
-     * @see #Second(Date, TimeZone, Locale)
+     * @return The vector length.
      */
-    public Second(Date time) {
-        this(time, getCalendarInstance());
+    public double getLength() {
+        return Math.sqrt((this.x * this.x) + (this.y * this.y));
     }
 
     /**
-     * Creates a new second based on the supplied time and time zone.
+     * Returns the angle of the vector.
      *
-     * @param time  the time ({@code null} not permitted).
-     * @param zone  the time zone ({@code null} not permitted).
-     * @param locale  the locale ({@code null} not permitted).
-     *
-     * @since 1.0.13
+     * @return The angle of the vector.
      */
-    public Second(Date time, TimeZone zone, Locale locale) {
-        this(time, Calendar.getInstance(zone, locale));
+    public double getAngle() {
+        return Math.atan2(this.y, this.x);
     }
 
     /**
-     * Constructs a new instance, based on a particular date/time.
-     * The time zone and locale are determined by the {@code calendar}
-     * parameter.
+     * Tests this vector for equality with an arbitrary object.
      *
-     * @param time the date/time ({@code null} not permitted).
-     * @param calendar the calendar to use for calculations ({@code null} not permitted).
-     */
-    public Second(Date time, Calendar calendar) {
-        super();
-        calendar.setTime(time);
-        this.second = (byte) calendar.get(Calendar.SECOND);
-        this.minute = (byte) calendar.get(Calendar.MINUTE);
-        this.hour = (byte) calendar.get(Calendar.HOUR_OF_DAY);
-        this.day = new Day(time, calendar);
-        peg(calendar);
-    }
-
-    /**
-     * Returns the second within the minute.
+     * @param obj  the object ({@code null} not permitted).
      *
-     * @return The second (0 - 59).
-     */
-    public int getSecond() {
-        return this.second;
-    }
-
-    /**
-     * Returns the minute.
-     *
-     * @return The minute (never {@code null}).
-     */
-    public Minute getMinute() {
-        return new Minute(this.minute, new Hour(this.hour, this.day));
-    }
-
-    /**
-     * Returns the first millisecond of the second.  This will be determined
-     * relative to the time zone specified in the constructor, or in the
-     * calendar instance passed in the most recent call to the
-     * {@link #peg(Calendar)} method.
-     *
-     * @return The first millisecond of the second.
-     *
-     * @see #getLastMillisecond()
-     */
-    @Override
-    public long getFirstMillisecond() {
-        return this.firstMillisecond;
-    }
-
-    /**
-     * Returns the last millisecond of the second.  This will be
-     * determined relative to the time zone specified in the constructor, or
-     * in the calendar instance passed in the most recent call to the
-     * {@link #peg(Calendar)} method.
-     *
-     * @return The last millisecond of the second.
-     *
-     * @see #getFirstMillisecond()
-     */
-    @Override
-    public long getLastMillisecond() {
-        return this.firstMillisecond + 999L;
-    }
-
-    /**
-     * Recalculates the start date/time and end date/time for this time period
-     * relative to the supplied calendar (which incorporates a time zone).
-     *
-     * @param calendar  the calendar ({@code null} not permitted).
-     *
-     * @since 1.0.3
-     */
-    @Override
-    public void peg(Calendar calendar) {
-        this.firstMillisecond = getFirstMillisecond(calendar);
-    }
-
-    /**
-     * Returns the second preceding this one.
-     * No matter what time zone and locale this instance was created with,
-     * the returned instance will use the default calendar for time
-     * calculations, obtained with {@link RegularTimePeriod#getCalendarInstance()}.
-     *
-     * @return The second preceding this one.
-     */
-    @Override
-    public RegularTimePeriod previous() {
-        Second result = null;
-        if (this.second != FIRST_SECOND_IN_MINUTE) {
-            result = new Second(this.second - 1, getMinute());
-        } else {
-            Minute previous = (Minute) getMinute().previous();
-            if (previous != null) {
-                result = new Second(LAST_SECOND_IN_MINUTE, previous);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns the second following this one.
-     * No matter what time zone and locale this instance was created with,
-     * the returned instance will use the default calendar for time
-     * calculations, obtained with {@link RegularTimePeriod#getCalendarInstance()}.
-     *
-     * @return The second following this one.
-     */
-    @Override
-    public RegularTimePeriod next() {
-        Second result = null;
-        if (this.second != LAST_SECOND_IN_MINUTE) {
-            result = new Second(this.second + 1, getMinute());
-        } else {
-            Minute next = (Minute) getMinute().next();
-            if (next != null) {
-                result = new Second(FIRST_SECOND_IN_MINUTE, next);
-            }
-        }
-        return result;
-    }
-
-    /**
-     * Returns a serial index number for the minute.
-     *
-     * @return The serial index number.
-     */
-    @Override
-    public long getSerialIndex() {
-        long hourIndex = this.day.getSerialIndex() * 24L + this.hour;
-        long minuteIndex = hourIndex * 60L + this.minute;
-        return minuteIndex * 60L + this.second;
-    }
-
-    /**
-     * Returns the first millisecond of the minute.
-     *
-     * @param calendar  the calendar/timezone ({@code null} not permitted).
-     *
-     * @return The first millisecond.
-     *
-     * @throws NullPointerException if {@code calendar} is {@code null}.
-     */
-    @Override
-    public long getFirstMillisecond(Calendar calendar) {
-        int year = this.day.getYear();
-        int month = this.day.getMonth() - 1;
-        int d = this.day.getDayOfMonth();
-        calendar.clear();
-        calendar.set(year, month, d, this.hour, this.minute, this.second);
-        calendar.set(Calendar.MILLISECOND, 0);
-        return calendar.getTimeInMillis();
-    }
-
-    /**
-     * Returns the last millisecond of the second.
-     *
-     * @param calendar  the calendar/timezone ({@code null} not permitted).
-     *
-     * @return The last millisecond.
-     *
-     * @throws NullPointerException if {@code calendar} is {@code null}.
-     */
-    @Override
-    public long getLastMillisecond(Calendar calendar) {
-        return getFirstMillisecond(calendar) + 999L;
-    }
-
-    /**
-     * Tests the equality of this object against an arbitrary Object.
-     * <P>
-     * This method will return true ONLY if the object is a Second object
-     * representing the same second as this instance.
-     *
-     * @param obj  the object to compare ({@code null} permitted).
-     *
-     * @return {@code true} if second and minute of this and the object
-     *         are the same.
+     * @return A boolean.
      */
     @Override
     public boolean equals(Object obj) {
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof Second)) {
+        if (!(obj instanceof Vector)) {
             return false;
         }
-        Second that = (Second) obj;
-        if (this.second != that.second) {
+        Vector that = (Vector) obj;
+        if (this.x != that.x) {
             return false;
         }
-        if (this.minute != that.minute) {
-            return false;
-        }
-        if (this.hour != that.hour) {
-            return false;
-        }
-        if (!this.day.equals(that.day)) {
+        if (this.y != that.y) {
             return false;
         }
         return true;
     }
 
     /**
-     * Returns a hash code for this object instance.  The approach described by
-     * Joshua Bloch in "Effective Java" has been used here:
-     * <p>
-     * {@code http://developer.java.sun.com/developer/Books/effectivejava
-     * /Chapter3.pdf}
+     * Returns a hash code for this instance.
      *
      * @return A hash code.
      */
     @Override
     public int hashCode() {
-        int result = 17;
-        result = 37 * result + this.second;
-        result = 37 * result + this.minute;
-        result = 37 * result + this.hour;
-        result = 37 * result + this.day.hashCode();
+        int result = 193;
+        long temp = Double.doubleToLongBits(this.x);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
+        temp = Double.doubleToLongBits(this.y);
+        result = 37 * result + (int) (temp ^ (temp >>> 32));
         return result;
+    }
+}
+/* ======================================================
+ * JFreeChart : a chart library for the Java(tm) platform
+ * ======================================================
+ *
+ * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ *
+ * Project Info:  https://www.jfree.org/jfreechart/index.html
+ *
+ * This library is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU Lesser General Public License as published by
+ * the Free Software Foundation; either version 2.1 of the License, or
+ * (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful, but
+ * WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+ * or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public
+ * License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
+ * USA.
+ *
+ * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
+ * Other names may be trademarks of their respective owners.]
+ *
+ * -------------------
+ * XYAreaRenderer.java
+ * -------------------
+ * (C) Copyright 2002-2021, by Hari and Contributors.
+ *
+ * Original Author:  Hari (ourhari@hotmail.com);
+ * Contributor(s):   David Gilbert;
+ *                   Richard Atkinson;
+ *                   Christian W. Zuckschwerdt;
+ *                   Martin Krauskopf;
+ *                   Ulrich Voigt (patch #312);
+ */
+/**
+ * Area item renderer for an {@link XYPlot}.  This class can draw (a) shapes at
+ * each point, or (b) lines between points, or (c) both shapes and lines,
+ * or (d) filled areas, or (e) filled areas and shapes. The example shown here
+ * is generated by the {@code XYAreaRendererDemo1.java} program included
+ * in the JFreeChart demo collection:
+ * <br><br>
+ * <img src="doc-files/XYAreaRendererSample.png" alt="XYAreaRendererSample.png">
+ */
+public class XYAreaRenderer extends AbstractXYItemRenderer implements XYItemRenderer, PublicCloneable {
+
+    /**
+     * For serialization.
+     */
+    private static final long serialVersionUID = -4481971353973876747L;
+
+    /**
+     * A state object used by this renderer.
+     */
+    static class XYAreaRendererState extends XYItemRendererState {
+
+        /**
+         * Working storage for the area under one series.
+         */
+        public GeneralPath area;
+
+        /**
+         * Working line that can be recycled.
+         */
+        public Line2D line;
+
+        /**
+         * Creates a new state.
+         *
+         * @param info  the plot rendering info.
+         */
+        public XYAreaRendererState(PlotRenderingInfo info) {
+            super(info);
+            this.area = new GeneralPath();
+            this.line = new Line2D.Double();
+        }
     }
 
     /**
-     * Returns an integer indicating the order of this Second object relative
-     * to the specified
-     * object: negative == before, zero == same, positive == after.
+     * Useful constant for specifying the type of rendering (shapes only).
+     */
+    public static final int SHAPES = 1;
+
+    /**
+     * Useful constant for specifying the type of rendering (lines only).
+     */
+    public static final int LINES = 2;
+
+    /**
+     * Useful constant for specifying the type of rendering (shapes and lines).
+     */
+    public static final int SHAPES_AND_LINES = 3;
+
+    /**
+     * Useful constant for specifying the type of rendering (area only).
+     */
+    public static final int AREA = 4;
+
+    /**
+     * Useful constant for specifying the type of rendering (area and shapes).
+     */
+    public static final int AREA_AND_SHAPES = 5;
+
+    /**
+     * A flag indicating whether shapes are drawn at each XY point.
+     */
+    private boolean plotShapes;
+
+    /**
+     * A flag indicating whether lines are drawn between XY points.
+     */
+    private boolean plotLines;
+
+    /**
+     * A flag indicating whether Area are drawn at each XY point.
+     */
+    private boolean plotArea;
+
+    /**
+     * A flag that controls whether the outline is shown.
+     */
+    private boolean showOutline;
+
+    /**
+     * The shape used to represent an area in each legend item (this should
+     * never be {@code null}).
+     */
+    private transient Shape legendArea;
+
+    /**
+     * A flag that can be set to specify that the fill paint should be used
+     * to fill the area under the renderer.
+     */
+    private boolean useFillPaint;
+
+    /**
+     * A transformer that is applied to the paint used to fill under the
+     * area *if* it is an instance of GradientPaint.
+     */
+    private GradientPaintTransformer gradientTransformer;
+
+    /**
+     * Constructs a new renderer.
+     */
+    public XYAreaRenderer() {
+        this(AREA);
+    }
+
+    /**
+     * Constructs a new renderer.
      *
-     * @param o1  the object to compare.
+     * @param type  the type of the renderer.
+     */
+    public XYAreaRenderer(int type) {
+        this(type, null, null);
+    }
+
+    /**
+     * Constructs a new renderer.  To specify the type of renderer, use one of
+     * the constants: {@code SHAPES}, {@code LINES}, {@code SHAPES_AND_LINES},
+     * {@code AREA} or {@code AREA_AND_SHAPES}.
      *
-     * @return negative == before, zero == same, positive == after.
+     * @param type  the type of renderer.
+     * @param toolTipGenerator  the tool tip generator ({@code null} permitted).
+     * @param urlGenerator  the URL generator ({@code null} permitted).
+     */
+    public XYAreaRenderer(int type, XYToolTipGenerator toolTipGenerator, XYURLGenerator urlGenerator) {
+        super();
+        setDefaultToolTipGenerator(toolTipGenerator);
+        setURLGenerator(urlGenerator);
+        if (type == SHAPES) {
+            this.plotShapes = true;
+        }
+        if (type == LINES) {
+            this.plotLines = true;
+        }
+        if (type == SHAPES_AND_LINES) {
+            this.plotShapes = true;
+            this.plotLines = true;
+        }
+        if (type == AREA) {
+            this.plotArea = true;
+        }
+        if (type == AREA_AND_SHAPES) {
+            this.plotArea = true;
+            this.plotShapes = true;
+        }
+        this.showOutline = false;
+        GeneralPath area = new GeneralPath();
+        area.moveTo(0.0f, -4.0f);
+        area.lineTo(3.0f, -2.0f);
+        area.lineTo(4.0f, 4.0f);
+        area.lineTo(-4.0f, 4.0f);
+        area.lineTo(-3.0f, -2.0f);
+        area.closePath();
+        this.legendArea = area;
+        this.useFillPaint = false;
+        this.gradientTransformer = new StandardGradientPaintTransformer();
+    }
+
+    /**
+     * Returns true if shapes are being plotted by the renderer.
+     *
+     * @return {@code true} if shapes are being plotted by the renderer.
+     */
+    public boolean getPlotShapes() {
+        return this.plotShapes;
+    }
+
+    /**
+     * Returns true if lines are being plotted by the renderer.
+     *
+     * @return {@code true} if lines are being plotted by the renderer.
+     */
+    public boolean getPlotLines() {
+        return this.plotLines;
+    }
+
+    /**
+     * Returns true if Area is being plotted by the renderer.
+     *
+     * @return {@code true} if Area is being plotted by the renderer.
+     */
+    public boolean getPlotArea() {
+        return this.plotArea;
+    }
+
+    /**
+     * Returns a flag that controls whether outlines of the areas are
+     * drawn.
+     *
+     * @return The flag.
+     *
+     * @see #setOutline(boolean)
+     */
+    public boolean isOutline() {
+        return this.showOutline;
+    }
+
+    /**
+     * Sets a flag that controls whether outlines of the areas are drawn
+     * and sends a {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param show  the flag.
+     *
+     * @see #isOutline()
+     */
+    public void setOutline(boolean show) {
+        this.showOutline = show;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the shape used to represent an area in the legend.
+     *
+     * @return The legend area (never {@code null}).
+     */
+    public Shape getLegendArea() {
+        return this.legendArea;
+    }
+
+    /**
+     * Sets the shape used as an area in each legend item and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param area  the area ({@code null} not permitted).
+     */
+    public void setLegendArea(Shape area) {
+        Args.nullNotPermitted(area, "area");
+        this.legendArea = area;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the flag that controls whether the series fill paint is used to
+     * fill the area under the line.
+     *
+     * @return A boolean.
+     */
+    public boolean getUseFillPaint() {
+        return this.useFillPaint;
+    }
+
+    /**
+     * Sets the flag that controls whether the series fill paint is
+     * used to fill the area under the line and sends a
+     * {@link RendererChangeEvent} to all listeners.
+     *
+     * @param use  the new flag value.
+     */
+    public void setUseFillPaint(boolean use) {
+        this.useFillPaint = use;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the gradient paint transformer.
+     *
+     * @return The gradient paint transformer (never {@code null}).
+     */
+    public GradientPaintTransformer getGradientTransformer() {
+        return this.gradientTransformer;
+    }
+
+    /**
+     * Sets the gradient paint transformer and sends a
+     * {@link RendererChangeEvent} to all registered listeners.
+     *
+     * @param transformer  the transformer ({@code null} not permitted).
+     */
+    public void setGradientTransformer(GradientPaintTransformer transformer) {
+        Args.nullNotPermitted(transformer, "transformer");
+        this.gradientTransformer = transformer;
+        fireChangeEvent();
+    }
+
+    /**
+     * Initialises the renderer and returns a state object that should be
+     * passed to all subsequent calls to the drawItem() method.
+     *
+     * @param g2  the graphics device.
+     * @param dataArea  the area inside the axes.
+     * @param plot  the plot.
+     * @param data  the data.
+     * @param info  an optional info collection object to return data back to
+     *              the caller.
+     *
+     * @return A state object for use by the renderer.
      */
     @Override
-    public int compareTo(TimePeriod o1) {
-        int result;
-        // CASE 1 : Comparing to another Second object
-        // -------------------------------------------
-        if (o1 instanceof Second) {
-            Second s = (Second) o1;
-            return Long.compare(this.firstMillisecond, s.firstMillisecond);
-        } else // CASE 2 : Comparing to another TimePeriod object
-        // -----------------------------------------------
-        if (o1 instanceof RegularTimePeriod) {
-            // more difficult case - evaluate later...
-            result = 0;
-        } else // CASE 3 : Comparing to a non-TimePeriod object
-        // ---------------------------------------------
-        {
-            // consider time periods to be ordered after general objects
-            result = 1;
-        }
-        return result;
+    public XYItemRendererState initialise(Graphics2D g2, Rectangle2D dataArea, XYPlot plot, XYDataset data, PlotRenderingInfo info) {
+        XYAreaRendererState state = new XYAreaRendererState(info);
+        // in the rendering process, there is special handling for item
+        // zero, so we can't support processing of visible data items only
+        state.setProcessVisibleItemsOnly(false);
+        return state;
     }
 
     /**
-     * Creates a new instance by parsing a string.  The string is assumed to
-     * be in the format "YYYY-MM-DD HH:MM:SS", perhaps with leading or trailing
-     * whitespace.
+     * Returns a default legend item for the specified series.  Subclasses
+     * should override this method to generate customised items.
      *
-     * @param s  the string to parse.
+     * @param datasetIndex  the dataset index (zero-based).
+     * @param series  the series index (zero-based).
      *
-     * @return The second, or {@code null} if the string is not parseable.
+     * @return A legend item for the series.
      */
-    public static Second parseSecond(String s) {
-        Second result = null;
-        s = s.trim();
-        String daystr = s.substring(0, Math.min(10, s.length()));
-        Day day = Day.parseDay(daystr);
-        if (day != null) {
-            String hmsstr = s.substring(Math.min(daystr.length() + 1, s.length()));
-            hmsstr = hmsstr.trim();
-            int l = hmsstr.length();
-            String hourstr = hmsstr.substring(0, Math.min(2, l));
-            String minstr = hmsstr.substring(Math.min(3, l), Math.min(5, l));
-            String secstr = hmsstr.substring(Math.min(6, l), Math.min(8, l));
-            int hour = Integer.parseInt(hourstr);
-            if ((hour >= 0) && (hour <= 23)) {
-                int minute = Integer.parseInt(minstr);
-                if ((minute >= 0) && (minute <= 59)) {
-                    Minute m = new Minute(minute, new Hour(hour, day));
-                    int second = Integer.parseInt(secstr);
-                    if ((second >= 0) && (second <= 59)) {
-                        result = new Second(second, m);
-                    }
+    @Override
+    public LegendItem getLegendItem(int datasetIndex, int series) {
+        LegendItem result = null;
+        XYPlot xyplot = getPlot();
+        if (xyplot != null) {
+            XYDataset dataset = xyplot.getDataset(datasetIndex);
+            if (dataset != null) {
+                XYSeriesLabelGenerator lg = getLegendItemLabelGenerator();
+                String label = lg.generateLabel(dataset, series);
+                String description = label;
+                String toolTipText = null;
+                if (getLegendItemToolTipGenerator() != null) {
+                    toolTipText = getLegendItemToolTipGenerator().generateLabel(dataset, series);
                 }
+                String urlText = null;
+                if (getLegendItemURLGenerator() != null) {
+                    urlText = getLegendItemURLGenerator().generateLabel(dataset, series);
+                }
+                Paint paint = lookupSeriesPaint(series);
+                result = new LegendItem(label, description, toolTipText, urlText, this.legendArea, paint);
+                result.setLabelFont(lookupLegendTextFont(series));
+                Paint labelPaint = lookupLegendTextPaint(series);
+                if (labelPaint != null) {
+                    result.setLabelPaint(labelPaint);
+                }
+                result.setDataset(dataset);
+                result.setDatasetIndex(datasetIndex);
+                result.setSeriesKey(dataset.getSeriesKey(series));
+                result.setSeriesIndex(series);
             }
         }
         return result;
+    }
+
+    /**
+     * Draws the visual representation of a single data item.
+     *
+     * @param g2  the graphics device.
+     * @param state  the renderer state.
+     * @param dataArea  the area within which the data is being drawn.
+     * @param info  collects information about the drawing.
+     * @param plot  the plot (can be used to obtain standard color information
+     *              etc).
+     * @param domainAxis  the domain axis.
+     * @param rangeAxis  the range axis.
+     * @param dataset  the dataset.
+     * @param series  the series index (zero-based).
+     * @param item  the item index (zero-based).
+     * @param crosshairState  crosshair information for the plot
+     *                        ({@code null} permitted).
+     * @param pass  the pass index.
+     */
+    @Override
+    public void drawItem(Graphics2D g2, XYItemRendererState state, Rectangle2D dataArea, PlotRenderingInfo info, XYPlot plot, ValueAxis domainAxis, ValueAxis rangeAxis, XYDataset dataset, int series, int item, CrosshairState crosshairState, int pass) {
+        if (!getItemVisible(series, item)) {
+            return;
+        }
+        XYAreaRendererState areaState = (XYAreaRendererState) state;
+        // get the data point...
+        double x1 = dataset.getXValue(series, item);
+        double y1 = dataset.getYValue(series, item);
+        if (Double.isNaN(y1)) {
+            y1 = 0.0;
+        }
+        double transX1 = domainAxis.valueToJava2D(x1, dataArea, plot.getDomainAxisEdge());
+        double transY1 = rangeAxis.valueToJava2D(y1, dataArea, plot.getRangeAxisEdge());
+        // get the previous point and the next point so we can calculate a
+        // "hot spot" for the area (used by the chart entity)...
+        int itemCount = dataset.getItemCount(series);
+        double x0 = dataset.getXValue(series, Math.max(item - 1, 0));
+        double y0 = dataset.getYValue(series, Math.max(item - 1, 0));
+        if (Double.isNaN(y0)) {
+            y0 = 0.0;
+        }
+        double transX0 = domainAxis.valueToJava2D(x0, dataArea, plot.getDomainAxisEdge());
+        double transY0 = rangeAxis.valueToJava2D(y0, dataArea, plot.getRangeAxisEdge());
+        double x2 = dataset.getXValue(series, Math.min(item + 1, itemCount - 1));
+        double y2 = dataset.getYValue(series, Math.min(item + 1, itemCount - 1));
+        if (Double.isNaN(y2)) {
+            y2 = 0.0;
+        }
+        double transX2 = domainAxis.valueToJava2D(x2, dataArea, plot.getDomainAxisEdge());
+        double transY2 = rangeAxis.valueToJava2D(y2, dataArea, plot.getRangeAxisEdge());
+        double transZero = rangeAxis.valueToJava2D(0.0, dataArea, plot.getRangeAxisEdge());
+        if (item == 0) {
+            // create a new area polygon for the series
+            areaState.area = new GeneralPath();
+            // the first point is (x, 0)
+            double zero = rangeAxis.valueToJava2D(0.0, dataArea, plot.getRangeAxisEdge());
+            if (plot.getOrientation().isVertical()) {
+                moveTo(areaState.area, transX1, zero);
+            } else if (plot.getOrientation().isHorizontal()) {
+                moveTo(areaState.area, zero, transX1);
+            }
+        }
+        // Add each point to Area (x, y)
+        if (plot.getOrientation().isVertical()) {
+            lineTo(areaState.area, transX1, transY1);
+        } else if (plot.getOrientation().isHorizontal()) {
+            lineTo(areaState.area, transY1, transX1);
+        }
+        PlotOrientation orientation = plot.getOrientation();
+        Paint paint = getItemPaint(series, item);
+        Stroke stroke = getItemStroke(series, item);
+        g2.setPaint(paint);
+        g2.setStroke(stroke);
+        Shape shape;
+        if (getPlotShapes()) {
+            shape = getItemShape(series, item);
+            if (orientation == PlotOrientation.VERTICAL) {
+                shape = ShapeUtils.createTranslatedShape(shape, transX1, transY1);
+            } else if (orientation == PlotOrientation.HORIZONTAL) {
+                shape = ShapeUtils.createTranslatedShape(shape, transY1, transX1);
+            }
+            g2.draw(shape);
+        }
+        if (getPlotLines()) {
+            if (item > 0) {
+                if (plot.getOrientation() == PlotOrientation.VERTICAL) {
+                    areaState.line.setLine(transX0, transY0, transX1, transY1);
+                } else if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+                    areaState.line.setLine(transY0, transX0, transY1, transX1);
+                }
+                g2.draw(areaState.line);
+            }
+        }
+        // Check if the item is the last item for the series.
+        // and number of items > 0.  We can't draw an area for a single point.
+        if (getPlotArea() && item > 0 && item == (itemCount - 1)) {
+            if (orientation == PlotOrientation.VERTICAL) {
+                // Add the last point (x,0)
+                lineTo(areaState.area, transX1, transZero);
+                areaState.area.closePath();
+            } else if (orientation == PlotOrientation.HORIZONTAL) {
+                // Add the last point (x,0)
+                lineTo(areaState.area, transZero, transX1);
+                areaState.area.closePath();
+            }
+            if (this.useFillPaint) {
+                paint = lookupSeriesFillPaint(series);
+                g2.setPaint(paint);
+            }
+            if (paint instanceof GradientPaint) {
+                GradientPaint gp = (GradientPaint) paint;
+                GradientPaint adjGP = this.gradientTransformer.transform(gp, dataArea);
+                g2.setPaint(adjGP);
+            }
+            g2.fill(areaState.area);
+            // draw an outline around the Area.
+            if (isOutline()) {
+                Shape area = areaState.area;
+                // Java2D has some issues drawing dashed lines around "large"
+                // geometrical shapes - for example, see bug 6620013 in the
+                // Java bug database.  So, we'll check if the outline is
+                // dashed and, if it is, do our own clipping before drawing
+                // the outline...
+                Stroke outlineStroke = lookupSeriesOutlineStroke(series);
+                if (outlineStroke instanceof BasicStroke) {
+                    BasicStroke bs = (BasicStroke) outlineStroke;
+                    if (bs.getDashArray() != null) {
+                        Area poly = new Area(areaState.area);
+                        // we make the clip region slightly larger than the
+                        // dataArea so that the clipped edges don't show lines
+                        // on the chart
+                        Area clip = new Area(new Rectangle2D.Double(dataArea.getX() - 5.0, dataArea.getY() - 5.0, dataArea.getWidth() + 10.0, dataArea.getHeight() + 10.0));
+                        poly.intersect(clip);
+                        area = poly;
+                    }
+                }
+                // end of workaround
+                g2.setStroke(outlineStroke);
+                g2.setPaint(lookupSeriesOutlinePaint(series));
+                g2.draw(area);
+            }
+        }
+        int datasetIndex = plot.indexOf(dataset);
+        updateCrosshairValues(crosshairState, x1, y1, datasetIndex, transX1, transY1, orientation);
+        // collect entity and tool tip information...
+        EntityCollection entities = state.getEntityCollection();
+        if (entities != null) {
+            GeneralPath hotspot = new GeneralPath();
+            if (plot.getOrientation() == PlotOrientation.HORIZONTAL) {
+                moveTo(hotspot, transZero, ((transX0 + transX1) / 2.0));
+                lineTo(hotspot, ((transY0 + transY1) / 2.0), ((transX0 + transX1) / 2.0));
+                lineTo(hotspot, transY1, transX1);
+                lineTo(hotspot, ((transY1 + transY2) / 2.0), ((transX1 + transX2) / 2.0));
+                lineTo(hotspot, transZero, ((transX1 + transX2) / 2.0));
+            } else {
+                // vertical orientation
+                moveTo(hotspot, ((transX0 + transX1) / 2.0), transZero);
+                lineTo(hotspot, ((transX0 + transX1) / 2.0), ((transY0 + transY1) / 2.0));
+                lineTo(hotspot, transX1, transY1);
+                lineTo(hotspot, ((transX1 + transX2) / 2.0), ((transY1 + transY2) / 2.0));
+                lineTo(hotspot, ((transX1 + transX2) / 2.0), transZero);
+            }
+            hotspot.closePath();
+            // limit the entity hotspot area to the data area
+            Area dataAreaHotspot = new Area(hotspot);
+            dataAreaHotspot.intersect(new Area(dataArea));
+            if (dataAreaHotspot.isEmpty() == false) {
+                addEntity(entities, dataAreaHotspot, dataset, series, item, 0.0, 0.0);
+            }
+        }
+    }
+
+    /**
+     * Returns a clone of the renderer.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException  if the renderer cannot be cloned.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        XYAreaRenderer clone = (XYAreaRenderer) super.clone();
+        clone.legendArea = CloneUtils.clone(this.legendArea);
+        return clone;
+    }
+
+    /**
+     * Tests this renderer for equality with an arbitrary object.
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof XYAreaRenderer)) {
+            return false;
+        }
+        XYAreaRenderer that = (XYAreaRenderer) obj;
+        if (this.plotArea != that.plotArea) {
+            return false;
+        }
+        if (this.plotLines != that.plotLines) {
+            return false;
+        }
+        if (this.plotShapes != that.plotShapes) {
+            return false;
+        }
+        if (this.showOutline != that.showOutline) {
+            return false;
+        }
+        if (this.useFillPaint != that.useFillPaint) {
+            return false;
+        }
+        if (!this.gradientTransformer.equals(that.gradientTransformer)) {
+            return false;
+        }
+        if (!ShapeUtils.equal(this.legendArea, that.legendArea)) {
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this instance.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result = super.hashCode();
+        result = HashUtils.hashCode(result, this.plotArea);
+        result = HashUtils.hashCode(result, this.plotLines);
+        result = HashUtils.hashCode(result, this.plotShapes);
+        result = HashUtils.hashCode(result, this.useFillPaint);
+        return result;
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the input stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     * @throws ClassNotFoundException  if there is a classpath problem.
+     */
+    private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+        stream.defaultReadObject();
+        this.legendArea = SerialUtils.readShape(stream);
+    }
+
+    /**
+     * Provides serialization support.
+     *
+     * @param stream  the output stream.
+     *
+     * @throws IOException  if there is an I/O error.
+     */
+    private void writeObject(ObjectOutputStream stream) throws IOException {
+        stream.defaultWriteObject();
+        SerialUtils.writeShape(this.legendArea, stream);
     }
 }

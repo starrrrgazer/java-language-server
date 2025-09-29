@@ -25,1364 +25,858 @@ package DEF.bz;
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * ---------------
- * JFreeChart.java
- * ---------------
- * (C) Copyright 2000-present, by David Gilbert and Contributors.
+ * --------------------
+ * FastScatterPlot.java
+ * --------------------
+ * (C) Copyright 2002-present, by David Gilbert.
  *
  * Original Author:  David Gilbert;
- * Contributor(s):   Andrzej Porebski;
- *                   David Li;
- *                   Wolfgang Irler;
- *                   Christian W. Zuckschwerdt;
- *                   Klaus Rheinwald;
- *                   Nicolas Brodu;
- *                   Peter Kolb (patch 2603321);
- *
- * NOTE: The above list of contributors lists only the people that have
- * contributed to this source file (JFreeChart.java) - for a list of ALL
- * contributors to the project, please see the README.txt file.
+ * Contributor(s):   Arnaud Lelievre;
+ *                   Ulrich Voigt (patch #307);
  *
  */
 /**
- * A chart class implemented using the Java 2D APIs.  The current version
- * supports bar charts, line charts, pie charts and xy plots (including time
- * series data).
- * <P>
- * JFreeChart coordinates several objects to achieve its aim of being able to
- * draw a chart on a Java 2D graphics device: a list of {@link Title} objects
- * (which often includes the chart's legend), a {@link Plot} and a
- * {@link org.jfree.data.general.Dataset} (the plot in turn manages a
- * domain axis and a range axis).
- * <P>
- * You should use a {@link ChartPanel} to display a chart in a GUI.
- * <P>
- * The {@link ChartFactory} class contains static methods for creating
- * 'ready-made' charts.
- *
- * @see ChartPanel
- * @see ChartFactory
- * @see Title
- * @see Plot
+ * A fast scatter plot.
  */
-class JFreeChart implements Drawable, TitleChangeListener, PlotChangeListener, ChartElement, Serializable, Cloneable {
+public class FastScatterPlot extends Plot implements ValueAxisPlot, Pannable, Zoomable, Cloneable, Serializable {
 
     /**
      * For serialization.
      */
-    private static final long serialVersionUID = -3470703747817429120L;
+    private static final long serialVersionUID = 7871545897358563521L;
 
     /**
-     * The default font for titles.
+     * The default grid line stroke.
      */
-    public static final Font DEFAULT_TITLE_FONT = new Font("SansSerif", Font.BOLD, 18);
+    public static final Stroke DEFAULT_GRIDLINE_STROKE = new BasicStroke(0.5f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_BEVEL, 0.0f, new float[] { 2.0f, 2.0f }, 0.0f);
 
     /**
-     * The default background color.
+     * The default grid line paint.
      */
-    public static final Paint DEFAULT_BACKGROUND_PAINT = UIManager.getColor("Panel.background");
+    public static final Paint DEFAULT_GRIDLINE_PAINT = Color.lightGray;
 
     /**
-     * The default background image.
+     * The data.
      */
-    public static final Image DEFAULT_BACKGROUND_IMAGE = null;
+    private float[][] data;
 
     /**
-     * The default background image alignment.
+     * The x data range.
      */
-    public static final RectangleAlignment DEFAULT_BACKGROUND_IMAGE_ALIGNMENT = RectangleAlignment.FILL;
+    private final Range xDataRange;
 
     /**
-     * The default background image alpha.
+     * The y data range.
      */
-    public static final float DEFAULT_BACKGROUND_IMAGE_ALPHA = 0.5f;
+    private final Range yDataRange;
 
     /**
-     * The key for a rendering hint that can suppress the generation of a
-     * shadow effect when drawing the chart.  The hint value must be a
-     * Boolean.
+     * The domain axis (used for the x-values).
      */
-    public static final RenderingHints.Key KEY_SUPPRESS_SHADOW_GENERATION = new RenderingHints.Key(0) {
-
-        @Override
-        public boolean isCompatibleValue(Object val) {
-            return val instanceof Boolean;
-        }
-    };
+    private ValueAxis domainAxis;
 
     /**
-     * Rendering hints that will be used for chart drawing.  This should never
-     * be {@code null}.
+     * The range axis (used for the y-values).
      */
-    private transient RenderingHints renderingHints;
+    private ValueAxis rangeAxis;
 
     /**
-     * The chart id (optional, will be used by JFreeSVG export).
+     * The paint used to plot data points.
      */
-    private String id;
+    private transient Paint paint;
 
     /**
-     * A flag that controls whether the chart border is drawn.
+     * A flag that controls whether the domain grid-lines are visible.
      */
-    private boolean borderVisible;
+    private boolean domainGridlinesVisible;
 
     /**
-     * The stroke used to draw the chart border (if visible).
+     * The stroke used to draw the domain grid-lines.
      */
-    private transient Stroke borderStroke;
+    private transient Stroke domainGridlineStroke;
 
     /**
-     * The paint used to draw the chart border (if visible).
+     * The paint used to draw the domain grid-lines.
      */
-    private transient Paint borderPaint;
+    private transient Paint domainGridlinePaint;
 
     /**
-     * The padding between the chart border and the chart drawing area.
+     * A flag that controls whether the range grid-lines are visible.
      */
-    private RectangleInsets padding;
+    private boolean rangeGridlinesVisible;
 
     /**
-     * The chart title (optional).
+     * The stroke used to draw the range grid-lines.
      */
-    private TextTitle title;
+    private transient Stroke rangeGridlineStroke;
 
     /**
-     * The chart subtitles (zero, one or many).  This field should never be
-     * {@code null}.
+     * The paint used to draw the range grid-lines.
      */
-    private List<Title> subtitles;
+    private transient Paint rangeGridlinePaint;
 
     /**
-     * Draws the visual representation of the data.
+     * A flag that controls whether panning is enabled for the domain
+     * axis.
      */
-    private Plot plot;
+    private boolean domainPannable;
 
     /**
-     * Paint used to draw the background of the chart.
+     * A flag that controls whether panning is enabled for the range
+     * axis.
      */
-    private transient Paint backgroundPaint;
+    private boolean rangePannable;
 
     /**
-     * An optional background image for the chart.
+     * The resourceBundle for the localization.
      */
-    // todo: not serialized yet
-    private transient Image backgroundImage;
+    protected static ResourceBundle localizationResources = ResourceBundle.getBundle("org.jfree.chart.plot.LocalizationBundle");
 
     /**
-     * The alignment for the background image.
+     * Creates a new instance of {@code FastScatterPlot} with default
+     * axes.
      */
-    private RectangleAlignment backgroundImageAlignment = RectangleAlignment.FILL;
-
-    /**
-     * The alpha transparency for the background image.
-     */
-    private float backgroundImageAlpha = 0.5f;
-
-    /**
-     * Storage for registered change listeners.
-     */
-    private transient EventListenerList changeListeners;
-
-    /**
-     * Storage for registered progress listeners.
-     */
-    private transient EventListenerList progressListeners;
-
-    /**
-     * A flag that can be used to enable/disable notification of chart change
-     * events.
-     */
-    private boolean notify;
-
-    /**
-     * A flag that controls whether rendering hints that identify
-     * chart element should be added during rendering.  This defaults to false
-     * and it should only be enabled if the output target will use the hints.
-     * JFreeSVG is one output target that supports these hints.
-     */
-    private boolean elementHinting;
-
-    /**
-     * Creates a new chart based on the supplied plot.  The chart will have
-     * a legend added automatically, but no title (although you can easily add
-     * one later).
-     * <br><br>
-     * Note that the  {@link ChartFactory} class contains a range
-     * of static methods that will return ready-made charts, and often this
-     * is a more convenient way to create charts than using this constructor.
-     *
-     * @param plot  the plot ({@code null} not permitted).
-     */
-    public JFreeChart(Plot plot) {
-        this(null, null, plot, true);
+    public FastScatterPlot() {
+        this(null, new NumberAxis("X"), new NumberAxis("Y"));
     }
 
     /**
-     * Creates a new chart with the given title and plot.  A default font
-     * ({@link #DEFAULT_TITLE_FONT}) is used for the title, and the chart will
-     * have a legend added automatically.
-     * <br><br>
-     * Note that the {@link ChartFactory} class contains a range
-     * of static methods that will return ready-made charts, and often this
-     * is a more convenient way to create charts than using this constructor.
+     * Creates a new fast scatter plot.
+     * <p>
+     * The data is an array of x, y values:  data[0][i] = x, data[1][i] = y.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param plot  the plot ({@code null} not permitted).
+     * @param data  the data ({@code null} permitted).
+     * @param domainAxis  the domain (x) axis ({@code null} not permitted).
+     * @param rangeAxis  the range (y) axis ({@code null} not permitted).
      */
-    public JFreeChart(String title, Plot plot) {
-        this(title, JFreeChart.DEFAULT_TITLE_FONT, plot, true);
+    public FastScatterPlot(float[][] data, ValueAxis domainAxis, ValueAxis rangeAxis) {
+        super();
+        Args.nullNotPermitted(domainAxis, "domainAxis");
+        Args.nullNotPermitted(rangeAxis, "rangeAxis");
+        this.data = data;
+        this.xDataRange = calculateXDataRange(data);
+        this.yDataRange = calculateYDataRange(data);
+        this.domainAxis = domainAxis;
+        this.domainAxis.setPlot(this);
+        this.domainAxis.addChangeListener(this);
+        this.rangeAxis = rangeAxis;
+        this.rangeAxis.setPlot(this);
+        this.rangeAxis.addChangeListener(this);
+        this.paint = Color.RED;
+        this.domainGridlinesVisible = true;
+        this.domainGridlinePaint = FastScatterPlot.DEFAULT_GRIDLINE_PAINT;
+        this.domainGridlineStroke = FastScatterPlot.DEFAULT_GRIDLINE_STROKE;
+        this.rangeGridlinesVisible = true;
+        this.rangeGridlinePaint = FastScatterPlot.DEFAULT_GRIDLINE_PAINT;
+        this.rangeGridlineStroke = FastScatterPlot.DEFAULT_GRIDLINE_STROKE;
     }
 
     /**
-     * Creates a new chart with the given title and plot.  The
-     * {@code createLegend} argument specifies whether a legend
-     * should be added to the chart.
-     * <br><br>
-     * Note that the  {@link ChartFactory} class contains a range
-     * of static methods that will return ready-made charts, and often this
-     * is a more convenient way to create charts than using this constructor.
+     * Returns a short string describing the plot type.
      *
-     * @param title  the chart title ({@code null} permitted).
-     * @param titleFont  the font for displaying the chart title
-     *                   ({@code null} permitted).
-     * @param plot  controller of the visual representation of the data
-     *              ({@code null} not permitted).
-     * @param createLegend  a flag indicating whether a legend should
-     *                      be created for the chart.
+     * @return A short string describing the plot type.
      */
-    public JFreeChart(String title, Font titleFont, Plot plot, boolean createLegend) {
-        Args.nullNotPermitted(plot, "plot");
-        this.id = null;
-        plot.setChart(this);
-        // create storage for listeners...
-        this.progressListeners = new EventListenerList();
-        this.changeListeners = new EventListenerList();
-        // default is to notify listeners when the
-        this.notify = true;
-        // chart changes
-        this.renderingHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // added the following hint because of
-        // http://stackoverflow.com/questions/7785082/
-        this.renderingHints.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        this.borderVisible = false;
-        this.borderStroke = new BasicStroke(1.0f);
-        this.borderPaint = Color.BLACK;
-        this.padding = RectangleInsets.ZERO_INSETS;
-        this.plot = plot;
-        plot.addChangeListener(this);
-        this.subtitles = new ArrayList<>();
-        // create a legend, if requested...
-        if (createLegend) {
-            LegendTitle legend = new LegendTitle(this.plot);
-            legend.setMargin(new RectangleInsets(1.0, 1.0, 1.0, 1.0));
-            legend.setBackgroundPaint(Color.WHITE);
-            legend.setPosition(RectangleEdge.BOTTOM);
-            this.subtitles.add(legend);
-            legend.addChangeListener(this);
-        }
-        // add the chart title, if one has been specified...
-        if (title != null) {
-            if (titleFont == null) {
-                titleFont = DEFAULT_TITLE_FONT;
-            }
-            this.title = new TextTitle(title, titleFont);
-            this.title.addChangeListener(this);
-        }
-        this.backgroundPaint = DEFAULT_BACKGROUND_PAINT;
-        this.backgroundImage = DEFAULT_BACKGROUND_IMAGE;
-        this.backgroundImageAlignment = DEFAULT_BACKGROUND_IMAGE_ALIGNMENT;
-        this.backgroundImageAlpha = DEFAULT_BACKGROUND_IMAGE_ALPHA;
+    @Override
+    public String getPlotType() {
+        return localizationResources.getString("Fast_Scatter_Plot");
     }
 
     /**
-     * Returns the ID for the chart.
+     * Returns the data array used by the plot.
      *
-     * @return The ID for the chart (possibly {@code null}).
+     * @return The data array (possibly {@code null}).
+     *
+     * @see #setData(float[][])
      */
-    public String getID() {
-        return this.id;
+    public float[][] getData() {
+        return this.data;
     }
 
     /**
-     * Sets the ID for the chart.
-     *
-     * @param id  the id ({@code null} permitted).
-     */
-    public void setID(String id) {
-        this.id = id;
-    }
-
-    /**
-     * Returns the flag that controls whether rendering hints
-     * ({@link ChartHints#KEY_BEGIN_ELEMENT} and
-     * {@link ChartHints#KEY_END_ELEMENT}) that identify chart elements are
-     * added during rendering.  The default value is {@code false}.
-     *
-     * @return A boolean.
-     *
-     * @see #setElementHinting(boolean)
-     */
-    public boolean getElementHinting() {
-        return this.elementHinting;
-    }
-
-    /**
-     * Sets the flag that controls whether rendering hints
-     * ({@link ChartHints#KEY_BEGIN_ELEMENT} and
-     * {@link ChartHints#KEY_END_ELEMENT}) that identify chart elements are
-     * added during rendering.
-     *
-     * @param hinting  the new flag value.
-     *
-     * @see #getElementHinting()
-     */
-    public void setElementHinting(boolean hinting) {
-        this.elementHinting = hinting;
-    }
-
-    /**
-     * Returns the collection of rendering hints for the chart.
-     *
-     * @return The rendering hints for the chart (never {@code null}).
-     *
-     * @see #setRenderingHints(RenderingHints)
-     */
-    public RenderingHints getRenderingHints() {
-        return this.renderingHints;
-    }
-
-    /**
-     * Sets the rendering hints for the chart.  These will be added (using the
-     * {@code Graphics2D.addRenderingHints()} method) near the start of the
-     * {@code JFreeChart.draw()} method.
-     *
-     * @param renderingHints  the rendering hints ({@code null} not permitted).
-     *
-     * @see #getRenderingHints()
-     */
-    public void setRenderingHints(RenderingHints renderingHints) {
-        Args.nullNotPermitted(renderingHints, "renderingHints");
-        this.renderingHints = renderingHints;
-        fireChartChanged();
-    }
-
-    /**
-     * Returns a flag that controls whether a border is drawn around the
-     * outside of the chart.
-     *
-     * @return A boolean.
-     *
-     * @see #setBorderVisible(boolean)
-     */
-    public boolean isBorderVisible() {
-        return this.borderVisible;
-    }
-
-    /**
-     * Sets a flag that controls whether a border is drawn around the
-     * outside of the chart.
-     *
-     * @param visible  the flag.
-     *
-     * @see #isBorderVisible()
-     */
-    public void setBorderVisible(boolean visible) {
-        this.borderVisible = visible;
-        fireChartChanged();
-    }
-
-    /**
-     * Returns the stroke used to draw the chart border (if visible).
-     *
-     * @return The border stroke.
-     *
-     * @see #setBorderStroke(Stroke)
-     */
-    public Stroke getBorderStroke() {
-        return this.borderStroke;
-    }
-
-    /**
-     * Sets the stroke used to draw the chart border (if visible).
-     *
-     * @param stroke  the stroke.
-     *
-     * @see #getBorderStroke()
-     */
-    public void setBorderStroke(Stroke stroke) {
-        this.borderStroke = stroke;
-        fireChartChanged();
-    }
-
-    /**
-     * Returns the paint used to draw the chart border (if visible).
-     *
-     * @return The border paint.
-     *
-     * @see #setBorderPaint(Paint)
-     */
-    public Paint getBorderPaint() {
-        return this.borderPaint;
-    }
-
-    /**
-     * Sets the paint used to draw the chart border (if visible).
-     *
-     * @param paint  the paint.
-     *
-     * @see #getBorderPaint()
-     */
-    public void setBorderPaint(Paint paint) {
-        this.borderPaint = paint;
-        fireChartChanged();
-    }
-
-    /**
-     * Returns the padding between the chart border and the chart drawing area.
-     *
-     * @return The padding (never {@code null}).
-     *
-     * @see #setPadding(RectangleInsets)
-     */
-    public RectangleInsets getPadding() {
-        return this.padding;
-    }
-
-    /**
-     * Sets the padding between the chart border and the chart drawing area,
-     * and sends a {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param padding  the padding ({@code null} not permitted).
-     *
-     * @see #getPadding()
-     */
-    public void setPadding(RectangleInsets padding) {
-        Args.nullNotPermitted(padding, "padding");
-        this.padding = padding;
-        notifyListeners(new ChartChangeEvent(this));
-    }
-
-    /**
-     * Returns the main chart title.  Very often a chart will have just one
-     * title, so we make this case simple by providing accessor methods for
-     * the main title.  However, multiple titles are supported - see the
-     * {@link #addSubtitle(Title)} method.
-     *
-     * @return The chart title (possibly {@code null}).
-     *
-     * @see #setTitle(TextTitle)
-     */
-    public TextTitle getTitle() {
-        return this.title;
-    }
-
-    /**
-     * Sets the main title for the chart and sends a {@link ChartChangeEvent}
-     * to all registered listeners.  If you do not want a title for the
-     * chart, set it to {@code null}.  If you want more than one title on
-     * a chart, use the {@link #addSubtitle(Title)} method.
-     *
-     * @param title  the title ({@code null} permitted).
-     *
-     * @see #getTitle()
-     */
-    public void setTitle(TextTitle title) {
-        if (this.title != null) {
-            this.title.removeChangeListener(this);
-        }
-        this.title = title;
-        if (title != null) {
-            title.addChangeListener(this);
-        }
-        fireChartChanged();
-    }
-
-    /**
-     * Sets the chart title and sends a {@link ChartChangeEvent} to all
-     * registered listeners.  This is a convenience method that ends up calling
-     * the {@link #setTitle(TextTitle)} method.  If there is an existing title,
-     * its text is updated, otherwise a new title using the default font is
-     * added to the chart.  If {@code text} is {@code null} the chart
-     * title is set to {@code null}.
-     *
-     * @param text  the title text ({@code null} permitted).
-     *
-     * @see #getTitle()
-     */
-    public void setTitle(String text) {
-        if (text != null) {
-            if (this.title == null) {
-                setTitle(new TextTitle(text, JFreeChart.DEFAULT_TITLE_FONT));
-            } else {
-                this.title.setText(text);
-            }
-        } else {
-            setTitle((TextTitle) null);
-        }
-    }
-
-    /**
-     * Adds a legend to the plot and sends a {@link ChartChangeEvent} to all
-     * registered listeners.
-     *
-     * @param legend  the legend ({@code null} not permitted).
-     *
-     * @see #removeLegend()
-     */
-    public void addLegend(LegendTitle legend) {
-        addSubtitle(legend);
-    }
-
-    /**
-     * Returns the legend for the chart, if there is one.  Note that a chart
-     * can have more than one legend - this method returns the first.
-     *
-     * @return The legend (possibly {@code null}).
-     *
-     * @see #getLegend(int)
-     */
-    public LegendTitle getLegend() {
-        return getLegend(0);
-    }
-
-    /**
-     * Returns the nth legend for a chart, or {@code null}.
-     *
-     * @param index  the legend index (zero-based).
-     *
-     * @return The legend (possibly {@code null}).
-     *
-     * @see #addLegend(LegendTitle)
-     */
-    public LegendTitle getLegend(int index) {
-        int seen = 0;
-        for (Title subtitle : this.subtitles) {
-            if (subtitle instanceof LegendTitle) {
-                if (seen == index) {
-                    return (LegendTitle) subtitle;
-                } else {
-                    seen++;
-                }
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Removes the first legend in the chart and sends a
-     * {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @see #getLegend()
-     */
-    public void removeLegend() {
-        removeSubtitle(getLegend());
-    }
-
-    /**
-     * Returns a new list containing all the subtitles for the chart.
-     *
-     * @return The subtitle list (possibly empty, but never {@code null}).
-     *
-     * @see #setSubtitles(List)
-     */
-    public List<Title> getSubtitles() {
-        return new ArrayList<>(this.subtitles);
-    }
-
-    /**
-     * Sets the title list for the chart (completely replaces any existing
-     * titles) and sends a {@link ChartChangeEvent} to all registered
-     * listeners.
-     *
-     * @param subtitles  the new list of subtitles ({@code null} not
-     *                   permitted).
-     *
-     * @see #getSubtitles()
-     */
-    public void setSubtitles(List<Title> subtitles) {
-        Args.nullNotPermitted(subtitles, "subtitles");
-        setNotify(false);
-        clearSubtitles();
-        for (Title t : subtitles) {
-            if (t != null) {
-                addSubtitle(t);
-            }
-        }
-        // this fires a ChartChangeEvent
-        setNotify(true);
-    }
-
-    /**
-     * Returns the number of titles for the chart.
-     *
-     * @return The number of titles for the chart.
-     *
-     * @see #getSubtitles()
-     */
-    public int getSubtitleCount() {
-        return this.subtitles.size();
-    }
-
-    /**
-     * Returns a chart subtitle.
-     *
-     * @param index  the index of the chart subtitle (zero based).
-     *
-     * @return A chart subtitle.
-     *
-     * @see #addSubtitle(Title)
-     */
-    public Title getSubtitle(int index) {
-        if ((index < 0) || (index >= getSubtitleCount())) {
-            throw new IllegalArgumentException("Index out of range.");
-        }
-        return this.subtitles.get(index);
-    }
-
-    /**
-     * Adds a chart subtitle, and notifies registered listeners that the chart
-     * has been modified.
-     *
-     * @param subtitle  the subtitle ({@code null} not permitted).
-     *
-     * @see #getSubtitle(int)
-     */
-    public void addSubtitle(Title subtitle) {
-        Args.nullNotPermitted(subtitle, "subtitle");
-        this.subtitles.add(subtitle);
-        subtitle.addChangeListener(this);
-        fireChartChanged();
-    }
-
-    /**
-     * Adds a subtitle at a particular position in the subtitle list, and sends
-     * a {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param index  the index (in the range 0 to {@link #getSubtitleCount()}).
-     * @param subtitle  the subtitle to add ({@code null} not permitted).
-     */
-    public void addSubtitle(int index, Title subtitle) {
-        Args.requireInRange(index, "index", 0, getSubtitleCount());
-        Args.nullNotPermitted(subtitle, "subtitle");
-        this.subtitles.add(index, subtitle);
-        subtitle.addChangeListener(this);
-        fireChartChanged();
-    }
-
-    /**
-     * Clears all subtitles from the chart and sends a {@link ChartChangeEvent}
+     * Sets the data array used by the plot and sends a {@link PlotChangeEvent}
      * to all registered listeners.
      *
-     * @see #addSubtitle(Title)
+     * @param data  the data array ({@code null} permitted).
+     *
+     * @see #getData()
      */
-    public void clearSubtitles() {
-        for (Title t : this.subtitles) {
-            t.removeChangeListener(this);
-        }
-        this.subtitles.clear();
-        fireChartChanged();
+    public void setData(float[][] data) {
+        this.data = data;
+        fireChangeEvent();
     }
 
     /**
-     * Removes the specified subtitle and sends a {@link ChartChangeEvent} to
-     * all registered listeners.
+     * Returns the orientation of the plot.
      *
-     * @param title  the title.
-     *
-     * @see #addSubtitle(Title)
+     * @return The orientation (always {@link PlotOrientation#VERTICAL}).
      */
-    public void removeSubtitle(Title title) {
-        this.subtitles.remove(title);
-        fireChartChanged();
+    @Override
+    public PlotOrientation getOrientation() {
+        return PlotOrientation.VERTICAL;
     }
 
     /**
-     * Returns the plot for the chart.  The plot is a class responsible for
-     * coordinating the visual representation of the data, including the axes
-     * (if any).
+     * Returns the domain axis for the plot.
      *
-     * @return The plot.
+     * @return The domain axis (never {@code null}).
+     *
+     * @see #setDomainAxis(ValueAxis)
      */
-    public Plot getPlot() {
-        return this.plot;
+    public ValueAxis getDomainAxis() {
+        return this.domainAxis;
     }
 
     /**
-     * Returns a flag that indicates whether anti-aliasing is used when
-     * the chart is drawn.
-     *
-     * @return The flag.
-     *
-     * @see #setAntiAlias(boolean)
-     */
-    public boolean getAntiAlias() {
-        Object val = this.renderingHints.get(RenderingHints.KEY_ANTIALIASING);
-        return RenderingHints.VALUE_ANTIALIAS_ON.equals(val);
-    }
-
-    /**
-     * Sets a flag that indicates whether anti-aliasing is used when the
-     * chart is drawn.
-     * <P>
-     * Anti-aliasing usually improves the appearance of charts, but is slower.
-     *
-     * @param flag  the new value of the flag.
-     *
-     * @see #getAntiAlias()
-     */
-    public void setAntiAlias(boolean flag) {
-        Object hint = flag ? RenderingHints.VALUE_ANTIALIAS_ON : RenderingHints.VALUE_ANTIALIAS_OFF;
-        this.renderingHints.put(RenderingHints.KEY_ANTIALIASING, hint);
-        fireChartChanged();
-    }
-
-    /**
-     * Returns the current value stored in the rendering hints table for
-     * {@link RenderingHints#KEY_TEXT_ANTIALIASING}.
-     *
-     * @return The hint value (possibly {@code null}).
-     *
-     * @see #setTextAntiAlias(Object)
-     */
-    public Object getTextAntiAlias() {
-        return this.renderingHints.get(RenderingHints.KEY_TEXT_ANTIALIASING);
-    }
-
-    /**
-     * Sets the value in the rendering hints table for
-     * {@link RenderingHints#KEY_TEXT_ANTIALIASING} to either
-     * {@link RenderingHints#VALUE_TEXT_ANTIALIAS_ON} or
-     * {@link RenderingHints#VALUE_TEXT_ANTIALIAS_OFF}, then sends a
-     * {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param flag  the new value of the flag.
-     *
-     * @see #getTextAntiAlias()
-     * @see #setTextAntiAlias(Object)
-     */
-    public void setTextAntiAlias(boolean flag) {
-        if (flag) {
-            setTextAntiAlias(RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
-        } else {
-            setTextAntiAlias(RenderingHints.VALUE_TEXT_ANTIALIAS_OFF);
-        }
-    }
-
-    /**
-     * Sets the value in the rendering hints table for
-     * {@link RenderingHints#KEY_TEXT_ANTIALIASING} and sends a
-     * {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param val  the new value ({@code null} permitted).
-     *
-     * @see #getTextAntiAlias()
-     * @see #setTextAntiAlias(boolean)
-     */
-    public void setTextAntiAlias(Object val) {
-        this.renderingHints.put(RenderingHints.KEY_TEXT_ANTIALIASING, val);
-        notifyListeners(new ChartChangeEvent(this));
-    }
-
-    /**
-     * Returns the paint used for the chart background.
-     *
-     * @return The paint (possibly {@code null}).
-     *
-     * @see #setBackgroundPaint(Paint)
-     */
-    public Paint getBackgroundPaint() {
-        return this.backgroundPaint;
-    }
-
-    /**
-     * Sets the paint used to fill the chart background and sends a
-     * {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param paint  the paint ({@code null} permitted).
-     *
-     * @see #getBackgroundPaint()
-     */
-    public void setBackgroundPaint(Paint paint) {
-        if (this.backgroundPaint != null) {
-            if (!this.backgroundPaint.equals(paint)) {
-                this.backgroundPaint = paint;
-                fireChartChanged();
-            }
-        } else {
-            if (paint != null) {
-                this.backgroundPaint = paint;
-                fireChartChanged();
-            }
-        }
-    }
-
-    /**
-     * Returns the background image for the chart, or {@code null} if
-     * there is no image.
-     *
-     * @return The image (possibly {@code null}).
-     *
-     * @see #setBackgroundImage(Image)
-     */
-    public Image getBackgroundImage() {
-        return this.backgroundImage;
-    }
-
-    /**
-     * Sets the background image for the chart and sends a
-     * {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param image  the image ({@code null} permitted).
-     *
-     * @see #getBackgroundImage()
-     */
-    public void setBackgroundImage(Image image) {
-        if (this.backgroundImage != null) {
-            if (!this.backgroundImage.equals(image)) {
-                this.backgroundImage = image;
-                fireChartChanged();
-            }
-        } else {
-            if (image != null) {
-                this.backgroundImage = image;
-                fireChartChanged();
-            }
-        }
-    }
-
-    /**
-     * Returns the background image alignment.
-     *
-     * @return The alignment (never {@code null}).
-     *
-     * @see #setBackgroundImageAlignment(RectangleAlignment)
-     */
-    public RectangleAlignment getBackgroundImageAlignment() {
-        return this.backgroundImageAlignment;
-    }
-
-    /**
-     * Sets the background alignment and sends a change notification to all
+     * Sets the domain axis and sends a {@link PlotChangeEvent} to all
      * registered listeners.
      *
-     * @param alignment  the alignment ({@code null} not permitted).
+     * @param axis  the axis ({@code null} not permitted).
      *
-     * @see #getBackgroundImageAlignment()
+     * @see #getDomainAxis()
      */
-    public void setBackgroundImageAlignment(RectangleAlignment alignment) {
-        Args.nullNotPermitted(alignment, "alignment");
-        if (this.backgroundImageAlignment != alignment) {
-            this.backgroundImageAlignment = alignment;
-            fireChartChanged();
-        }
+    public void setDomainAxis(ValueAxis axis) {
+        Args.nullNotPermitted(axis, "axis");
+        this.domainAxis = axis;
+        fireChangeEvent();
     }
 
     /**
-     * Returns the alpha-transparency for the chart's background image.
+     * Returns the range axis for the plot.
      *
-     * @return The alpha-transparency.
+     * @return The range axis (never {@code null}).
      *
-     * @see #setBackgroundImageAlpha(float)
+     * @see #setRangeAxis(ValueAxis)
      */
-    public float getBackgroundImageAlpha() {
-        return this.backgroundImageAlpha;
+    public ValueAxis getRangeAxis() {
+        return this.rangeAxis;
     }
 
     /**
-     * Sets the alpha-transparency for the chart's background image.
-     * Registered listeners are notified that the chart has been changed.
-     *
-     * @param alpha  the alpha value.
-     *
-     * @see #getBackgroundImageAlpha()
-     */
-    public void setBackgroundImageAlpha(float alpha) {
-        if (this.backgroundImageAlpha != alpha) {
-            this.backgroundImageAlpha = alpha;
-            fireChartChanged();
-        }
-    }
-
-    /**
-     * Returns a flag that controls whether change events are sent to
+     * Sets the range axis and sends a {@link PlotChangeEvent} to all
      * registered listeners.
      *
-     * @return A boolean.
+     * @param axis  the axis ({@code null} not permitted).
      *
-     * @see #setNotify(boolean)
+     * @see #getRangeAxis()
      */
-    public boolean isNotify() {
-        return this.notify;
+    public void setRangeAxis(ValueAxis axis) {
+        Args.nullNotPermitted(axis, "axis");
+        this.rangeAxis = axis;
+        fireChangeEvent();
     }
 
     /**
-     * Sets a flag that controls whether listeners receive
-     * {@link ChartChangeEvent} notifications.
+     * Returns the paint used to plot data points.  The default is
+     * {@code Color.RED}.
      *
-     * @param notify  a boolean.
+     * @return The paint.
      *
-     * @see #isNotify()
+     * @see #setPaint(Paint)
      */
-    public void setNotify(boolean notify) {
-        this.notify = notify;
-        // if the flag is being set to true, there may be queued up changes...
-        if (notify) {
-            notifyListeners(new ChartChangeEvent(this));
+    public Paint getPaint() {
+        return this.paint;
+    }
+
+    /**
+     * Sets the color for the data points and sends a {@link PlotChangeEvent}
+     * to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getPaint()
+     */
+    public void setPaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.paint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns {@code true} if the domain gridlines are visible, and
+     * {@code false} otherwise.
+     *
+     * @return {@code true} or {@code false}.
+     *
+     * @see #setDomainGridlinesVisible(boolean)
+     * @see #setDomainGridlinePaint(Paint)
+     */
+    public boolean isDomainGridlinesVisible() {
+        return this.domainGridlinesVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the domain grid-lines are
+     * visible.  If the flag value is changed, a {@link PlotChangeEvent} is
+     * sent to all registered listeners.
+     *
+     * @param visible  the new value of the flag.
+     *
+     * @see #getDomainGridlinePaint()
+     */
+    public void setDomainGridlinesVisible(boolean visible) {
+        if (this.domainGridlinesVisible != visible) {
+            this.domainGridlinesVisible = visible;
+            fireChangeEvent();
         }
     }
 
+    /**
+     * Returns the stroke for the grid-lines (if any) plotted against the
+     * domain axis.
+     *
+     * @return The stroke (never {@code null}).
+     *
+     * @see #setDomainGridlineStroke(Stroke)
+     */
+    public Stroke getDomainGridlineStroke() {
+        return this.domainGridlineStroke;
+    }
+
+    /**
+     * Sets the stroke for the grid lines plotted against the domain axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param stroke  the stroke ({@code null} not permitted).
+     *
+     * @see #getDomainGridlineStroke()
+     */
+    public void setDomainGridlineStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.domainGridlineStroke = stroke;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the grid lines (if any) plotted against the domain
+     * axis.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setDomainGridlinePaint(Paint)
+     */
+    public Paint getDomainGridlinePaint() {
+        return this.domainGridlinePaint;
+    }
+
+    /**
+     * Sets the paint for the grid lines plotted against the domain axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getDomainGridlinePaint()
+     */
+    public void setDomainGridlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.domainGridlinePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns {@code true} if the range axis grid is visible, and
+     * {@code false} otherwise.
+     *
+     * @return {@code true} or {@code false}.
+     *
+     * @see #setRangeGridlinesVisible(boolean)
+     */
+    public boolean isRangeGridlinesVisible() {
+        return this.rangeGridlinesVisible;
+    }
+
+    /**
+     * Sets the flag that controls whether the range axis grid lines are
+     * visible.  If the flag value is changed, a {@link PlotChangeEvent} is
+     * sent to all registered listeners.
+     *
+     * @param visible  the new value of the flag.
+     *
+     * @see #isRangeGridlinesVisible()
+     */
+    public void setRangeGridlinesVisible(boolean visible) {
+        if (this.rangeGridlinesVisible != visible) {
+            this.rangeGridlinesVisible = visible;
+            fireChangeEvent();
+        }
+    }
+
+    /**
+     * Returns the stroke for the grid lines (if any) plotted against the range
+     * axis.
+     *
+     * @return The stroke (never {@code null}).
+     *
+     * @see #setRangeGridlineStroke(Stroke)
+     */
+    public Stroke getRangeGridlineStroke() {
+        return this.rangeGridlineStroke;
+    }
+
+    /**
+     * Sets the stroke for the grid lines plotted against the range axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param stroke  the stroke ({@code null} permitted).
+     *
+     * @see #getRangeGridlineStroke()
+     */
+    public void setRangeGridlineStroke(Stroke stroke) {
+        Args.nullNotPermitted(stroke, "stroke");
+        this.rangeGridlineStroke = stroke;
+        fireChangeEvent();
+    }
+
+    /**
+     * Returns the paint for the grid lines (if any) plotted against the range
+     * axis.
+     *
+     * @return The paint (never {@code null}).
+     *
+     * @see #setRangeGridlinePaint(Paint)
+     */
+    public Paint getRangeGridlinePaint() {
+        return this.rangeGridlinePaint;
+    }
+
+    /**
+     * Sets the paint for the grid lines plotted against the range axis and
+     * sends a {@link PlotChangeEvent} to all registered listeners.
+     *
+     * @param paint  the paint ({@code null} not permitted).
+     *
+     * @see #getRangeGridlinePaint()
+     */
+    public void setRangeGridlinePaint(Paint paint) {
+        Args.nullNotPermitted(paint, "paint");
+        this.rangeGridlinePaint = paint;
+        fireChangeEvent();
+    }
+
+    /**
+     * Receives a chart element visitor.
+     *
+     * @param visitor  the visitor ({@code null} not permitted).
+     */
     @Override
     public void receive(ChartElementVisitor visitor) {
-        this.title.receive(visitor);
-        this.subtitles.forEach(subtitle -> {
-            subtitle.receive(visitor);
-        });
-        this.plot.receive(visitor);
-        visitor.visit(this);
+        this.domainAxis.receive(visitor);
+        this.rangeAxis.receive(visitor);
+        super.receive(visitor);
     }
 
     /**
-     * Draws the chart on a Java 2D graphics device (such as the screen or a
-     * printer).
-     * <P>
-     * This method is the focus of the entire JFreeChart library.
+     * Draws the fast scatter plot on a Java 2D graphics device (such as the
+     * screen or a printer).
      *
      * @param g2  the graphics device.
-     * @param area  the area within which the chart should be drawn.
+     * @param area   the area within which the plot (including axis labels)
+     *                   should be drawn.
+     * @param anchor  the anchor point ({@code null} permitted).
+     * @param parentState  the state from the parent plot (ignored).
+     * @param info  collects chart drawing information ({@code null}
+     *              permitted).
      */
     @Override
-    public void draw(Graphics2D g2, Rectangle2D area) {
-        draw(g2, area, null, null);
+    public void draw(Graphics2D g2, Rectangle2D area, Point2D anchor, PlotState parentState, PlotRenderingInfo info) {
+        // set up info collection...
+        if (info != null) {
+            info.setPlotArea(area);
+        }
+        // adjust the drawing area for plot insets (if any)...
+        RectangleInsets insets = getInsets();
+        insets.trim(area);
+        AxisSpace space = new AxisSpace();
+        space = this.domainAxis.reserveSpace(g2, this, area, RectangleEdge.BOTTOM, space);
+        space = this.rangeAxis.reserveSpace(g2, this, area, RectangleEdge.LEFT, space);
+        Rectangle2D dataArea = space.shrink(area, null);
+        if (info != null) {
+            info.setDataArea(dataArea);
+        }
+        // draw the plot background and axes...
+        drawBackground(g2, dataArea);
+        AxisState domainAxisState = this.domainAxis.draw(g2, dataArea.getMaxY(), area, dataArea, RectangleEdge.BOTTOM, info);
+        AxisState rangeAxisState = this.rangeAxis.draw(g2, dataArea.getMinX(), area, dataArea, RectangleEdge.LEFT, info);
+        drawDomainGridlines(g2, dataArea, domainAxisState.getTicks());
+        drawRangeGridlines(g2, dataArea, rangeAxisState.getTicks());
+        Shape originalClip = g2.getClip();
+        Composite originalComposite = g2.getComposite();
+        g2.clip(dataArea);
+        g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, getForegroundAlpha()));
+        render(g2, dataArea, info, null);
+        g2.setClip(originalClip);
+        g2.setComposite(originalComposite);
+        drawOutline(g2, dataArea);
     }
 
     /**
-     * Draws the chart on a Java 2D graphics device (such as the screen or a
-     * printer).  This method is the focus of the entire JFreeChart library.
+     * Draws a representation of the data within the dataArea region.  The
+     * {@code info} and {@code crosshairState} arguments may be
+     * {@code null}.
      *
      * @param g2  the graphics device.
-     * @param area  the area within which the chart should be drawn.
-     * @param info  records info about the drawing (null means collect no info).
+     * @param dataArea  the region in which the data is to be drawn.
+     * @param info  an optional object for collection dimension information.
+     * @param crosshairState  collects crosshair information ({@code null}
+     *                        permitted).
      */
-    public void draw(Graphics2D g2, Rectangle2D area, ChartRenderingInfo info) {
-        draw(g2, area, null, info);
+    public void render(Graphics2D g2, Rectangle2D dataArea, PlotRenderingInfo info, CrosshairState crosshairState) {
+        g2.setPaint(this.paint);
+        // if the axes use a linear scale, you can uncomment the code below and
+        // switch to the alternative transX/transY calculation inside the loop
+        // that follows - it is a little bit faster then.
+        //
+        // int xx = (int) dataArea.getMinX();
+        // int ww = (int) dataArea.getWidth();
+        // int yy = (int) dataArea.getMaxY();
+        // int hh = (int) dataArea.getHeight();
+        // double domainMin = this.domainAxis.getLowerBound();
+        // double domainLength = this.domainAxis.getUpperBound() - domainMin;
+        // double rangeMin = this.rangeAxis.getLowerBound();
+        // double rangeLength = this.rangeAxis.getUpperBound() - rangeMin;
+        if (this.data != null) {
+            for (int i = 0; i < this.data[0].length; i++) {
+                float x = this.data[0][i];
+                float y = this.data[1][i];
+                //int transX = (int) (xx + ww * (x - domainMin) / domainLength);
+                //int transY = (int) (yy - hh * (y - rangeMin) / rangeLength);
+                int transX = (int) this.domainAxis.valueToJava2D(x, dataArea, RectangleEdge.BOTTOM);
+                int transY = (int) this.rangeAxis.valueToJava2D(y, dataArea, RectangleEdge.LEFT);
+                g2.fillRect(transX, transY, 1, 1);
+            }
+        }
     }
 
     /**
-     * Draws the chart on a Java 2D graphics device (such as the screen or a
-     * printer).
-     * <P>
-     * This method is the focus of the entire JFreeChart library.
+     * Draws the gridlines for the plot, if they are visible.
      *
      * @param g2  the graphics device.
-     * @param chartArea  the area within which the chart should be drawn.
-     * @param anchor  the anchor point (in Java2D space) for the chart
-     *                ({@code null} permitted).
-     * @param info  records info about the drawing (null means collect no info).
+     * @param dataArea  the data area.
+     * @param ticks  the ticks.
      */
-    public void draw(Graphics2D g2, Rectangle2D chartArea, Point2D anchor, ChartRenderingInfo info) {
-        notifyListeners(new ChartProgressEvent(this, this, ChartProgressEventType.DRAWING_STARTED, 0));
-        if (this.elementHinting) {
-            Map<String, String> m = new HashMap<>();
-            if (this.id != null) {
-                m.put("id", this.id);
-            }
-            m.put("ref", "JFREECHART_TOP_LEVEL");
-            g2.setRenderingHint(ChartHints.KEY_BEGIN_ELEMENT, m);
+    protected void drawDomainGridlines(Graphics2D g2, Rectangle2D dataArea, List ticks) {
+        if (!isDomainGridlinesVisible()) {
+            return;
         }
-        EntityCollection entities = null;
-        // record the chart area, if info is requested...
-        if (info != null) {
-            info.clear();
-            info.setChartArea(chartArea);
-            entities = info.getEntityCollection();
+        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        for (Object o : ticks) {
+            ValueTick tick = (ValueTick) o;
+            double v = this.domainAxis.valueToJava2D(tick.getValue(), dataArea, RectangleEdge.BOTTOM);
+            Line2D line = new Line2D.Double(v, dataArea.getMinY(), v, dataArea.getMaxY());
+            g2.setPaint(getDomainGridlinePaint());
+            g2.setStroke(getDomainGridlineStroke());
+            g2.draw(line);
         }
-        if (entities != null) {
-            entities.add(new JFreeChartEntity((Rectangle2D) chartArea.clone(), this));
-        }
-        // ensure no drawing occurs outside chart area...
-        Shape savedClip = g2.getClip();
-        g2.clip(chartArea);
-        g2.addRenderingHints(this.renderingHints);
-        // draw the chart background...
-        if (this.backgroundPaint != null) {
-            g2.setPaint(this.backgroundPaint);
-            g2.fill(chartArea);
-        }
-        if (this.backgroundImage != null) {
-            Composite originalComposite = g2.getComposite();
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, this.backgroundImageAlpha));
-            Rectangle2D dest = new Rectangle2D.Double(0.0, 0.0, this.backgroundImage.getWidth(null), this.backgroundImage.getHeight(null));
-            this.backgroundImageAlignment.align(dest, chartArea);
-            g2.drawImage(this.backgroundImage, (int) dest.getX(), (int) dest.getY(), (int) dest.getWidth(), (int) dest.getHeight(), null);
-            g2.setComposite(originalComposite);
-        }
-        if (isBorderVisible()) {
-            Paint paint = getBorderPaint();
-            Stroke stroke = getBorderStroke();
-            if (paint != null && stroke != null) {
-                Rectangle2D borderArea = new Rectangle2D.Double(chartArea.getX(), chartArea.getY(), chartArea.getWidth() - 1.0, chartArea.getHeight() - 1.0);
-                g2.setPaint(paint);
-                g2.setStroke(stroke);
-                g2.draw(borderArea);
-            }
-        }
-        // draw the title and subtitles...
-        Rectangle2D nonTitleArea = new Rectangle2D.Double();
-        nonTitleArea.setRect(chartArea);
-        this.padding.trim(nonTitleArea);
-        if (this.title != null && this.title.isVisible()) {
-            EntityCollection e = drawTitle(this.title, g2, nonTitleArea, (entities != null));
-            if (e != null && entities != null) {
-                entities.addAll(e);
-            }
-        }
-        for (Title currentTitle : this.subtitles) {
-            if (currentTitle.isVisible()) {
-                EntityCollection e = drawTitle(currentTitle, g2, nonTitleArea, (entities != null));
-                if (e != null && entities != null) {
-                    entities.addAll(e);
-                }
-            }
-        }
-        Rectangle2D plotArea = nonTitleArea;
-        // draw the plot (axes and data visualisation)
-        PlotRenderingInfo plotInfo = null;
-        if (info != null) {
-            plotInfo = info.getPlotInfo();
-        }
-        this.plot.draw(g2, plotArea, anchor, null, plotInfo);
-        g2.setClip(savedClip);
-        if (this.elementHinting) {
-            g2.setRenderingHint(ChartHints.KEY_END_ELEMENT, Boolean.TRUE);
-        }
-        notifyListeners(new ChartProgressEvent(this, this, ChartProgressEventType.DRAWING_FINISHED, 100));
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
     }
 
     /**
-     * Creates a rectangle that is aligned to the frame.
+     * Draws the gridlines for the plot, if they are visible.
      *
-     * @param dimensions  the dimensions for the rectangle.
-     * @param frame  the frame to align to.
-     * @param hAlign  the horizontal alignment ({@code null} not permitted).
-     * @param vAlign  the vertical alignment ({@code null} not permitted).
-     *
-     * @return A rectangle.
+     * @param g2  the graphics device.
+     * @param dataArea  the data area.
+     * @param ticks  the ticks.
      */
-    private Rectangle2D createAlignedRectangle2D(Size2D dimensions, Rectangle2D frame, HorizontalAlignment hAlign, VerticalAlignment vAlign) {
-        Args.nullNotPermitted(hAlign, "hAlign");
-        Args.nullNotPermitted(vAlign, "vAlign");
-        double x = Double.NaN;
-        double y = Double.NaN;
-        switch(hAlign) {
-            case LEFT:
-                x = frame.getX();
-                break;
-            case CENTER:
-                x = frame.getCenterX() - (dimensions.width / 2.0);
-                break;
-            case RIGHT:
-                x = frame.getMaxX() - dimensions.width;
-                break;
-            default:
-                throw new IllegalStateException("Unexpected enum value " + hAlign);
+    protected void drawRangeGridlines(Graphics2D g2, Rectangle2D dataArea, List ticks) {
+        if (!isRangeGridlinesVisible()) {
+            return;
         }
-        switch(vAlign) {
-            case TOP:
-                y = frame.getY();
-                break;
-            case CENTER:
-                y = frame.getCenterY() - (dimensions.height / 2.0);
-                break;
-            case BOTTOM:
-                y = frame.getMaxY() - dimensions.height;
-                break;
-            default:
-                throw new IllegalStateException("Unexpected enum value " + hAlign);
+        Object saved = g2.getRenderingHint(RenderingHints.KEY_STROKE_CONTROL);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_NORMALIZE);
+        for (Object o : ticks) {
+            ValueTick tick = (ValueTick) o;
+            double v = this.rangeAxis.valueToJava2D(tick.getValue(), dataArea, RectangleEdge.LEFT);
+            Line2D line = new Line2D.Double(dataArea.getMinX(), v, dataArea.getMaxX(), v);
+            g2.setPaint(getRangeGridlinePaint());
+            g2.setStroke(getRangeGridlineStroke());
+            g2.draw(line);
         }
-        return new Rectangle2D.Double(x, y, dimensions.width, dimensions.height);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, saved);
     }
 
     /**
-     * Draws a title.  The title should be drawn at the top, bottom, left or
-     * right of the specified area, and the area should be updated to reflect
-     * the amount of space used by the title.
+     * Returns the range of data values to be plotted along the axis, or
+     * {@code null} if the specified axis isn't the domain axis or the
+     * range axis for the plot.
      *
-     * @param t  the title ({@code null} not permitted).
-     * @param g2  the graphics device ({@code null} not permitted).
-     * @param area  the chart area, excluding any existing titles
-     *              ({@code null} not permitted).
-     * @param entities  a flag that controls whether an entity
-     *                  collection is returned for the title.
+     * @param axis  the axis ({@code null} permitted).
      *
-     * @return An entity collection for the title (possibly {@code null}).
+     * @return The range (possibly {@code null}).
      */
-    protected EntityCollection drawTitle(Title t, Graphics2D g2, Rectangle2D area, boolean entities) {
-        Args.nullNotPermitted(t, "t");
-        Args.nullNotPermitted(area, "area");
-        Rectangle2D titleArea;
-        RectangleEdge position = t.getPosition();
-        double ww = area.getWidth();
-        if (ww <= 0.0) {
-            return null;
-        }
-        double hh = area.getHeight();
-        if (hh <= 0.0) {
-            return null;
-        }
-        RectangleConstraint constraint = new RectangleConstraint(ww, new Range(0.0, ww), LengthConstraintType.RANGE, hh, new Range(0.0, hh), LengthConstraintType.RANGE);
-        Object retValue = null;
-        BlockParams p = new BlockParams();
-        p.setGenerateEntities(entities);
-        switch(position) {
-            case TOP:
-                {
-                    Size2D size = t.arrange(g2, constraint);
-                    titleArea = createAlignedRectangle2D(size, area, t.getHorizontalAlignment(), VerticalAlignment.TOP);
-                    retValue = t.draw(g2, titleArea, p);
-                    area.setRect(area.getX(), Math.min(area.getY() + size.height, area.getMaxY()), area.getWidth(), Math.max(area.getHeight() - size.height, 0));
-                    break;
-                }
-            case BOTTOM:
-                {
-                    Size2D size = t.arrange(g2, constraint);
-                    titleArea = createAlignedRectangle2D(size, area, t.getHorizontalAlignment(), VerticalAlignment.BOTTOM);
-                    retValue = t.draw(g2, titleArea, p);
-                    area.setRect(area.getX(), area.getY(), area.getWidth(), area.getHeight() - size.height);
-                    break;
-                }
-            case RIGHT:
-                {
-                    Size2D size = t.arrange(g2, constraint);
-                    titleArea = createAlignedRectangle2D(size, area, HorizontalAlignment.RIGHT, t.getVerticalAlignment());
-                    retValue = t.draw(g2, titleArea, p);
-                    area.setRect(area.getX(), area.getY(), area.getWidth() - size.width, area.getHeight());
-                    break;
-                }
-            case LEFT:
-                {
-                    Size2D size = t.arrange(g2, constraint);
-                    titleArea = createAlignedRectangle2D(size, area, HorizontalAlignment.LEFT, t.getVerticalAlignment());
-                    retValue = t.draw(g2, titleArea, p);
-                    area.setRect(area.getX() + size.width, area.getY(), area.getWidth() - size.width, area.getHeight());
-                    break;
-                }
-            default:
-                {
-                    throw new RuntimeException("Unrecognised title position.");
-                }
-        }
-        EntityCollection result = null;
-        if (retValue instanceof EntityBlockResult) {
-            EntityBlockResult ebr = (EntityBlockResult) retValue;
-            result = ebr.getEntityCollection();
+    @Override
+    public Range getDataRange(ValueAxis axis) {
+        Range result = null;
+        if (axis == this.domainAxis) {
+            result = this.xDataRange;
+        } else if (axis == this.rangeAxis) {
+            result = this.yDataRange;
         }
         return result;
     }
 
     /**
-     * Creates and returns a buffered image into which the chart has been drawn.
+     * Calculates the X data range.
      *
-     * @param width  the width.
-     * @param height  the height.
+     * @param data  the data ({@code null} permitted).
      *
-     * @return A buffered image.
+     * @return The range.
      */
-    public BufferedImage createBufferedImage(int width, int height) {
-        return createBufferedImage(width, height, null);
-    }
-
-    /**
-     * Creates and returns a buffered image into which the chart has been drawn.
-     *
-     * @param width  the width.
-     * @param height  the height.
-     * @param info  carries back chart state information ({@code null}
-     *              permitted).
-     *
-     * @return A buffered image.
-     */
-    public BufferedImage createBufferedImage(int width, int height, ChartRenderingInfo info) {
-        return createBufferedImage(width, height, BufferedImage.TYPE_INT_ARGB, info);
-    }
-
-    /**
-     * Creates and returns a buffered image into which the chart has been drawn.
-     *
-     * @param width  the width.
-     * @param height  the height.
-     * @param imageType  the image type.
-     * @param info  carries back chart state information ({@code null}
-     *              permitted).
-     *
-     * @return A buffered image.
-     */
-    public BufferedImage createBufferedImage(int width, int height, int imageType, ChartRenderingInfo info) {
-        BufferedImage image = new BufferedImage(width, height, imageType);
-        Graphics2D g2 = image.createGraphics();
-        draw(g2, new Rectangle2D.Double(0, 0, width, height), null, info);
-        g2.dispose();
-        return image;
-    }
-
-    /**
-     * Creates and returns a buffered image into which the chart has been drawn.
-     *
-     * @param imageWidth  the image width.
-     * @param imageHeight  the image height.
-     * @param drawWidth  the width for drawing the chart (will be scaled to
-     *                   fit image).
-     * @param drawHeight  the height for drawing the chart (will be scaled to
-     *                    fit image).
-     * @param info  optional object for collection chart dimension and entity
-     *              information.
-     *
-     * @return A buffered image.
-     */
-    public BufferedImage createBufferedImage(int imageWidth, int imageHeight, double drawWidth, double drawHeight, ChartRenderingInfo info) {
-        BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        double scaleX = imageWidth / drawWidth;
-        double scaleY = imageHeight / drawHeight;
-        AffineTransform st = AffineTransform.getScaleInstance(scaleX, scaleY);
-        g2.transform(st);
-        draw(g2, new Rectangle2D.Double(0, 0, drawWidth, drawHeight), null, info);
-        g2.dispose();
-        return image;
-    }
-
-    /**
-     * Handles a 'click' on the chart.  JFreeChart is not a UI component, so
-     * some other object (for example, {@link ChartPanel}) needs to capture
-     * the click event and pass it onto the JFreeChart object.
-     * If you are not using JFreeChart in a client application, then this
-     * method is not required.
-     *
-     * @param x  x-coordinate of the click (in Java2D space).
-     * @param y  y-coordinate of the click (in Java2D space).
-     * @param info  contains chart dimension and entity information
-     *              ({@code null} not permitted).
-     */
-    public void handleClick(int x, int y, ChartRenderingInfo info) {
-        // pass the click on to the plot...
-        // rely on the plot to post a plot change event and redraw the chart...
-        this.plot.handleClick(x, y, info.getPlotInfo());
-    }
-
-    /**
-     * Registers an object for notification of changes to the chart.
-     *
-     * @param listener  the listener ({@code null} not permitted).
-     *
-     * @see #removeChangeListener(ChartChangeListener)
-     */
-    public void addChangeListener(ChartChangeListener listener) {
-        Args.nullNotPermitted(listener, "listener");
-        this.changeListeners.add(ChartChangeListener.class, listener);
-    }
-
-    /**
-     * Deregisters an object for notification of changes to the chart.
-     *
-     * @param listener  the listener ({@code null} not permitted)
-     *
-     * @see #addChangeListener(ChartChangeListener)
-     */
-    public void removeChangeListener(ChartChangeListener listener) {
-        Args.nullNotPermitted(listener, "listener");
-        this.changeListeners.remove(ChartChangeListener.class, listener);
-    }
-
-    /**
-     * Sends a default {@link ChartChangeEvent} to all registered listeners.
-     * <P>
-     * This method is for convenience only.
-     */
-    public void fireChartChanged() {
-        ChartChangeEvent event = new ChartChangeEvent(this);
-        notifyListeners(event);
-    }
-
-    /**
-     * Sends a {@link ChartChangeEvent} to all registered listeners.
-     *
-     * @param event  information about the event that triggered the
-     *               notification.
-     */
-    protected void notifyListeners(ChartChangeEvent event) {
-        if (this.notify) {
-            Object[] listeners = this.changeListeners.getListenerList();
-            for (int i = listeners.length - 2; i >= 0; i -= 2) {
-                if (listeners[i] == ChartChangeListener.class) {
-                    ((ChartChangeListener) listeners[i + 1]).chartChanged(event);
+    private Range calculateXDataRange(float[][] data) {
+        Range result = null;
+        if (data != null) {
+            float lowest = Float.POSITIVE_INFINITY;
+            float highest = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < data[0].length; i++) {
+                float v = data[0][i];
+                if (v < lowest) {
+                    lowest = v;
+                }
+                if (v > highest) {
+                    highest = v;
                 }
             }
-        }
-    }
-
-    /**
-     * Registers an object for notification of progress events relating to the
-     * chart.
-     *
-     * @param listener  the object being registered.
-     *
-     * @see #removeProgressListener(ChartProgressListener)
-     */
-    public void addProgressListener(ChartProgressListener listener) {
-        this.progressListeners.add(ChartProgressListener.class, listener);
-    }
-
-    /**
-     * Deregisters an object for notification of changes to the chart.
-     *
-     * @param listener  the object being deregistered.
-     *
-     * @see #addProgressListener(ChartProgressListener)
-     */
-    public void removeProgressListener(ChartProgressListener listener) {
-        this.progressListeners.remove(ChartProgressListener.class, listener);
-    }
-
-    /**
-     * Sends a {@link ChartProgressEvent} to all registered listeners.
-     *
-     * @param event  information about the event that triggered the
-     *               notification.
-     */
-    protected void notifyListeners(ChartProgressEvent event) {
-        Object[] listeners = this.progressListeners.getListenerList();
-        for (int i = listeners.length - 2; i >= 0; i -= 2) {
-            if (listeners[i] == ChartProgressListener.class) {
-                ((ChartProgressListener) listeners[i + 1]).chartProgress(event);
+            if (lowest <= highest) {
+                result = new Range(lowest, highest);
             }
         }
+        return result;
     }
 
     /**
-     * Receives notification that a chart title has changed, and passes this
-     * on to registered listeners.
+     * Calculates the Y data range.
      *
-     * @param event  information about the chart title change.
+     * @param data  the data ({@code null} permitted).
+     *
+     * @return The range.
+     */
+    private Range calculateYDataRange(float[][] data) {
+        Range result = null;
+        if (data != null) {
+            float lowest = Float.POSITIVE_INFINITY;
+            float highest = Float.NEGATIVE_INFINITY;
+            for (int i = 0; i < data[0].length; i++) {
+                float v = data[1][i];
+                if (v < lowest) {
+                    lowest = v;
+                }
+                if (v > highest) {
+                    highest = v;
+                }
+            }
+            if (lowest <= highest) {
+                result = new Range(lowest, highest);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Multiplies the range on the domain axis by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
      */
     @Override
-    public void titleChanged(TitleChangeEvent event) {
-        event.setChart(this);
-        notifyListeners(event);
+    public void zoomDomainAxes(double factor, PlotRenderingInfo info, Point2D source) {
+        this.domainAxis.resizeRange(factor);
     }
 
     /**
-     * Receives notification that the plot has changed, and passes this on to
-     * registered listeners.
+     * Multiplies the range on the domain axis by the specified factor.
      *
-     * @param event  information about the plot change.
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point (in Java2D space).
+     * @param useAnchor  use source point as zoom anchor?
+     *
+     * @see #zoomRangeAxes(double, PlotRenderingInfo, Point2D, boolean)
      */
     @Override
-    public void plotChanged(PlotChangeEvent event) {
-        event.setChart(this);
-        notifyListeners(event);
+    public void zoomDomainAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
+        if (useAnchor) {
+            // get the source coordinate - this plot has always a VERTICAL
+            // orientation
+            double sourceX = source.getX();
+            double anchorX = this.domainAxis.java2DToValue(sourceX, info.getDataArea(), RectangleEdge.BOTTOM);
+            this.domainAxis.resizeRange2(factor, anchorX);
+        } else {
+            this.domainAxis.resizeRange(factor);
+        }
     }
 
     /**
-     * Tests this chart for equality with another object.
+     * Zooms in on the domain axes.
+     *
+     * @param lowerPercent  the new lower bound as a percentage of the current
+     *                      range.
+     * @param upperPercent  the new upper bound as a percentage of the current
+     *                      range.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomDomainAxes(double lowerPercent, double upperPercent, PlotRenderingInfo info, Point2D source) {
+        this.domainAxis.zoomRange(lowerPercent, upperPercent);
+    }
+
+    /**
+     * Multiplies the range on the range axis/axes by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source) {
+        this.rangeAxis.resizeRange(factor);
+    }
+
+    /**
+     * Multiplies the range on the range axis by the specified factor.
+     *
+     * @param factor  the zoom factor.
+     * @param info  the plot rendering info.
+     * @param source  the source point (in Java2D space).
+     * @param useAnchor  use source point as zoom anchor?
+     *
+     * @see #zoomDomainAxes(double, PlotRenderingInfo, Point2D, boolean)
+     */
+    @Override
+    public void zoomRangeAxes(double factor, PlotRenderingInfo info, Point2D source, boolean useAnchor) {
+        if (useAnchor) {
+            // get the source coordinate - this plot has always a VERTICAL
+            // orientation
+            double sourceY = source.getY();
+            double anchorY = this.rangeAxis.java2DToValue(sourceY, info.getDataArea(), RectangleEdge.LEFT);
+            this.rangeAxis.resizeRange2(factor, anchorY);
+        } else {
+            this.rangeAxis.resizeRange(factor);
+        }
+    }
+
+    /**
+     * Zooms in on the range axes.
+     *
+     * @param lowerPercent  the new lower bound as a percentage of the current
+     *                      range.
+     * @param upperPercent  the new upper bound as a percentage of the current
+     *                      range.
+     * @param info  the plot rendering info.
+     * @param source  the source point.
+     */
+    @Override
+    public void zoomRangeAxes(double lowerPercent, double upperPercent, PlotRenderingInfo info, Point2D source) {
+        this.rangeAxis.zoomRange(lowerPercent, upperPercent);
+    }
+
+    /**
+     * Returns {@code true}.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean isDomainZoomable() {
+        return true;
+    }
+
+    /**
+     * Returns {@code true}.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean isRangeZoomable() {
+        return true;
+    }
+
+    /**
+     * Returns {@code true} if panning is enabled for the domain axes,
+     * and {@code false} otherwise.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean isDomainPannable() {
+        return this.domainPannable;
+    }
+
+    /**
+     * Sets the flag that enables or disables panning of the plot along the
+     * domain axes.
+     *
+     * @param pannable  the new flag value.
+     */
+    public void setDomainPannable(boolean pannable) {
+        this.domainPannable = pannable;
+    }
+
+    /**
+     * Returns {@code true} if panning is enabled for the range axes,
+     * and {@code false} otherwise.
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean isRangePannable() {
+        return this.rangePannable;
+    }
+
+    /**
+     * Sets the flag that enables or disables panning of the plot along
+     * the range axes.
+     *
+     * @param pannable  the new flag value.
+     */
+    public void setRangePannable(boolean pannable) {
+        this.rangePannable = pannable;
+    }
+
+    /**
+     * Pans the domain axes by the specified percentage.
+     *
+     * @param percent  the distance to pan (as a percentage of the axis length).
+     * @param info the plot info
+     * @param source the source point where the pan action started.
+     */
+    @Override
+    public void panDomainAxes(double percent, PlotRenderingInfo info, Point2D source) {
+        if (!isDomainPannable() || this.domainAxis == null) {
+            return;
+        }
+        double length = this.domainAxis.getRange().getLength();
+        double adj = percent * length;
+        if (this.domainAxis.isInverted()) {
+            adj = -adj;
+        }
+        this.domainAxis.setRange(this.domainAxis.getLowerBound() + adj, this.domainAxis.getUpperBound() + adj);
+    }
+
+    /**
+     * Pans the range axes by the specified percentage.
+     *
+     * @param percent  the distance to pan (as a percentage of the axis length).
+     * @param info the plot info
+     * @param source the source point where the pan action started.
+     */
+    @Override
+    public void panRangeAxes(double percent, PlotRenderingInfo info, Point2D source) {
+        if (!isRangePannable() || this.rangeAxis == null) {
+            return;
+        }
+        double length = this.rangeAxis.getRange().getLength();
+        double adj = percent * length;
+        if (this.rangeAxis.isInverted()) {
+            adj = -adj;
+        }
+        this.rangeAxis.setRange(this.rangeAxis.getLowerBound() + adj, this.rangeAxis.getUpperBound() + adj);
+    }
+
+    /**
+     * Tests an arbitrary object for equality with this plot.  Note that
+     * {@code FastScatterPlot} carries its data around with it (rather
+     * than referencing a dataset), and the data is included in the
+     * equality test.
      *
      * @param obj  the object ({@code null} permitted).
      *
@@ -1393,69 +887,77 @@ class JFreeChart implements Drawable, TitleChangeListener, PlotChangeListener, C
         if (obj == this) {
             return true;
         }
-        if (!(obj instanceof JFreeChart)) {
+        if (!super.equals(obj)) {
             return false;
         }
-        JFreeChart that = (JFreeChart) obj;
-        if (!this.renderingHints.equals(that.renderingHints)) {
+        if (!(obj instanceof FastScatterPlot)) {
             return false;
         }
-        if (this.borderVisible != that.borderVisible) {
+        FastScatterPlot that = (FastScatterPlot) obj;
+        if (this.domainPannable != that.domainPannable) {
             return false;
         }
-        if (!Objects.equals(this.borderStroke, that.borderStroke)) {
+        if (this.rangePannable != that.rangePannable) {
             return false;
         }
-        if (!PaintUtils.equal(this.borderPaint, that.borderPaint)) {
+        if (!ArrayUtils.equal(this.data, that.data)) {
             return false;
         }
-        if (!this.padding.equals(that.padding)) {
+        if (!Objects.equals(this.domainAxis, that.domainAxis)) {
             return false;
         }
-        if (!Objects.equals(this.title, that.title)) {
+        if (!Objects.equals(this.rangeAxis, that.rangeAxis)) {
             return false;
         }
-        if (!Objects.equals(this.subtitles, that.subtitles)) {
+        if (!PaintUtils.equal(this.paint, that.paint)) {
             return false;
         }
-        if (!Objects.equals(this.plot, that.plot)) {
+        if (this.domainGridlinesVisible != that.domainGridlinesVisible) {
             return false;
         }
-        if (!PaintUtils.equal(this.backgroundPaint, that.backgroundPaint)) {
+        if (!PaintUtils.equal(this.domainGridlinePaint, that.domainGridlinePaint)) {
             return false;
         }
-        if (!Objects.equals(this.backgroundImage, that.backgroundImage)) {
+        if (!Objects.equals(this.domainGridlineStroke, that.domainGridlineStroke)) {
             return false;
         }
-        if (this.backgroundImageAlignment != that.backgroundImageAlignment) {
+        if (!this.rangeGridlinesVisible == that.rangeGridlinesVisible) {
             return false;
         }
-        if (this.backgroundImageAlpha != that.backgroundImageAlpha) {
+        if (!PaintUtils.equal(this.rangeGridlinePaint, that.rangeGridlinePaint)) {
             return false;
         }
-        if (this.notify != that.notify) {
+        if (!Objects.equals(this.rangeGridlineStroke, that.rangeGridlineStroke)) {
             return false;
         }
         return true;
     }
 
+    /**
+     * Returns a clone of the plot.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if some component of the plot does
+     *                                    not support cloning.
+     */
     @Override
-    public int hashCode() {
-        int hash = 7;
-        hash = 59 * hash + Objects.hashCode(this.renderingHints);
-        hash = 59 * hash + (this.borderVisible ? 1 : 0);
-        hash = 59 * hash + Objects.hashCode(this.borderStroke);
-        hash = 59 * hash + Objects.hashCode(this.borderPaint);
-        hash = 59 * hash + Objects.hashCode(this.padding);
-        hash = 59 * hash + Objects.hashCode(this.title);
-        hash = 59 * hash + Objects.hashCode(this.subtitles);
-        hash = 59 * hash + Objects.hashCode(this.plot);
-        hash = 59 * hash + Objects.hashCode(this.backgroundPaint);
-        hash = 59 * hash + Objects.hashCode(this.backgroundImage);
-        hash = 59 * hash + Objects.hashCode(this.backgroundImageAlignment);
-        hash = 59 * hash + Float.floatToIntBits(this.backgroundImageAlpha);
-        hash = 59 * hash + (this.notify ? 1 : 0);
-        return hash;
+    public Object clone() throws CloneNotSupportedException {
+        FastScatterPlot clone = (FastScatterPlot) super.clone();
+        if (this.data != null) {
+            clone.data = ArrayUtils.clone(this.data);
+        }
+        if (this.domainAxis != null) {
+            clone.domainAxis = (ValueAxis) this.domainAxis.clone();
+            clone.domainAxis.setPlot(clone);
+            clone.domainAxis.addChangeListener(clone);
+        }
+        if (this.rangeAxis != null) {
+            clone.rangeAxis = (ValueAxis) this.rangeAxis.clone();
+            clone.rangeAxis.setPlot(clone);
+            clone.rangeAxis.addChangeListener(clone);
+        }
+        return clone;
     }
 
     /**
@@ -1467,9 +969,11 @@ class JFreeChart implements Drawable, TitleChangeListener, PlotChangeListener, C
      */
     private void writeObject(ObjectOutputStream stream) throws IOException {
         stream.defaultWriteObject();
-        SerialUtils.writeStroke(this.borderStroke, stream);
-        SerialUtils.writePaint(this.borderPaint, stream);
-        SerialUtils.writePaint(this.backgroundPaint, stream);
+        SerialUtils.writePaint(this.paint, stream);
+        SerialUtils.writeStroke(this.domainGridlineStroke, stream);
+        SerialUtils.writePaint(this.domainGridlinePaint, stream);
+        SerialUtils.writeStroke(this.rangeGridlineStroke, stream);
+        SerialUtils.writePaint(this.rangeGridlinePaint, stream);
     }
 
     /**
@@ -1482,55 +986,17 @@ class JFreeChart implements Drawable, TitleChangeListener, PlotChangeListener, C
      */
     private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
         stream.defaultReadObject();
-        this.borderStroke = SerialUtils.readStroke(stream);
-        this.borderPaint = SerialUtils.readPaint(stream);
-        this.backgroundPaint = SerialUtils.readPaint(stream);
-        this.progressListeners = new EventListenerList();
-        this.changeListeners = new EventListenerList();
-        this.renderingHints = new RenderingHints(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        this.renderingHints.put(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-        // register as a listener with sub-components...
-        if (this.title != null) {
-            this.title.addChangeListener(this);
+        this.paint = SerialUtils.readPaint(stream);
+        this.domainGridlineStroke = SerialUtils.readStroke(stream);
+        this.domainGridlinePaint = SerialUtils.readPaint(stream);
+        this.rangeGridlineStroke = SerialUtils.readStroke(stream);
+        this.rangeGridlinePaint = SerialUtils.readPaint(stream);
+        if (this.domainAxis != null) {
+            this.domainAxis.addChangeListener(this);
         }
-        for (int i = 0; i < getSubtitleCount(); i++) {
-            getSubtitle(i).addChangeListener(this);
+        if (this.rangeAxis != null) {
+            this.rangeAxis.addChangeListener(this);
         }
-        this.plot.addChangeListener(this);
-    }
-
-    /**
-     * Clones the object, and takes care of listeners.
-     * Note: caller shall register its own listeners on cloned graph.
-     *
-     * @return A clone.
-     *
-     * @throws CloneNotSupportedException if the chart is not cloneable.
-     */
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        JFreeChart chart = (JFreeChart) super.clone();
-        chart.renderingHints = (RenderingHints) this.renderingHints.clone();
-        // private boolean borderVisible;
-        // private transient Stroke borderStroke;
-        // private transient Paint borderPaint;
-        if (this.title != null) {
-            chart.title = (TextTitle) this.title.clone();
-            chart.title.addChangeListener(chart);
-        }
-        chart.subtitles = new ArrayList<>();
-        for (int i = 0; i < getSubtitleCount(); i++) {
-            Title subtitle = (Title) getSubtitle(i).clone();
-            chart.subtitles.add(subtitle);
-            subtitle.addChangeListener(chart);
-        }
-        if (this.plot != null) {
-            chart.plot = (Plot) this.plot.clone();
-            chart.plot.addChangeListener(chart);
-        }
-        chart.progressListeners = new EventListenerList();
-        chart.changeListeners = new EventListenerList();
-        return chart;
     }
 }
 /* ======================================================
@@ -1559,59 +1025,510 @@ class JFreeChart implements Drawable, TitleChangeListener, PlotChangeListener, C
  * [Oracle and Java are registered trademarks of Oracle and/or its affiliates. 
  * Other names may be trademarks of their respective owners.]
  *
- * -----------------------
- * DatasetChangeEvent.java
- * -----------------------
- * (C) Copyright 2000-present, by David Gilbert.
+ * -----------------------------
+ * DefaultIntervalXYDataset.java
+ * -----------------------------
+ * (C) Copyright 2006-present, by David Gilbert and Contributors.
  *
  * Original Author:  David Gilbert;
  * Contributor(s):   -;
- *
- * Changes (from 24-Aug-2001)
- * --------------------------
- * 24-Aug-2001 : Added standard source header. Fixed DOS encoding problem (DG);
- * 15-Oct-2001 : Move to new package (com.jrefinery.data.*) (DG);
- * 22-Oct-2001 : Renamed DataSource.java --> Dataset.java etc. (DG);
- * 11-Jun-2002 : Separated the event source from the dataset to cover the case
- *               where the dataset is changed to null in the Plot class.
- *               Updated Javadocs (DG);
- * 04-Oct-2002 : Fixed errors reported by Checkstyle (DG);
- * 05-Oct-2004 : Minor Javadoc updates (DG);
- *
  */
 /**
- * A change event that encapsulates information about a change to a dataset.
+ * A dataset that defines a range (interval) for both the x-values and the
+ * y-values.  This implementation uses six arrays to store the x, start-x,
+ * end-x, y, start-y and end-y values.
+ * <br><br>
+ * An alternative implementation of the {@link IntervalXYDataset} interface
+ * is provided by the {@link XYIntervalSeriesCollection} class.
+ *
+ * @param <S> the series key type.
  */
-class DatasetChangeEvent extends java.util.EventObject {
+public class DefaultIntervalXYDataset<S extends Comparable<S>> extends AbstractIntervalXYDataset<S> implements PublicCloneable {
 
     /**
-     * The dataset that generated the change event.
+     * Storage for the series keys.  This list must be kept in sync with the
+     * seriesList.
      */
-    private final Dataset dataset;
+    private List<S> seriesKeys;
 
     /**
-     * Constructs a new event.  The source is either the dataset or the
-     * {@link org.jfree.chart.plot.Plot} class.  The dataset can be
-     * {@code null} (in this case the source will be the
-     * {@link org.jfree.chart.plot.Plot} class).
-     *
-     * @param source  the source of the event.
-     * @param dataset  the dataset that generated the event ({@code null}
-     *                 permitted).
+     * Storage for the series in the dataset.  We use a list because the
+     * order of the series is significant.  This list must be kept in sync
+     * with the seriesKeys list.
      */
-    public DatasetChangeEvent(Object source, Dataset dataset) {
-        super(source);
-        this.dataset = dataset;
+    private List<double[][]> seriesList;
+
+    /**
+     * Creates a new {@code DefaultIntervalXYDataset} instance, initially
+     * containing no data.
+     */
+    public DefaultIntervalXYDataset() {
+        super();
+        this.seriesKeys = new ArrayList<>();
+        this.seriesList = new ArrayList<>();
     }
 
     /**
-     * Returns the dataset that generated the event.  Note that the dataset
-     * may be {@code null} since adding a {@code null} dataset to a
-     * plot will generated a change event.
+     * Returns the number of series in the dataset.
      *
-     * @return The dataset (possibly {@code null}).
+     * @return The series count.
      */
-    public Dataset getDataset() {
-        return this.dataset;
+    @Override
+    public int getSeriesCount() {
+        return this.seriesList.size();
+    }
+
+    /**
+     * Returns the key for a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     *
+     * @return The key for the series.
+     *
+     * @throws IllegalArgumentException if {@code series} is not in the
+     *     specified range.
+     */
+    @Override
+    public S getSeriesKey(int series) {
+        Args.requireInRange(series, "series", 0, this.seriesKeys.size() - 1);
+        return this.seriesKeys.get(series);
+    }
+
+    /**
+     * Returns the number of items in the specified series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     *
+     * @return The item count.
+     *
+     * @throws IllegalArgumentException if {@code series} is not in the
+     *     specified range.
+     */
+    @Override
+    public int getItemCount(int series) {
+        Args.requireInRange(series, "series", 0, this.seriesList.size() - 1);
+        double[][] seriesArray = this.seriesList.get(series);
+        return seriesArray[0].length;
+    }
+
+    /**
+     * Returns the x-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The x-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getX(int, int)
+     */
+    @Override
+    public double getXValue(int series, int item) {
+        double[][] seriesData = this.seriesList.get(series);
+        return seriesData[0][item];
+    }
+
+    /**
+     * Returns the y-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getY(int, int)
+     */
+    @Override
+    public double getYValue(int series, int item) {
+        double[][] seriesData = this.seriesList.get(series);
+        return seriesData[3][item];
+    }
+
+    /**
+     * Returns the starting x-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The starting x-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getStartX(int, int)
+     */
+    @Override
+    public double getStartXValue(int series, int item) {
+        double[][] seriesData = this.seriesList.get(series);
+        return seriesData[1][item];
+    }
+
+    /**
+     * Returns the ending x-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The ending x-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getEndX(int, int)
+     */
+    @Override
+    public double getEndXValue(int series, int item) {
+        double[][] seriesData = this.seriesList.get(series);
+        return seriesData[2][item];
+    }
+
+    /**
+     * Returns the starting y-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The starting y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getStartY(int, int)
+     */
+    @Override
+    public double getStartYValue(int series, int item) {
+        double[][] seriesData = this.seriesList.get(series);
+        return seriesData[4][item];
+    }
+
+    /**
+     * Returns the ending y-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The ending y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getEndY(int, int)
+     */
+    @Override
+    public double getEndYValue(int series, int item) {
+        double[][] seriesData = this.seriesList.get(series);
+        return seriesData[5][item];
+    }
+
+    /**
+     * Returns the ending x-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The ending x-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getEndXValue(int, int)
+     */
+    @Override
+    public Number getEndX(int series, int item) {
+        return getEndXValue(series, item);
+    }
+
+    /**
+     * Returns the ending y-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The ending y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getEndYValue(int, int)
+     */
+    @Override
+    public Number getEndY(int series, int item) {
+        return getEndYValue(series, item);
+    }
+
+    /**
+     * Returns the starting x-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The starting x-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getStartXValue(int, int)
+     */
+    @Override
+    public Number getStartX(int series, int item) {
+        return getStartXValue(series, item);
+    }
+
+    /**
+     * Returns the starting y-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The starting y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getStartYValue(int, int)
+     */
+    @Override
+    public Number getStartY(int series, int item) {
+        return getStartYValue(series, item);
+    }
+
+    /**
+     * Returns the x-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The x-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getXValue(int, int)
+     */
+    @Override
+    public Number getX(int series, int item) {
+        return getXValue(series, item);
+    }
+
+    /**
+     * Returns the y-value for an item within a series.
+     *
+     * @param series  the series index (in the range {@code 0} to
+     *     {@code getSeriesCount() - 1}).
+     * @param item  the item index (in the range {@code 0} to
+     *     {@code getItemCount(series)}).
+     *
+     * @return The y-value.
+     *
+     * @throws ArrayIndexOutOfBoundsException if {@code series} is not
+     *     within the specified range.
+     * @throws ArrayIndexOutOfBoundsException if {@code item} is not
+     *     within the specified range.
+     *
+     * @see #getYValue(int, int)
+     */
+    @Override
+    public Number getY(int series, int item) {
+        return getYValue(series, item);
+    }
+
+    /**
+     * Adds a series or if a series with the same key already exists replaces
+     * the data for that series, then sends a {@link DatasetChangeEvent} to
+     * all registered listeners.
+     *
+     * @param seriesKey  the series key ({@code null} not permitted).
+     * @param data  the data (must be an array with length 6, containing six
+     *     arrays of equal length, the first three containing the x-values
+     *     (x, xLow and xHigh) and the last three containing the y-values
+     *     (y, yLow and yHigh)).
+     */
+    public void addSeries(S seriesKey, double[][] data) {
+        Args.nullNotPermitted(seriesKey, "seriesKey");
+        Args.nullNotPermitted(data, "data");
+        if (data.length != 6) {
+            throw new IllegalArgumentException("The 'data' array must have length == 6.");
+        }
+        int length = data[0].length;
+        if (length != data[1].length || length != data[2].length || length != data[3].length || length != data[4].length || length != data[5].length) {
+            throw new IllegalArgumentException("The 'data' array must contain six arrays with equal length.");
+        }
+        int seriesIndex = indexOf(seriesKey);
+        if (seriesIndex == -1) {
+            // add a new series
+            this.seriesKeys.add(seriesKey);
+            this.seriesList.add(data);
+        } else {
+            // replace an existing series
+            this.seriesList.remove(seriesIndex);
+            this.seriesList.add(seriesIndex, data);
+        }
+        notifyListeners(new DatasetChangeEvent(this, this));
+    }
+
+    /**
+     * Tests this {@code DefaultIntervalXYDataset} instance for equality
+     * with an arbitrary object.  This method returns {@code true} if and
+     * only if:
+     * <ul>
+     * <li>{@code obj} is not {@code null};</li>
+     * <li>{@code obj} is an instance of {@code DefaultIntervalXYDataset};</li>
+     * <li>both datasets have the same number of series, each containing
+     *         exactly the same values.</li>
+     * </ul>
+     *
+     * @param obj  the object ({@code null} permitted).
+     *
+     * @return A boolean.
+     */
+    @Override
+    public boolean equals(Object obj) {
+        if (obj == this) {
+            return true;
+        }
+        if (!(obj instanceof DefaultIntervalXYDataset)) {
+            return false;
+        }
+        DefaultIntervalXYDataset<String> that = (DefaultIntervalXYDataset) obj;
+        if (!this.seriesKeys.equals(that.seriesKeys)) {
+            return false;
+        }
+        for (int i = 0; i < this.seriesList.size(); i++) {
+            double[][] d1 = this.seriesList.get(i);
+            double[][] d2 = that.seriesList.get(i);
+            double[] d1x = d1[0];
+            double[] d2x = d2[0];
+            if (!Arrays.equals(d1x, d2x)) {
+                return false;
+            }
+            double[] d1xs = d1[1];
+            double[] d2xs = d2[1];
+            if (!Arrays.equals(d1xs, d2xs)) {
+                return false;
+            }
+            double[] d1xe = d1[2];
+            double[] d2xe = d2[2];
+            if (!Arrays.equals(d1xe, d2xe)) {
+                return false;
+            }
+            double[] d1y = d1[3];
+            double[] d2y = d2[3];
+            if (!Arrays.equals(d1y, d2y)) {
+                return false;
+            }
+            double[] d1ys = d1[4];
+            double[] d2ys = d2[4];
+            if (!Arrays.equals(d1ys, d2ys)) {
+                return false;
+            }
+            double[] d1ye = d1[5];
+            double[] d2ye = d2[5];
+            if (!Arrays.equals(d1ye, d2ye)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    /**
+     * Returns a hash code for this instance.
+     *
+     * @return A hash code.
+     */
+    @Override
+    public int hashCode() {
+        int result;
+        result = this.seriesKeys.hashCode();
+        result = 29 * result + this.seriesList.hashCode();
+        return result;
+    }
+
+    /**
+     * Returns a clone of this dataset.
+     *
+     * @return A clone.
+     *
+     * @throws CloneNotSupportedException if the dataset contains a series with
+     *         a key that cannot be cloned.
+     */
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        DefaultIntervalXYDataset clone = (DefaultIntervalXYDataset) super.clone();
+        clone.seriesKeys = new ArrayList<>(this.seriesKeys);
+        clone.seriesList = new ArrayList<>(this.seriesList.size());
+        for (int i = 0; i < this.seriesList.size(); i++) {
+            double[][] data = this.seriesList.get(i);
+            double[] x = data[0];
+            double[] xStart = data[1];
+            double[] xEnd = data[2];
+            double[] y = data[3];
+            double[] yStart = data[4];
+            double[] yEnd = data[5];
+            double[] xx = new double[x.length];
+            double[] xxStart = new double[xStart.length];
+            double[] xxEnd = new double[xEnd.length];
+            double[] yy = new double[y.length];
+            double[] yyStart = new double[yStart.length];
+            double[] yyEnd = new double[yEnd.length];
+            System.arraycopy(x, 0, xx, 0, x.length);
+            System.arraycopy(xStart, 0, xxStart, 0, xStart.length);
+            System.arraycopy(xEnd, 0, xxEnd, 0, xEnd.length);
+            System.arraycopy(y, 0, yy, 0, y.length);
+            System.arraycopy(yStart, 0, yyStart, 0, yStart.length);
+            System.arraycopy(yEnd, 0, yyEnd, 0, yEnd.length);
+            clone.seriesList.add(i, new double[][] { xx, xxStart, xxEnd, yy, yyStart, yyEnd });
+        }
+        return clone;
     }
 }
