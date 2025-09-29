@@ -442,7 +442,7 @@ def derived_prediction_eval(results, k_compile, b_compile, k_locate, b_locate,
 
 if __name__ == "__main__":
     """主函数：默认读取当前目录下的 opt.log 文件"""
-    log_file = "1759052970613.log"
+    log_file = "java-lsp.log"
     if not os.path.exists(log_file):
         print(f"未找到 {log_file} 文件！")
 

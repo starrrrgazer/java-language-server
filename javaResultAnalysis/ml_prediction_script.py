@@ -207,13 +207,12 @@ def main():
     """主函数"""
     try:
         # 创建预测器实例
-        predictor = JavaLSPPredictor('log_analysis_java-lsp.csv')
+        predictor = JavaLSPPredictor('java-lsp_results.csv')
         
         # 运行预测
         results = predictor.run_prediction()
         
         print("\n预测完成！")
-        print("结果文件: ml_prediction_results.csv")
         
     except FileNotFoundError:
         print("错误: 找不到数据文件 'log_analysis_java-lsp.csv'")
